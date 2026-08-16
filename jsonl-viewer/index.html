@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSONL Pretty Print Viewer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>JSONL Pretty Print Viewer</h1>
+    <p class="subtitle">Upload a <code>.jsonl</code> file or paste JSONL text below — each line is parsed and pretty-printed.</p>
+  </header>
+
+  <main>
+    <section class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept=".jsonl,.json,.txt" hidden />
+      <div class="dropzone-content">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p><strong>Click to browse</strong> or drag &amp; drop a file here</p>
+        <p class="hint">Accepts .jsonl, .json, .txt</p>
+      </div>
+    </section>
+
+    <section class="paste-area">
+      <label for="pasteInput">Or paste JSONL:</label>
+      <textarea id="pasteInput" rows="6" placeholder='{"name":"Ada","age":36}&#10;{"name":"Alan","age":41}'></textarea>
+      <div class="actions">
+        <button id="parseBtn" class="primary">Pretty Print</button>
+        <button id="clearBtn">Clear</button>
+        <div class="toggles">
+          <label class="toggle">
+            <input type="checkbox" id="wrapToggle" />
+            <span>Wrap long lines</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="newlineToggle" />
+            <span>Expand \n in strings</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="results">
+      <div class="results-header">
+        <h2>Output</h2>
+        <span id="stats" class="stats"></span>
+      </div>
+      <div id="errorBox" class="error" hidden></div>
+      <div id="output" class="output"></div>
+    </section>
+  </main>
+
+  <footer>
+    <small>Built with vanilla HTML, CSS &amp; JavaScript · runs entirely in your browser</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Markdown Reader</title>
+
+<!-- Markdown parser + GitHub-matching syntax highlighter (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" id="hljs-light" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" id="hljs-dark" disabled />
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
+<style>
+  /* ---- GitHub-flavored color scheme ---- */
+  :root {
+    --bg: #f6f8fa;            /* outer page background */
+    --panel: #ffffff;          /* document card */
+    --text: #1f2328;           /* primary text / headings */
+    --muted: #656d76;          /* secondary text, blockquote */
+    --border: #d0d7de;         /* dividers, table borders, h1/h2 underline */
+    --accent: #0969da;         /* links, primary buttons */
+    --accent-soft: #ddf4ff;     /* hover/focus accents */
+    --code-inline: #eff1f3;    /* inline code background */
+    --code-block: #f6f8fa;     /* fenced code block background */
+    --table-th: #f6f8fa;       /* table header background */
+    --quote-border: #d0d7de;   /* blockquote left bar */
+    --danger: #cf222e;
+    --success: #1a7f37;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.06);
+    --radius: 12px;
+    --content-width: 820px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  [data-theme="dark"] {
+    --bg: #0d1117;
+    --panel: #151b23;
+    --text: #e6edf3;
+    --muted: #9198a1;
+    --border: #3d444d;
+    --accent: #4493f8;
+    --accent-soft: #1f6feb22;
+    --code-inline: #21262d;
+    --code-block: #151b23;
+    --table-th: #151b23;
+    --quote-border: #3d444d;
+    --danger: #f85149;
+    --success: #3fb950;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 30px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    transition: background .2s, color .2s;
+  }
+
+  /* Top bar */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .topbar .logo { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; color: var(--text); }
+  .topbar .logo .mark {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: linear-gradient(135deg, var(--accent), #218bff);
+    display: inline-block;
+  }
+  .spacer { flex: 1; }
+  .btn {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 500; font-family: var(--font-sans);
+    transition: background .12s, border-color .12s, transform .05s;
+  }
+  .btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: var(--accent); filter: brightness(1.07); border-color: var(--accent); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn:disabled:hover { background: var(--panel); border-color: var(--border); }
+  .icon-btn {
+    width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+    color: var(--text); font-size: 17px;
+  }
+  .icon-btn:hover { background: var(--accent-soft); }
+
+  /* Breadcrumb */
+  .crumbs {
+    display: none; align-items: center; gap: 4px; flex-wrap: wrap;
+    margin: 14px auto 0; max-width: var(--content-width); padding: 0 12px;
+    font-size: 13px; color: var(--muted);
+  }
+  .crumbs.active { display: flex; }
+  .crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .crumbs a:hover { text-decoration: underline; }
+  .crumbs .sep { opacity: .5; }
+
+  /* Drop zone / empty state */
+  .stage { min-height: calc(100vh - 57px); }
+  .dropzone {
+    max-width: 560px; margin: 0 auto;
+    padding: 80px 24px; text-align: center;
+  }
+  .dropzone .big {
+    width: 72px; height: 72px; margin: 0 auto 20px;
+    border-radius: 18px;
+    background: var(--panel);
+    border: 2px dashed var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; color: var(--muted);
+  }
+  .dropzone h1 { font-size: 22px; margin: 0 0 8px; color: var(--text); }
+  .dropzone p { color: var(--muted); margin: 0 0 24px; font-size: 14px; line-height: 1.6; }
+  .dropzone .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  body.dragging .stage::after {
+    content: "Drop your .md files / folder here";
+    position: fixed; inset: 57px 0 0 0;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border: 3px dashed var(--accent);
+    color: var(--accent); font-weight: 600; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; pointer-events: none;
+  }
+
+  /* Reader */
+  .reader { display: none; }
+  .reader.active { display: block; }
+  .reader-inner {
+    max-width: var(--content-width);
+    margin: 32px auto 80px;
+    padding: 44px 56px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  @media (max-width: 720px) {
+    .reader-inner { padding: 28px 22px; margin: 16px 12px 60px; }
+  }
+
+  /* ===== GitHub-style Markdown content ===== */
+  .markdown-body {
+    font-family: var(--font-sans);
+    font-size: 16px; line-height: 1.5; color: var(--text);
+    word-wrap: break-word;
+  }
+  .markdown-body > *:first-child { margin-top: 0; }
+  .markdown-body > *:last-child { margin-bottom: 0; }
+
+  .markdown-body h1, .markdown-body h2, .markdown-body h3,
+  .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+    margin: 24px 0 16px; font-weight: 600; line-height: 1.25; color: var(--text);
+  }
+  .markdown-body h1 { font-size: 2em; padding-bottom: .3em; border-bottom: 1px solid var(--border); }
+  .markdown-body h2 { font-size: 1.5em; padding-bottom: .3em; border-bottom: 1px solid var(--border); }
+  .markdown-body h3 { font-size: 1.25em; }
+  .markdown-body h4 { font-size: 1em; }
+  .markdown-body h5 { font-size: .875em; }
+  .markdown-body h6 { font-size: .85em; color: var(--muted); }
+
+  .markdown-body p { margin: 0 0 16px; }
+  .markdown-body a { color: var(--accent); text-decoration: none; }
+  .markdown-body a:hover { text-decoration: underline; }
+  .markdown-body strong { font-weight: 600; }
+  .markdown-body del { color: var(--muted); }
+
+  .markdown-body ul, .markdown-body ol { margin: 0 0 16px; padding-left: 2em; }
+  .markdown-body li { margin: .25em 0; }
+  .markdown-body li > ul, .markdown-body li > ol { margin: .25em 0; }
+  /* task list items: no bullet */
+  .markdown-body li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.5em; }
+  .markdown-body input[type="checkbox"] {
+    margin: 0 .5em 0 0; vertical-align: middle;
+    accent-color: var(--accent);
+  }
+
+  .markdown-body blockquote {
+    margin: 0 0 16px; padding: 0 1em;
+    color: var(--muted);
+    border-left: .25em solid var(--quote-border);
+  }
+  .markdown-body blockquote > :first-child { margin-top: 0; }
+  .markdown-body blockquote > :last-child { margin-bottom: 0; }
+
+  .markdown-body hr {
+    height: .25em; padding: 0; margin: 24px 0;
+    background: var(--border); border: 0;
+  }
+
+  .markdown-body img { max-width: 100%; border-radius: 6px; margin: 0; vertical-align: middle; background: var(--panel); }
+
+  .markdown-body table {
+    border-collapse: collapse; margin: 0 0 16px; width: 100%;
+    display: block; overflow-x: auto;
+  }
+  .markdown-body th, .markdown-body td {
+    border: 1px solid var(--border); padding: 6px 13px;
+  }
+  .markdown-body th { background: var(--table-th); font-weight: 600; }
+  .markdown-body tr:nth-child(even) td { background: transparent; }
+  .markdown-body td { color: var(--text); }
+
+  /* code */
+  .markdown-body code { font-family: var(--font-mono); font-size: 85%; }
+  .markdown-body :not(pre) > code {
+    background: var(--code-inline); padding: .2em .4em; border-radius: 6px;
+  }
+  .markdown-body pre {
+    background: var(--code-block); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; overflow-x: auto;
+    margin: 0 0 16px; line-height: 1.45;
+  }
+  .markdown-body pre code {
+    background: none; padding: 0; border: 0; font-size: 85%; color: var(--text);
+    display: block;
+  }
+  /* highlight.js tokens already themed by github/github-dark CSS */
+
+  /* keyboard / key tags */
+  .markdown-body kbd {
+    background: var(--panel); border: 1px solid var(--border);
+    border-bottom-width: 2px; border-radius: 6px;
+    padding: 3px 5px; font-family: var(--font-mono); font-size: 11px;
+  }
+
+  /* anchor link markers on hover (GitHub-style) */
+  .markdown-body h1, .markdown-body h2, .markdown-body h3,
+  .markdown-body h4, .markdown-body h5, .markdown-body h6 { position: relative; }
+
+  /* File name chip */
+  .filechip {
+    display: none; align-items: center; gap: 8px;
+    background: var(--code-inline); border: 1px solid var(--border);
+    padding: 4px 12px; border-radius: 20px; font-size: 13px; color: var(--muted);
+    max-width: 280px;
+  }
+  .filechip.show { display: inline-flex; }
+  .filechip .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .filechip .x { cursor: pointer; opacity: .6; }
+  .filechip .x:hover { opacity: 1; color: var(--text); }
+
+  .hidden-input { display: none; }
+
+  /* Toast / notice */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    padding: 12px 18px; border-radius: 8px; box-shadow: var(--shadow);
+    font-size: 14px; max-width: 90vw; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <button class="icon-btn" id="backBtn" title="Back" disabled>←</button>
+    <div class="logo"><span class="mark"></span> Markdown Reader</div>
+    <span id="filechip" class="filechip">
+      <span>📄</span><span class="name" id="filename"></span><span class="x" id="clearFile" title="Clear">✕</span>
+    </span>
+    <div class="spacer"></div>
+    <button class="btn" id="openFolderBtn" title="Open a folder so .md links work">📁 Open folder</button>
+    <button class="btn primary" id="openBtn">Open .md file</button>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="crumbs" id="crumbs"></div>
+
+  <input type="file" id="fileInput" class="hidden-input" accept=".md,.markdown,text/markdown,text/plain" />
+  <input type="file" id="folderInput" class="hidden-input" webkitdirectory multiple />
+
+  <div class="stage" id="stage">
+    <!-- Empty state -->
+    <div class="dropzone" id="dropzone">
+      <div class="big">📝</div>
+      <h1>Read Markdown beautifully</h1>
+      <p>Open a single <code>.md</code> file, or open a <strong>folder</strong> to follow links between Markdown files.<br>Rendered in a GitHub-style color scheme — headings, links, tables, code, and blockquotes.</p>
+      <div class="actions">
+        <button class="btn primary" id="openBtn2">Open a .md file</button>
+        <button class="btn" id="openFolderBtn2">Open a folder</button>
+        <button class="btn" id="sampleBtn">Try a sample</button>
+      </div>
+    </div>
+
+    <!-- Reader -->
+    <div class="reader" id="reader">
+      <div class="reader-inner">
+        <article class="markdown-body" id="content"></article>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const fileInput = $('#fileInput');
+  const folderInput = $('#folderInput');
+  const stage = $('#stage');
+  const dropzone = $('#dropzone');
+  const reader = $('#reader');
+  const content = $('#content');
+  const filechip = $('#filechip');
+  const filenameEl = $('#filename');
+  const crumbs = $('#crumbs');
+  const toastEl = $('#toast');
+  const backBtn = $('#backBtn');
+
+  // --- State ---
+  let files = new Map();       // path -> File (folder mode)
+  let byBasename = new Map();  // basename -> [paths] (fallback resolution)
+  let currentPath = null;      // path of the file currently shown (folder mode)
+  let standaloneFile = null;   // single-file mode File (no folder)
+  let folderName = '';
+  let history = [];            // navigation stack for Back button
+  let pendingNav = null;       // { hash, want } when a link triggered a manual pick
+  let suppressHistory = false; // avoid pushing when going Back
+
+  // --- Configure marked + highlight.js ---
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+    headerIds: true,
+    highlight: function (code, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        try { return hljs.highlight(code, { language: lang }).value; } catch (e) {}
+      }
+      try { return hljs.highlightAuto(code).value; } catch (e) { return code; }
+    }
+  });
+
+  // ---------- Path helpers ----------
+  function splitHash(href) {
+    const i = href.indexOf('#');
+    if (i < 0) return { path: href, hash: '' };
+    return { path: href.slice(0, i), hash: href.slice(i + 1) };
+  }
+  function normalize(p) {
+    const parts = p.split(/[\\/]+/);
+    const out = [];
+    for (const part of parts) {
+      if (part === '' || part === '.') continue;
+      if (part === '..') { out.pop(); continue; }
+      out.push(part);
+    }
+    return out.join('/');
+  }
+  function dirname(p) { const i = p.lastIndexOf('/'); return i < 0 ? '' : p.slice(0, i); }
+  function basename(p) { const i = p.lastIndexOf('/'); return i < 0 ? p : p.slice(i + 1); }
+  function resolveLink(href) {
+    const { path, hash } = splitHash(href);
+    if (!path) return { path: currentPath || '', hash, found: !!currentPath };
+    let resolved = normalize((dirname(currentPath || '') + '/' + path));
+    if (files.has(resolved)) return { path: resolved, hash, found: true };
+    const base = basename(path).toLowerCase();
+    const candidates = byBasename.get(base);
+    if (candidates && candidates.length) return { path: candidates[0], hash, found: true };
+    return { path: resolved, hash, found: false };
+  }
+
+  // ---------- Rendering ----------
+  function renderMarkdown(text) {
+    try {
+      content.innerHTML = marked.parse(text);
+      content.querySelectorAll('pre code').forEach((b) => {
+        if (!b.className || !/language-/.test(b.className)) hljs.highlightElement(b);
+      });
+      interceptLinks();
+    } catch (e) {
+      content.innerHTML = '<p style="color:var(--danger)">Could not render this file.</p>';
+    }
+  }
+
+  // Push current document onto history (called before switching)
+  function snapshot() {
+    if (suppressHistory) return;
+    history.push({
+      mode: files.size ? 'folder' : 'standalone',
+      path: currentPath,
+      file: standaloneFile,
+      folderName,
+      files: files.size ? new Map(files) : null,
+      byBasename: byBasename.size ? new Map(byBasename) : null,
+      scrollTop: window.scrollY
+    });
+    backBtn.disabled = false;
+  }
+
+  async function showFileFromPath(path, hash, fromBack) {
+    const f = files.get(path);
+    if (!f) { showToast('File not found: ' + path); return; }
+    if (!fromBack) snapshot();
+    currentPath = path;
+    filenameEl.textContent = (folderName ? folderName + ' / ' : '') + path;
+    filechip.classList.add('show');
+    dropzone.style.display = 'none';
+    reader.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    const text = await f.text();
+    renderMarkdown(text);
+    renderCrumbs(path);
+    if (hash) scrollToHash(hash);
+  }
+
+  async function showStandaloneFile(file, hash, fromBack) {
+    if (!fromBack) snapshot();
+    standaloneFile = file;
+    files = new Map(); byBasename = new Map(); currentPath = null; folderName = '';
+    filenameEl.textContent = file.name;
+    filechip.classList.add('show');
+    dropzone.style.display = 'none';
+    reader.classList.add('active');
+    crumbs.classList.remove('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    const text = await file.text();
+    renderMarkdown(text);
+    if (hash) scrollToHash(hash);
+  }
+
+  function renderCrumbs(path) {
+    if (!folderName && !path) { crumbs.classList.remove('active'); return; }
+    const segs = path.split('/');
+    let html = `<a data-path="">${folderName || 'root'}</a>`;
+    let acc = '';
+    segs.forEach((seg, i) => {
+      acc = acc ? acc + '/' + seg : seg;
+      const isLast = i === segs.length - 1;
+      html += `<span class="sep">/</span>` + (isLast
+        ? `<span>${seg}</span>`
+        : `<a data-path="${acc}">${seg}</a>`);
+    });
+    crumbs.innerHTML = html;
+    crumbs.classList.add('active');
+    crumbs.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        const p = a.getAttribute('data-path');
+        if (p === '') { const first = currentPath.split('/')[0]; if (files.has(first)) showFileFromPath(first); return; }
+        if (files.has(p)) showFileFromPath(p);
+        else {
+          const child = [...files.keys()].find(k => k.startsWith(p + '/'));
+          if (child) showFileFromPath(child);
+        }
+      });
+    });
+  }
+
+  function scrollToHash(hash) {
+    if (!hash) return;
+    let el = document.getElementById(hash);
+    if (!el) {
+      el = [...content.querySelectorAll('h1,h2,h3,h4,h5,h6')]
+        .find(h => h.textContent.trim().toLowerCase() === decodeURIComponent(hash).toLowerCase());
+    }
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.style.outline = '2px solid var(--accent)';
+      setTimeout(() => el.style.outline = '', 1800);
+    }
+  }
+
+  // ---------- Link interception ----------
+  function interceptLinks() {
+    content.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (!href) return;
+      if (/^(https?:|mailto:|tel:|data:)/i.test(href)) {
+        a.target = '_blank'; a.rel = 'noopener noreferrer'; return;
+      }
+      if (href.startsWith('#')) {
+        a.addEventListener('click', (e) => { e.preventDefault(); scrollToHash(href.slice(1)); });
+        return;
+      }
+      a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const { path, hash, found } = resolveLink(href);
+        if (found) { await showFileFromPath(path, hash); return; }
+        const want = basename(splitHash(href).path) || href;
+        pendingNav = { hash, want };
+        fileInput.value = '';
+        fileInput.click();
+        showToast('Couldn’t find "' + want + '" automatically. Please select it in the dialog that just opened.');
+      });
+    });
+  }
+
+  // ---------- Opening folders / files ----------
+  function buildFileIndex(fileList, baseName) {
+    files = new Map(); byBasename = new Map();
+    folderName = baseName || '';
+    for (const f of fileList) {
+      const rel = f.webkitRelativePath || f.name;
+      if (!/\.(md|markdown)$/i.test(rel)) continue;
+      const norm = normalize(rel);
+      let key = norm;
+      if (folderName && key.startsWith(folderName + '/')) key = key.slice(folderName.length + 1);
+      files.set(key, f);
+      const base = basename(key).toLowerCase();
+      if (!byBasename.has(base)) byBasename.set(base, []);
+      byBasename.get(base).push(key);
+    }
+    return files.size;
+  }
+
+  folderInput.addEventListener('change', async (e) => {
+    const list = e.target.files;
+    if (!list || !list.length) return;
+    folderName = folderInput.value.replace(/^.*[\\/]/, '') || 'folder';
+    const count = buildFileIndex(list, folderName);
+    if (count === 0) { showToast('No .md files found in that folder.'); return; }
+    history = []; backBtn.disabled = true;
+    const keys = [...files.keys()];
+    const start = keys.find(k => /readme/i.test(basename(k))) || keys[0];
+    await showFileFromPath(start, '');
+    showToast(`Loaded ${count} Markdown file${count > 1 ? 's' : ''} from "${folderName}".`);
+  });
+
+  fileInput.addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const hash = pendingNav ? pendingNav.hash : '';
+    const wasLinkPick = !!pendingNav;
+    pendingNav = null;
+    await showStandaloneFile(f, hash);
+    if (wasLinkPick) showToast('Loaded "' + f.name + '". Tip: open the whole folder to follow links automatically.');
+  });
+
+  // ---------- Back navigation ----------
+  backBtn.addEventListener('click', () => {
+    if (!history.length) return;
+    const prev = history.pop();
+    backBtn.disabled = history.length === 0;
+    suppressHistory = true;
+    files = prev.files ? new Map(prev.files) : new Map();
+    byBasename = prev.byBasename ? new Map(prev.byBasename) : new Map();
+    folderName = prev.folderName || '';
+    if (prev.mode === 'folder' && prev.path) {
+      showFileFromPath(prev.path, '', true).then(() => {
+        window.scrollTo({ top: prev.scrollTop || 0, behavior: 'instant' });
+        suppressHistory = false;
+      });
+    } else if (prev.file) {
+      showStandaloneFile(prev.file, '', true).then(() => {
+        window.scrollTo({ top: prev.scrollTop || 0, behavior: 'instant' });
+        suppressHistory = false;
+      });
+    } else {
+      reset(); suppressHistory = false;
+    }
+  });
+
+  // ---------- Buttons ----------
+  $('#openBtn').addEventListener('click', () => fileInput.click());
+  $('#openBtn2').addEventListener('click', () => fileInput.click());
+  $('#openFolderBtn').addEventListener('click', () => folderInput.click());
+  $('#openFolderBtn2').addEventListener('click', () => folderInput.click());
+  $('#clearFile').addEventListener('click', reset);
+
+  function reset() {
+    content.innerHTML = '';
+    filechip.classList.remove('show');
+    dropzone.style.display = 'block';
+    reader.classList.remove('active');
+    crumbs.classList.remove('active');
+    fileInput.value = ''; folderInput.value = '';
+    files = new Map(); byBasename = new Map();
+    currentPath = null; standaloneFile = null; folderName = '';
+    history = []; backBtn.disabled = true;
+  }
+
+  // ---------- Drag & drop ----------
+  let dragCounter = 0;
+  window.addEventListener('dragenter', (e) => {
+    e.preventDefault(); dragCounter++; document.body.classList.add('dragging');
+  });
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('dragleave', (e) => {
+    dragCounter--; if (dragCounter <= 0) { document.body.classList.remove('dragging'); dragCounter = 0; }
+  });
+  window.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dragCounter = 0; document.body.classList.remove('dragging');
+    const dt = e.dataTransfer;
+    if (!dt) return;
+
+    const items = dt.items;
+    const entryList = [];
+    let hasEntries = false;
+    if (items && items.length && items[0].webkitGetAsEntry) {
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry && items[i].webkitGetAsEntry();
+        if (entry) { hasEntries = true; entryList.push(entry); }
+      }
+    }
+
+    if (hasEntries) {
+      const collected = [];
+      let pending = 0;
+      await new Promise((resolve) => {
+        const maybeDone = () => { if (pending === 0) resolve(); };
+        const walk = (entry, prefix) => {
+          pending++;
+          if (entry.isFile) {
+            entry.file((file) => {
+              Object.defineProperty(file, 'webkitRelativePath', { value: prefix + entry.name });
+              collected.push(file);
+              pending--; maybeDone();
+            });
+          } else if (entry.isDirectory) {
+            const reader = entry.createReader();
+            const readBatch = () => {
+              reader.readEntries((entries) => {
+                if (!entries.length) { pending--; maybeDone(); return; }
+                entries.forEach(en => walk(en, prefix + entry.name + '/'));
+                readBatch();
+              });
+            };
+            readBatch();
+          } else { pending--; maybeDone(); }
+        };
+        entryList.forEach(en => walk(en, ''));
+        maybeDone();
+      });
+
+      if (!collected.length) { showToast('No files dropped.'); return; }
+      const top = entryList[0];
+      folderName = top.isDirectory ? top.name : 'dropped';
+      buildFileIndex(collected, folderName);
+      if (files.size) {
+        history = []; backBtn.disabled = true;
+        const keys = [...files.keys()];
+        const start = keys.find(k => /readme/i.test(basename(k))) || keys[0];
+        await showFileFromPath(start);
+        showToast(`Loaded ${files.size} Markdown file${files.size > 1 ? 's' : ''}.`);
+      } else {
+        const md = collected.find(f => /\.(md|markdown)$/i.test(f.name));
+        if (md) { history = []; backBtn.disabled = true; await showStandaloneFile(md); }
+        else showToast('No .md files in the dropped folder.');
+      }
+    } else {
+      const f = dt.files && dt.files[0];
+      if (f) { history = []; backBtn.disabled = true; await showStandaloneFile(f); }
+    }
+  });
+
+  // ---------- Toast ----------
+  let toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
+  }
+
+  // ---------- Sample ----------
+  const SAMPLE = `# Markdown Reader Demo ✨
+
+A clean, readable renderer rendered in a **GitHub-style** color scheme.
+
+## Typography
+- Headings get GitHub's exact weights and underlines on \`h1\` / \`h2\`
+- Links use GitHub blue: \`#0969da\` (light) / \`#4493f8\` (dark)
+- \`inline code\` uses GitHub's subtle grey background
+
+> Blockquotes get GitHub's muted text with a thin colored left bar.
+
+### Links to try
+- Jump to [Installation](#installation)
+- Open [a file you'll pick](other.md)
+
+### Installation
+This section is reachable via the link above. 👆
+
+\`\`\`javascript
+function greet(name) {
+  // syntax colors match GitHub's theme
+  return \`Hello, \${name}! 👋\`;
+}
+\`\`\`
+
+| Feature      | Status |
+|--------------|:------:|
+| Headings     | ✅     |
+| Tables       | ✅     |
+| Code blocks  | ✅     |
+| Inter-links  | ✅     |
+| Back button  | ✅     |
+
+- [x] GitHub color scheme
+- [ ] Your docs
+`;
+  $('#sampleBtn').addEventListener('click', async () => {
+    history = []; backBtn.disabled = true;
+    const f = new File([SAMPLE], 'sample.md', { type: 'text/markdown' });
+    await showStandaloneFile(f, '');
+  });
+
+  // ---------- Theme toggle (persist) ----------
+  const lightLink = $('#hljs-light');
+  const darkLink = $('#hljs-dark');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : '');
+    $('#themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+    lightLink.disabled = (t === 'dark');
+    darkLink.disabled = (t !== 'dark');
+    localStorage.setItem('mdr-theme', t);
+  }
+  $('#themeBtn').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    setTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+  setTheme(localStorage.getItem('mdr-theme') || 'light');
+</script>
+</body>
+</html>

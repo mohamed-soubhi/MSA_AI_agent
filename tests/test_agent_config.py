@@ -1,0 +1,156 @@
+"""Tests for agent_config.py — env-var-overridable settings for every
+agent module (chat/network, tool loop, filesystem, shell, confirm,
+auto mode). Mirrors log_config.py's own test style.
+"""
+
+import pytest
+
+import agent_config as cfg
+from agent_config import _env_bool, _env_int, _env_int_or_none, _env_list, _env_set
+
+
+class TestEnvBool:
+    @pytest.mark.tid("AGENTCFG-001")
+    @pytest.mark.parametrize("raw", ["1", "true", "TRUE", "yes", "YES", "on", "  true  "])
+    def test_truthy_values(self, monkeypatch, raw):
+        monkeypatch.setenv("SOME_FLAG", raw)
+        assert _env_bool("SOME_FLAG", False) is True
+
+    @pytest.mark.tid("AGENTCFG-002")
+    @pytest.mark.parametrize("raw", ["0", "false", "no", "off", "", "banana"])
+    def test_falsy_or_unrecognized_values(self, monkeypatch, raw):
+        monkeypatch.setenv("SOME_FLAG", raw)
+        assert _env_bool("SOME_FLAG", True) is False
+
+    @pytest.mark.tid("AGENTCFG-003")
+    def test_missing_env_var_uses_default(self, monkeypatch):
+        monkeypatch.delenv("SOME_FLAG", raising=False)
+        assert _env_bool("SOME_FLAG", True) is True
+        assert _env_bool("SOME_FLAG", False) is False
+
+
+class TestEnvInt:
+    @pytest.mark.tid("AGENTCFG-004")
+    def test_missing_env_var_uses_default(self, monkeypatch):
+        monkeypatch.delenv("SOME_INT", raising=False)
+        assert _env_int("SOME_INT", 42) == 42
+
+    @pytest.mark.tid("AGENTCFG-005")
+    def test_numeric_string_parsed(self, monkeypatch):
+        monkeypatch.setenv("SOME_INT", "99")
+        assert _env_int("SOME_INT", 42) == 99
+
+    @pytest.mark.tid("AGENTCFG-006")
+    def test_non_numeric_string_raises(self, monkeypatch):
+        monkeypatch.setenv("SOME_INT", "not-a-number")
+        with pytest.raises(ValueError):
+            _env_int("SOME_INT", 42)
+
+
+class TestEnvIntOrNone:
+    @pytest.mark.tid("AGENTCFG-007")
+    def test_missing_env_var_uses_default(self, monkeypatch):
+        monkeypatch.delenv("SOME_INT", raising=False)
+        assert _env_int_or_none("SOME_INT", 42) == 42
+        assert _env_int_or_none("SOME_INT", None) is None
+
+    @pytest.mark.tid("AGENTCFG-008")
+    @pytest.mark.parametrize("raw", ["none", "None", "NONE", "  none  "])
+    def test_literal_none_string(self, monkeypatch, raw):
+        monkeypatch.setenv("SOME_INT", raw)
+        assert _env_int_or_none("SOME_INT", 42) is None
+
+    @pytest.mark.tid("AGENTCFG-009")
+    def test_numeric_string_parsed(self, monkeypatch):
+        monkeypatch.setenv("SOME_INT", "12345")
+        assert _env_int_or_none("SOME_INT", 42) == 12345
+
+    @pytest.mark.tid("AGENTCFG-010")
+    def test_non_numeric_string_raises(self, monkeypatch):
+        monkeypatch.setenv("SOME_INT", "nope")
+        with pytest.raises(ValueError):
+            _env_int_or_none("SOME_INT", 42)
+
+
+class TestEnvSet:
+    @pytest.mark.tid("AGENTCFG-011")
+    def test_missing_env_var_uses_default(self, monkeypatch):
+        monkeypatch.delenv("SOME_SET", raising=False)
+        default = {"a", "b"}
+        assert _env_set("SOME_SET", default) == default
+
+    @pytest.mark.tid("AGENTCFG-012")
+    def test_comma_separated_parsed_into_set(self, monkeypatch):
+        monkeypatch.setenv("SOME_SET", "python,node,ls")
+        assert _env_set("SOME_SET", set()) == {"python", "node", "ls"}
+
+    @pytest.mark.tid("AGENTCFG-013")
+    def test_whitespace_trimmed_and_empty_items_dropped(self, monkeypatch):
+        monkeypatch.setenv("SOME_SET", " python , , node ,")
+        assert _env_set("SOME_SET", set()) == {"python", "node"}
+
+    @pytest.mark.tid("AGENTCFG-014")
+    def test_returns_a_set_type(self, monkeypatch):
+        monkeypatch.setenv("SOME_SET", "a,b")
+        assert isinstance(_env_set("SOME_SET", set()), set)
+
+
+class TestEnvList:
+    @pytest.mark.tid("AGENTCFG-015")
+    def test_missing_env_var_uses_default(self, monkeypatch):
+        monkeypatch.delenv("SOME_LIST", raising=False)
+        default = ["a", "b"]
+        assert _env_list("SOME_LIST", default) == default
+
+    @pytest.mark.tid("AGENTCFG-016")
+    def test_order_is_preserved(self, monkeypatch):
+        monkeypatch.setenv("SOME_LIST", "z,a,m")
+        assert _env_list("SOME_LIST", []) == ["z", "a", "m"]
+
+    @pytest.mark.tid("AGENTCFG-017")
+    def test_whitespace_trimmed_and_empty_items_dropped(self, monkeypatch):
+        monkeypatch.setenv("SOME_LIST", " rm , , sudo ,")
+        assert _env_list("SOME_LIST", []) == ["rm", "sudo"]
+
+    @pytest.mark.tid("AGENTCFG-018")
+    def test_returns_a_list_type(self, monkeypatch):
+        monkeypatch.setenv("SOME_LIST", "a,b")
+        assert isinstance(_env_list("SOME_LIST", []), list)
+
+
+class TestDefaultConstants:
+    """Spot checks that module constants resolve to their documented
+    defaults when no env vars override them (catches drift from
+    doc/agent_config.md and accidental hardcoded overrides)."""
+
+    @pytest.mark.tid("AGENTCFG-019")
+    def test_chat_and_loop_defaults(self):
+        assert cfg.CHAT_TIMEOUT_SECONDS == 60
+        assert cfg.CHAT_MAX_RETRIES == 2
+        assert cfg.CHAT_RETRY_BACKOFF_SECONDS == 2
+        assert cfg.MAX_ITERATIONS == 40
+        assert cfg.MAX_WALL_SECONDS == 600
+        assert cfg.TOOL_TIMEOUT_SECONDS == 30
+        assert cfg.MAX_REPEAT_CALLS == 3
+        assert cfg.MAX_OBSERVATION_CHARS == 4000
+
+    @pytest.mark.tid("AGENTCFG-020")
+    def test_fs_tools_defaults(self):
+        assert cfg.MAX_WRITE_BYTES == 2_000_000
+        assert cfg.REQUIRE_CONFIRMATION is True
+
+    @pytest.mark.tid("AGENTCFG-021")
+    def test_shell_tools_defaults(self):
+        assert "python3" in cfg.SHELL_ALLOWED
+        assert "rm " in cfg.SHELL_BLOCKED
+        assert cfg.SHELL_TIMEOUT_SECONDS == 120
+        assert cfg.SHELL_MAX_OUTPUT_LINES == 50
+
+    @pytest.mark.tid("AGENTCFG-022")
+    def test_confirm_defaults(self):
+        assert cfg.CONFIRM_TIMEOUT_SECONDS == 120
+        assert cfg.CONFIRM_MAX_ACTION_LEN == 400
+
+    @pytest.mark.tid("AGENTCFG-023")
+    def test_auto_mode_default(self):
+        assert cfg.MAX_AUTO_TOOL_CALLS == 30
