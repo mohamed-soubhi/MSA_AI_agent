@@ -12,11 +12,17 @@ Or via the run_be.sh / run_be.bat scripts at the project root, which
 read the same BE_HOST/BE_PORT settings this app itself reads.
 """
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
+from app.api import config as config_api
 from app.api import health
 from app.core.config import get_settings
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 def create_app() -> FastAPI:
@@ -38,6 +44,14 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router)
+    app.include_router(config_api.router)
+
+    @app.get("/config", include_in_schema=False)
+    def config_page() -> FileResponse:
+        """Interactive settings editor -- see app/static/config.html
+        and app/api/config.py (GET/POST /api/config, which this page
+        calls client-side)."""
+        return FileResponse(STATIC_DIR / "config.html")
 
     return app
 

@@ -10,14 +10,24 @@ share an environment.
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# This file lives in BE/app/core/ -- BE_DIR is BE/ itself, resolved
+# from this file's own location so env_file below finds BE/.env
+# regardless of the process's working directory at launch (previously
+# a bare relative ".env" only worked when cwd happened to be BE/,
+# which run_be.sh/.bat arrange but nothing enforces).
+BE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
     """One object, one source of truth for BE configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="BE_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="BE_", env_file=str(BE_DIR / ".env"), extra="ignore",
+    )
 
     # Identity / metadata
     app_name: str = "agent-backend"

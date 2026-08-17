@@ -1,5 +1,9 @@
 # assignment2 — documentation index
 
+**New here? Start with the [User Manual](USER_MANUAL.md)** — practical,
+task-oriented instructions for running the agent, the backend, and the
+config editor. This file is the module-by-module reference index.
+
 A sandboxed agent built on Ollama tool-calling. `CLI_agent.py` is
 the single entry point — it merges what used to be two separate agents
 (filesystem-only, and a "vibe-coding" write+run agent) into one that

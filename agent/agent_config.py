@@ -17,6 +17,8 @@ import logging
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 logger = logging.getLogger("agent.config")
 
 # SANDBOX FIX: this file lives in agent/, one level under the project
@@ -27,6 +29,16 @@ logger = logging.getLogger("agent.config")
 # which meant running from the project root let the agent read/write
 # its OWN source files, exactly the bug this fixes).
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# Config-editor support: load agent/.env (if present) into the process
+# environment BEFORE any os.getenv() call below reads it, so a value
+# saved by the BE config editor (see BE/app/api/config.py) takes effect
+# on the next restart with zero extra wiring -- every setting below
+# already reads via os.getenv(), so this is the only change needed.
+# override=False (the default): a real, already-exported env var still
+# wins over whatever's in the file, same "env var overrides everything"
+# philosophy already used throughout this module.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 def _env_bool(name: str, default: bool) -> bool:

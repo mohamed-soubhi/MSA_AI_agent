@@ -10,6 +10,17 @@ implemented below).
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Config-editor support: load agent/.env before any os.getenv() call
+# below reads it -- same reasoning as agent_config.py's own
+# load_dotenv() call. Safe/idempotent to call again here even though
+# agent_config.py already does this too: a module that imports
+# log_config.py WITHOUT going through agent_config.py first (a test
+# importing it directly, say) still gets .env values, and
+# override=False means calling it twice never overwrites a real env var.
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
 
 def _env_bool(name: str, default: bool) -> bool:
     """Read a boolean from an env var ('1'/'true'/'yes' -> True), else default."""

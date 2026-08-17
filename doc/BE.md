@@ -13,18 +13,53 @@ BE/
 ├── app/
 │   ├── main.py           — FastAPI app factory (create_app()) + module-level `app`
 │   ├── api/
-│   │   └── health.py      — GET /health
-│   └── core/
-│       └── config.py      — Settings (pydantic-settings), BE_-prefixed env vars
+│   │   ├── health.py      — GET /health
+│   │   └── config.py      — GET/POST /api/config (interactive config editor's API)
+│   ├── core/
+│   │   ├── config.py         — Settings (pydantic-settings), BE_-prefixed env vars
+│   │   └── config_schema.py  — field list + .env read/write for the config editor
+│   └── static/
+│       └── config.html    — the editor page itself (served at GET /config)
 ├── tests/
 │   ├── conftest.py         — adds BE/ to sys.path (same pattern as tests/conftest.py)
-│   └── test_health.py
+│   ├── test_health.py
+│   └── test_config.py
 ├── nginx/
 │   └── nginx.conf          — reverse proxy: Nginx :80 → Uvicorn 127.0.0.1:8000
 ├── requirements.txt
 ├── pytest.ini
 └── .env.example
 ```
+
+## Config editor (`GET /config`)
+
+An interactive page for editing every agent + BE setting, backed by
+`GET/POST /api/config`. Open `http://<host>:8000/config` (or through
+Nginx, `http://<host>/config`) while the BE service is running.
+
+- **Reads live**: the page always shows the *currently effective*
+  value of every setting — `agent/.env` overrides, real env vars, or
+  the built-in default, whichever actually won. Field metadata (label,
+  grouping, type, description) comes from one schema,
+  `app/core/config_schema.py`'s `FIELDS` list — the single source of
+  truth both the form and the save logic use, so they can't drift
+  apart.
+- **Writes to two files**: agent settings (`agent_config.py`/
+  `log_config.py`) go to `agent/.env`; `BE_`-prefixed settings go to
+  `BE/.env`. Existing lines (comments, unrelated keys) are preserved —
+  only the submitted keys are added or updated in place.
+- **Not live** — saving does **not** restart or hot-reload anything.
+  Both the agent and this BE process read their `.env` file exactly
+  once, at startup (`agent_config.py`/`log_config.py` call
+  `load_dotenv()` on import; BE's `Settings` reads `env_file` the same
+  way). A saved change takes effect the **next time each process is
+  restarted** — this is deliberate, not a bug: exactly what was asked
+  for ("saved in .env that can be loaded when restart").
+- Values are double-quoted and escaped on write, so `SYSTEM_PROMPT`'s
+  embedded newlines round-trip correctly through `python-dotenv` on
+  the next load.
+
+See [agent_config.md](agent_config.md) for the full settings reference.
 
 ## Running it
 

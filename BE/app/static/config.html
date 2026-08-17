@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Configuration</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #f8fafc;
+    --text-dim: #94a3b8;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --ok: #10b981;
+    --err: #f43f5e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    padding-bottom: 100px;
+  }
+  header {
+    padding: 32px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  .subtitle { color: var(--text-dim); font-size: 0.9rem; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px; }
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .section h2 {
+    font-size: 1.05rem;
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 4px;
+  }
+  .field .key {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-weight: 400;
+    margin-left: 6px;
+  }
+  .field .desc {
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    margin: 2px 0 6px;
+  }
+  input[type="text"], input[type="number"], textarea {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+  textarea { min-height: 140px; font-family: monospace; resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; }
+  .checkbox-row input { width: auto; }
+  .bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: center;
+  }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #status { font-size: 0.875rem; }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--err); }
+  #loading { padding: 40px; text-align: center; color: var(--text-dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Agent Configuration</h1>
+  <div class="subtitle">
+    Edits are saved to <code>agent/.env</code> and <code>BE/.env</code>.
+    Changes take effect on the next restart of each service, not live.
+  </div>
+</header>
+<main>
+  <div id="loading">Loading current configuration…</div>
+  <form id="config-form" style="display:none"></form>
+</main>
+<div class="bar">
+  <span id="status"></span>
+  <button type="submit" form="config-form" id="save-btn">Save</button>
+</div>
+
+<script>
+async function loadConfig() {
+  const res = await fetch("/api/config");
+  const data = await res.json();
+  const bySection = {};
+  for (const f of data.fields) {
+    (bySection[f.section] ||= []).push(f);
+  }
+
+  const form = document.getElementById("config-form");
+  form.innerHTML = "";
+
+  for (const [section, fields] of Object.entries(bySection)) {
+    const sectionEl = document.createElement("div");
+    sectionEl.className = "section";
+    const h2 = document.createElement("h2");
+    h2.textContent = section;
+    sectionEl.appendChild(h2);
+
+    for (const f of fields) {
+      sectionEl.appendChild(renderField(f));
+    }
+    form.appendChild(sectionEl);
+  }
+
+  document.getElementById("loading").style.display = "none";
+  form.style.display = "block";
+}
+
+function renderField(f) {
+  const wrap = document.createElement("div");
+  wrap.className = "field";
+
+  if (f.type === "bool") {
+    const row = document.createElement("div");
+    row.className = "checkbox-row";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.id = f.key;
+    input.name = f.key;
+    input.checked = f.value === "true";
+    const label = document.createElement("label");
+    label.htmlFor = f.key;
+    label.style.marginBottom = "0";
+    label.innerHTML = `${f.label}<span class="key">${f.key}</span>`;
+    row.appendChild(input);
+    row.appendChild(label);
+    wrap.appendChild(row);
+    if (f.description) wrap.appendChild(descEl(f.description));
+    return wrap;
+  }
+
+  const label = document.createElement("label");
+  label.htmlFor = f.key;
+  label.innerHTML = `${f.label}<span class="key">${f.key}</span>`;
+  wrap.appendChild(label);
+  if (f.description) wrap.appendChild(descEl(f.description));
+
+  let input;
+  if (f.type === "text") {
+    input = document.createElement("textarea");
+  } else {
+    input = document.createElement("input");
+    input.type = (f.type === "int" || f.type === "int_or_none") ? "number" : "text";
+  }
+  input.id = f.key;
+  input.name = f.key;
+  input.value = f.value;
+  wrap.appendChild(input);
+  return wrap;
+}
+
+function descEl(text) {
+  const d = document.createElement("div");
+  d.className = "desc";
+  d.textContent = text;
+  return d;
+}
+
+async function saveConfig(event) {
+  event.preventDefault();
+  const form = document.getElementById("config-form");
+  const status = document.getElementById("status");
+  const btn = document.getElementById("save-btn");
+
+  const values = {};
+  for (const el of form.querySelectorAll("input, textarea")) {
+    if (el.type === "checkbox") {
+      values[el.name] = el.checked ? "true" : "false";
+    } else {
+      values[el.name] = el.value;
+    }
+  }
+
+  btn.disabled = true;
+  status.textContent = "Saving…";
+  status.className = "";
+  try {
+    const res = await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ values }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Save failed");
+    status.textContent = data.message;
+    status.className = "ok";
+  } catch (err) {
+    status.textContent = "Error: " + err.message;
+    status.className = "err";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("config-form").addEventListener("submit", saveConfig);
+loadConfig();
+</script>
+</body>
+</html>

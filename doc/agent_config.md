@@ -15,6 +15,21 @@ files. `log_config.py` stays separate on purpose: it's a distinct
 concern (logging) that already had its own file before this one
 existed.
 
+## `.env` loading
+
+On import, this file calls `load_dotenv(Path(__file__).resolve().parent
+/ ".env")` — i.e. `agent/.env` — before reading any setting via
+`os.getenv()`. `log_config.py` does the same, independently (harmless
+to call twice — `override=False` means a real, already-exported env
+var still wins over the file either way). Missing file → no-op, same
+as before this existed.
+
+This is what lets the interactive config editor (`BE/`'s `GET /config`
+page, see [BE.md](BE.md#config-editor-get-config)) actually take
+effect: it writes to this exact `agent/.env` file, and the **next**
+agent restart picks the changes up automatically. Not live-reloaded —
+`load_dotenv()` only runs once, at import time.
+
 ## `PROJECT_ROOT` (module constant, not env-overridable)
 
 `PROJECT_ROOT = Path(__file__).resolve().parent.parent` — this file
