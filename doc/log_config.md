@@ -32,6 +32,7 @@ Reads an int from an env var. The literal string `"none"`
 | `MAX_LOG_FILE_BYTES` | `MAX_LOG_FILE_BYTES` | `10_000_000` (10 MB) | Roll the log file over to a numbered backup once it exceeds this size. `None` disables rotation. |
 | `LOG_MODEL_TIMING` | `LOG_MODEL_TIMING` | `True` | Include Ollama's own performance counters (`eval_count`, `total_duration`, etc.) when present on a response. |
 | `ECHO_TO_TERMINAL` | `ECHO_TO_TERMINAL` | `False` | Also print a one-line summary of every logged event to the terminal. |
+| `MASK_SECRETS` | `MASK_SECRETS` | `True` | SEC-03: mask recognizable secret patterns (API keys, bearer tokens, private keys) before disk serialization. |
 
 ## Test coverage (`tests/test_log_config.py`)
 

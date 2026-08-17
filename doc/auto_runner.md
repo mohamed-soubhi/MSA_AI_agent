@@ -39,7 +39,9 @@ If tools were available here, "write a plan" could quietly turn into
 "start executing," defeating the whole point of asking for approval
 before anything runs.
 
-The planning prompt asks for a clear, numbered, concrete plan (naming
+The planning prompt seeds `SYSTEM_PROMPT` as the first message
+(so the planner respects non-interactive rules, memory tools, and
+safety guidelines), asks for a clear, numbered, concrete plan (naming
 actual files/commands/directories, not vague descriptions) and
 explicitly instructs the model not to perform any actions. Returns
 `response.message.content`, or the literal string `"(model returned an

@@ -159,9 +159,11 @@ no extra cap beyond `max_iterations`.
      real signature via `_validate_arguments(func, arguments)` — a
      mismatch raises `ValueError`, caught the same way as a
      `_parse_arguments()` failure above.
-   - Compute the call signature and check the last `MAX_REPEAT_CALLS`
-     signatures — if all identical → return `"(stopped: repeated
-     identical call to '{tool}' — agent appears stuck)"`.
+   - Compute the call signature and check for stuck loops:
+     triggers if the exact same signature repeats `MAX_REPEAT_CALLS`
+     times, or if an alternating 2-step (A,B,A,B,...) or 3-step
+     (A,B,C,A,B,C,...) cycle repeats `MAX_REPEAT_CALLS` times → return
+     `"(stopped: '{tool}' is part of a repeating tool-call pattern — agent appears stuck)"`.
    - `func is None` → unknown-tool error observation, doesn't call
      anything.
    - Otherwise run via `_run_tool_with_timeout(func, arguments,

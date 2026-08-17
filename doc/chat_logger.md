@@ -34,6 +34,14 @@ applied to dict values and list items too (so a nested `write_file`
 `content` argument still gets truncated). `None` limit disables
 truncation entirely. Non-string/short values pass through untouched.
 
+## `_mask_secrets(value)`
+
+SEC-03: Recursively masks recognizable secret patterns (API keys,
+GitHub personal access tokens, Bearer authorization tokens, and
+`.env`-style password/secret assignments) before fields are written to
+disk. Controlled by `cfg.MASK_SECRETS` (defaults to `True`). Non-string
+values and clean text pass through untouched.
+
 ## `_extract_model_timing(response) -> dict`
 
 Pulls Ollama's own performance counters off a chat response, if
