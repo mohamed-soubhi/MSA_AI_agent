@@ -399,7 +399,15 @@ async function toggleModelDropdown(input, button, panel) {
     if (catalog.error) {
       panel.appendChild(errorEl("Could not reach Ollama Cloud catalog: " + catalog.error));
     } else if (catalog.models.length) {
-      renderModelGroup(panel, "Cloud catalog (browse all)", catalog.models, input);
+      // Catalog entries come back as bare model names (e.g. "glm-5.2"),
+      // not the ":cloud"-suffixed tag Ollama actually expects to run
+      // them (e.g. "glm-5.2:cloud") -- unlike the Local/Cloud (in use)
+      // groups above, whose names already come pre-tagged correctly
+      // from ollama.Client().list(). isCloudCatalog=true appends
+      // ":cloud" on selection, but only when the name has no tag of
+      // its own already (e.g. "deepseek-v4-flash:preview" keeps its
+      // explicit ":preview" tag untouched).
+      renderModelGroup(panel, "Cloud catalog (browse all)", catalog.models, input, true);
       anyShown = true;
     }
 
@@ -426,7 +434,7 @@ function errorEl(text) {
   return p;
 }
 
-function renderModelGroup(panel, title, models, input) {
+function renderModelGroup(panel, title, models, input, isCloudCatalog) {
   if (!models || models.length === 0) return;
   const heading = document.createElement("div");
   heading.className = "model-group-title";
@@ -449,7 +457,7 @@ function renderModelGroup(panel, title, models, input) {
     item.appendChild(name);
     item.appendChild(specs);
     item.addEventListener("click", () => {
-      input.value = m.name;
+      input.value = (isCloudCatalog && !m.name.includes(":")) ? `${m.name}:cloud` : m.name;
       closeModelDropdown(panel, panel.closest(".model-row").querySelector(".load-btn"));
     });
     panel.appendChild(item);
