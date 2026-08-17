@@ -20,11 +20,19 @@ Project/
 ├── agent/          — all agent source code (this file's "Modules" table)
 ├── workspace/       — the agent's sandbox; BASE_DIR. Everything it
 │                      builds/reads/writes lives here, and ONLY here.
+├── BE/             — backend service: FastAPI + Uvicorn + Nginx (see BE.md)
 ├── tests/          — pytest suite (imports agent/ via conftest.py)
 ├── doc/            — this documentation
 ├── logs/           — JSONL session logs (fixed at project root)
 └── memory.json     — persistent agent memory (fixed at project root)
 ```
+
+## Backend service (`BE/`)
+
+A FastAPI + Uvicorn + Nginx scaffold — currently just a `/health`
+endpoint proving the stack runs end to end, no agent wiring yet. Run it
+with `run_be.sh` / `run_be.bat` at the project root. See
+[BE.md](BE.md) for the full layout, config, and how to run it.
 
 **Sandbox-escape fix**: `agent/` and `workspace/` used to be the same
 directory (the project root) — the agent's own source code sat right

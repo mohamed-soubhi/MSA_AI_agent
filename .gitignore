@@ -8,6 +8,10 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Python virtual environments (BE/.venv, etc.)
+.venv/
+venv/
+
 # Node / JS
 node_modules/
 npm-debug.log*
