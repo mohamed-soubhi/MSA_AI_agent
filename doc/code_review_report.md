@@ -12,14 +12,14 @@
 
 All 9 previously identified defects have been **fully resolved, verified with unit and integration tests, and dropped from the active defect backlog**.
 
-The active defect backlog currently contains **0 open defects**. The codebase has 1 documented design tradeoff (`ARCH-01`) relating to single-workspace CLI deployment simplicity.
+The active defect backlog currently contains **0 open defects**, and the one previously-documented design tradeoff (`ARCH-01`) has since been **fixed** — see below.
 
 | Metric | Value | Notes |
 |---|---|---|
 | **Active / Open Defects** | **0** | Clean active backlog |
-| **Remediated & Dropped Issues** | **9** | Resolved in code and verified by test suite |
-| **Documented Design Tradeoffs** | **1** | ARCH-01: Single-workspace CLI path resolution |
-| **Test Suite Pass Rate** | **100% (398/398)** | Zero failing tests across 11 test modules |
+| **Remediated & Dropped Issues** | **10** | Resolved in code and verified by test suite |
+| **Documented Design Tradeoffs** | **0** | ARCH-01 (formerly accepted) is now fixed |
+| **Test Suite Pass Rate** | **100% (402/402)** | Zero failing tests across 12 test modules |
 | **Modules Audited** | **12 Source Modules** | ~3,500 LoC core + ~5,500 LoC tests/docs |
 
 ---
@@ -27,18 +27,13 @@ The active defect backlog currently contains **0 open defects**. The codebase ha
 ## Active Defect Backlog
 
 > **Status:** **CLEAN (0 Active Defects)**  
-> All security vulnerabilities, concurrency race conditions, memory wipe hazards, and ReAct loop cycle defects have been fixed in the codebase and validated by automated tests.
+> All security vulnerabilities, concurrency race conditions, memory wipe hazards, sandbox-escape paths, and ReAct loop cycle defects have been fixed in the codebase and validated by automated tests.
 
 ---
 
 ## Documented Design Tradeoffs
 
-### [ARCH-01] Module-Level Static Path Resolution
-- **Severity:** Medium
-- **Location:** [`fs_tools.py:L37-L48`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/fs_tools.py#L37-L48)
-- **Status:** **DOCUMENTED TRADEOFF (ACCEPTED)**
-- **Description:** `BASE_DIR = Path.cwd().resolve()` is evaluated once at module import time for single-process CLI REPL operation.
-- **Architectural Scope:** This is a deliberate simplicity design choice for a single-workspace CLI process where `cwd` is fixed. If the agent framework is later embedded into a long-lived multi-tenant service running concurrent distinct workspaces within a single Python interpreter, workspace paths should be encapsulated in an injectable `WorkspaceContext` class.
+None currently open. `ARCH-01` (below) was accepted as a tradeoff at the time of the original audit, then fixed once a real bug report (agent reading/modifying its own source) made the underlying risk concrete rather than theoretical.
 
 ---
 
@@ -57,6 +52,7 @@ The following 9 issues have been remediated in code and dropped from the active 
 | `UX-01` | Plan Generator Missing System Prompt | Medium | [`auto_runner.py:L41-L65`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/auto_runner.py#L41-L65) | `SYSTEM_PROMPT` prepended to planning messages | `AUTORUN-013` |
 | `SEC-03` | Plaintext Secrets in JSONL Audit Logs | Low | [`chat_logger.py:L44-L80`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/chat_logger.py#L44-L80) | `_mask_secrets()` regex redaction for API keys, tokens, and headers | `CHATLOG-025`–`CHATLOG-032` |
 | `ROB-05` | Numeric Environment Variable Crash | Low | [`agent_config.py:L30-L48`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent_config.py#L30-L48) | Integer conversion wrapped in `try...except ValueError` with default fallback | `CONFIG-010`, `CONFIG-011` |
+| `ARCH-01` | Sandbox Escape via cwd-Relative BASE_DIR | High | [`agent/fs_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/fs_tools.py), [`agent/agent_config.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/agent_config.py) | Escalated from an accepted design tradeoff to a real fix after a bug report: the agent's own source read the repo root as `Path.cwd()` and was normally launched from there, so its own sandbox let it read/overwrite its own source. Source moved to `agent/`; `BASE_DIR` now `agent_config.WORKSPACE_DIR`, resolved from the config file's own on-disk location (`agent/`'s parent), fixed at `<project_root>/workspace/` regardless of launch cwd. `MEMORY_FILE`/`LOG_DIR` similarly fixed at the project root, outside the sandbox. | `AGENTCFG-028`–`031` |
 
 ---
 

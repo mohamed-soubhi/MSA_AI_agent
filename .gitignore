@@ -26,3 +26,8 @@ logs/*.jsonl
 
 # Persistent agent memory (local, per-user learned state)
 memory.json
+
+# Agent sandbox -- everything the agent builds/writes lives here.
+# Keep the directory itself (.gitkeep) but not its generated contents.
+workspace/*
+!workspace/.gitkeep

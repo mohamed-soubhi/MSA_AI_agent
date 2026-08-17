@@ -15,6 +15,19 @@ files. `log_config.py` stays separate on purpose: it's a distinct
 concern (logging) that already had its own file before this one
 existed.
 
+## `PROJECT_ROOT` (module constant, not env-overridable)
+
+`PROJECT_ROOT = Path(__file__).resolve().parent.parent` — this file
+lives in `agent/`, one level under the project root, so `PROJECT_ROOT`
+is computed from **this file's own on-disk location**, never from the
+process's working directory. Everything below that's supposed to be
+launch-directory-independent (`WORKSPACE_DIR`, `MEMORY_FILE`'s default,
+`log_config.LOG_DIR`'s default) is anchored to this, not to `Path.cwd()`
+or a relative string. See [fs_tools.md](fs_tools.md) for the bug this
+fixes (the agent's sandbox used to be `Path.cwd()`, which — launched
+from the project root, as it normally was — let it read/edit its own
+source).
+
 ## Parsing helpers
 
 | Helper | Behavior |
@@ -50,8 +63,14 @@ existed.
 
 | Constant | Env var | Default |
 |---|---|---|
+| `WORKSPACE_DIR` | `WORKSPACE_DIR` | `PROJECT_ROOT / "workspace"` |
 | `MAX_WRITE_BYTES` | `MAX_WRITE_BYTES` | `2_000_000` (2 MB) |
 | `REQUIRE_CONFIRMATION` | `REQUIRE_CONFIRMATION` | `True` |
+
+`WORKSPACE_DIR` is `fs_tools.BASE_DIR` — the sandbox root every path
+resolves against. Fixed at `<project_root>/workspace/` by default, a
+folder sitting next to `agent/` (the source code), not inside it — see
+[fs_tools.md](fs_tools.md#sandbox-escape-fix-agent-could-readedit-its-own-source).
 
 ### Shell tools (`shell_tools.py`)
 
@@ -84,7 +103,7 @@ existed.
 | Constant | Env var | Default |
 |---|---|---|
 | `MEMORY_ENABLED` | `MEMORY_ENABLED` | `True` |
-| `MEMORY_FILE` | `MEMORY_FILE` | `"memory.json"` |
+| `MEMORY_FILE` | `MEMORY_FILE` | `PROJECT_ROOT / "memory.json"` |
 | `MEMORY_MAX_ENTRIES` | `MEMORY_MAX_ENTRIES` | `500` |
 | `MEMORY_MAX_TEXT_CHARS` | `MEMORY_MAX_TEXT_CHARS` | `1000` |
 | `MEMORY_MAX_RECALL_RESULTS` | `MEMORY_MAX_RECALL_RESULTS` | `10` |

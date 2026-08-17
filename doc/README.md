@@ -8,10 +8,43 @@ human for clarification. It also supports **auto mode**: approve one
 generated plan up front instead of confirming every step, with a few
 things (paths outside the sandbox, destructive shell patterns, a
 tool-call cap) that still always interrupt regardless of the plan.
-Everything stays inside `BASE_DIR` (the working directory the process
-was started from), and every session is logged to JSONL.
+Everything stays inside `BASE_DIR` (a fixed `workspace/` folder at the
+project root — **not** the working directory the process was started
+from, see "Project layout" below), and every session is logged to
+JSONL.
+
+## Project layout
+
+```
+Project/
+├── agent/          — all agent source code (this file's "Modules" table)
+├── workspace/       — the agent's sandbox; BASE_DIR. Everything it
+│                      builds/reads/writes lives here, and ONLY here.
+├── tests/          — pytest suite (imports agent/ via conftest.py)
+├── doc/            — this documentation
+├── logs/           — JSONL session logs (fixed at project root)
+└── memory.json     — persistent agent memory (fixed at project root)
+```
+
+**Sandbox-escape fix**: `agent/` and `workspace/` used to be the same
+directory (the project root) — the agent's own source code sat right
+next to whatever it was sandboxed to work on, and its sandbox root
+(`BASE_DIR = Path.cwd().resolve()`) was wherever the process happened
+to be launched from, which was normally that same root. That meant the
+agent's own filesystem tools could read and overwrite its own source
+files. Moving the source into `agent/` and fixing `BASE_DIR` to a
+dedicated `workspace/` folder (resolved from `agent_config.py`'s own
+file location, not the process cwd) closes that gap structurally —
+there's no path the model can construct that reaches back into `agent/`.
+See [fs_tools.md](fs_tools.md#sandbox-escape-fix-agent-could-readedit-its-own-source)
+for the full writeup. `logs/` and `memory.json` are likewise fixed at
+the project root now (not cwd-relative) and sit **outside**
+`workspace/`, so the agent can't read or edit its own operational data
+through its own sandboxed tools either.
 
 ## Modules
+
+All files below live in `agent/` (e.g. `agent/agent_config.py`).
 
 | File | Purpose | Docs |
 |---|---|---|
@@ -73,13 +106,27 @@ SAME BASE_DIR and the SAME confirm() gate — one sandbox, one approval
 experience, shared by every tool in the project, in BOTH modes.
 ```
 
+## Running the agent
+
+```bash
+python3 agent/CLI_agent.py
+```
+
+Run from the project root, or from anywhere — `agent_config.WORKSPACE_DIR`
+no longer depends on the process's working directory (see "Project
+layout" above), so launch location doesn't affect where the sandbox is.
+
 ## Running the tests
 
 ```bash
-cd assignment2
 python3 -m pytest tests/ -v
-python3 -m pytest tests/ --cov=. --cov-report=term-missing   # with coverage
+python3 -m pytest tests/ --cov=agent --cov-report=term-missing   # with coverage
 ```
+
+Run from the project root. `tests/conftest.py` adds `agent/` to
+`sys.path`, so `import fs_tools`, `import shared`, etc. resolve
+normally inside every test file without needing `agent.` as a package
+prefix.
 
 No live Ollama server or terminal tty is required — all network calls
 and `input()`/`confirm()` prompts are mocked in the test suite.
@@ -103,7 +150,7 @@ python3 -m pytest tests/test_fs_tools.py -v
 python3 tests/generate_report.py
 ```
 
-- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 398 tests, 100% pass rate.
+- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 402 tests, 100% pass rate.
 - **Code Review & Defect Assessment Report (HTML)**: [`code_review_report.html`](code_review_report.html) — interactive audit dashboard.
 - **Code Review & Defect Assessment Report (Markdown)**: [`code_review_report.md`](code_review_report.md) — comprehensive static analysis and defect assessment.
 

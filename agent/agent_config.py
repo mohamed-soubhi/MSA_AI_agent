@@ -15,8 +15,18 @@ log_config.py stays separate on purpose: it's a distinct concern
 
 import logging
 import os
+from pathlib import Path
 
 logger = logging.getLogger("agent.config")
+
+# SANDBOX FIX: this file lives in agent/, one level under the project
+# root. PROJECT_ROOT is computed from THIS file's own location, not
+# from the process's current working directory -- so the sandbox
+# boundary below no longer depends on which directory you happened to
+# launch the agent from (previously fs_tools.BASE_DIR = Path.cwd(),
+# which meant running from the project root let the agent read/write
+# its OWN source files, exactly the bug this fixes).
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -93,6 +103,15 @@ MAX_OBSERVATION_CHARS = _env_int("MAX_OBSERVATION_CHARS", 4000)  # cap what a to
 # --------------------------------------------------------------------------
 # Filesystem tools (fs_tools.py)
 # --------------------------------------------------------------------------
+# WORKSPACE_DIR is the sandbox root -- fs_tools.BASE_DIR and
+# shell_tools.run_command's cwd both point here, and NOTHING outside it
+# is ever reachable through resolve_path(). Fixed at <project_root>/
+# workspace/ by default: a dedicated folder for whatever the agent
+# builds, sitting NEXT TO agent/ (this code) rather than mixed into it.
+# Override via WORKSPACE_DIR env var for a different sandbox location
+# entirely.
+WORKSPACE_DIR = Path(os.getenv("WORKSPACE_DIR", str(PROJECT_ROOT / "workspace")))
+
 MAX_WRITE_BYTES = _env_int("MAX_WRITE_BYTES", 2_000_000)       # 2 MB per write_file() call
 REQUIRE_CONFIRMATION = _env_bool("REQUIRE_CONFIRMATION", True)  # gate write_file/create_directory
 
@@ -125,7 +144,12 @@ MAX_AUTO_TOOL_CALLS = _env_int("MAX_AUTO_TOOL_CALLS", 30)
 # Memory (memory.py)
 # --------------------------------------------------------------------------
 MEMORY_ENABLED = _env_bool("MEMORY_ENABLED", True)
-MEMORY_FILE = os.getenv("MEMORY_FILE", "memory.json")          # relative to cwd, like LOG_DIR
+# Fixed at <project_root>/memory.json by default -- deliberately OUTSIDE
+# WORKSPACE_DIR, so the agent's own persistent memory can never be
+# read/written through its own sandboxed fs_tools (write_file etc. can
+# only ever reach inside WORKSPACE_DIR). Also no longer cwd-relative --
+# same reasoning as WORKSPACE_DIR above.
+MEMORY_FILE = os.getenv("MEMORY_FILE", str(PROJECT_ROOT / "memory.json"))
 MEMORY_MAX_ENTRIES = _env_int("MEMORY_MAX_ENTRIES", 500)        # oldest entries drop past this
 MEMORY_MAX_TEXT_CHARS = _env_int("MEMORY_MAX_TEXT_CHARS", 1000)  # per-entry text cap
 MEMORY_MAX_RECALL_RESULTS = _env_int("MEMORY_MAX_RECALL_RESULTS", 10)  # cap on recall_memory() output

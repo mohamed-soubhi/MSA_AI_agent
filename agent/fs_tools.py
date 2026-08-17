@@ -1,10 +1,11 @@
 """Sandboxed filesystem tools for a coding agent.
 
-All four tools resolve every path against BASE_DIR (the directory the
-process was started from) and refuse anything that would land outside
-it -- absolute paths, "..", symlink escapes, all of it. The agent should
-never need to know or care where BASE_DIR actually is on disk; from its
-point of view, paths like "todo-app/style.css" are the whole world.
+All four tools resolve every path against BASE_DIR (a fixed workspace
+directory, agent_config.WORKSPACE_DIR -- see the note below) and refuse
+anything that would land outside it -- absolute paths, "..", symlink
+escapes, all of it. The agent should never need to know or care where
+BASE_DIR actually is on disk; from its point of view, paths like
+"todo-app/style.css" are the whole world.
 
 The docstrings below are not just documentation -- Ollama's tool-calling
 builds each tool's JSON schema from the function signature and docstring,
@@ -30,22 +31,24 @@ import unicodedata
 from pathlib import Path
 
 from confirm import confirm
-from agent_config import MAX_WRITE_BYTES, REQUIRE_CONFIRMATION
+from agent_config import MAX_WRITE_BYTES, REQUIRE_CONFIRMATION, WORKSPACE_DIR
 
 logger = logging.getLogger("agent.fs_tools")
 
-# ARCH-01 (accepted tradeoff, not fixed): computed once at import time,
-# not injectable per call/session. This matters for a multi-tenant
-# server juggling several concurrent workspaces in one process -- this
-# project is a single-process, single-workspace CLI REPL where cwd is
-# fixed for the whole life of the process, so that scenario never
-# actually arises here. Making this an injectable WorkspaceContext would
-# touch fs_tools.py, shell_tools.py (imports BASE_DIR from here),
-# auto_runner.py, and CLI_agent.py, plus every test that currently
-# monkeypatches this constant directly -- a lot of risk and churn for a
-# problem this deployment model doesn't have. Revisit if this ever runs
-# as a long-lived multi-workspace service instead of a one-shot CLI.
-BASE_DIR = Path.cwd().resolve()
+# SANDBOX FIX: previously `Path.cwd().resolve()` -- the directory the
+# process happened to be launched from. Since this project's source
+# lived at the repo root and was normally launched FROM the repo root,
+# that made BASE_DIR == the repo root, meaning fs_tools' own sandbox
+# let the agent read and overwrite its own source files (shared.py,
+# confirm.py, this file, ...) through the exact tools meant to sandbox
+# it. Moving the agent's source into agent/ and fixing BASE_DIR to
+# agent_config.WORKSPACE_DIR (a sibling `workspace/` folder, resolved
+# from THIS package's own location, not the process cwd) closes that
+# gap: the sandbox root is now a fixed, dedicated directory the agent
+# can never read or write outside of, and it no longer matters which
+# directory you happen to launch the agent from.
+BASE_DIR = WORKSPACE_DIR.resolve()
+BASE_DIR.mkdir(parents=True, exist_ok=True)  # guarantee it exists before first use
 
 # MAX_WRITE_BYTES and REQUIRE_CONFIRMATION now live in agent_config.py —
 # see that file to tune or override either via environment variable.

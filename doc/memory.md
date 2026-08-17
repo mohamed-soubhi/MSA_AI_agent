@@ -31,8 +31,12 @@ path serves both:
 ## Storage
 
 One JSON file, `MEMORY_FILE` in `agent_config.py` (default
-`memory.json`, relative to the working directory — same convention as
-`LOG_DIR` in `log_config.py`). Format:
+`<project_root>/memory.json` — fixed, not relative to the working
+directory, same convention as `LOG_DIR` in `log_config.py`).
+Deliberately fixed OUTSIDE `WORKSPACE_DIR` (the agent's sandbox — see
+[fs_tools.md](fs_tools.md)), so the agent can never read or overwrite
+its own persistent memory through its own sandboxed `write_file`/
+`read_file` tools. Format:
 
 ```json
 {
@@ -75,7 +79,7 @@ directories, not just within one sandboxed project.
 | Setting | Default | Purpose |
 |---|---|---|
 | `MEMORY_ENABLED` | `True` | Master switch — `False` makes both tools no-ops and `save_session_summary` skip entirely, with zero file I/O. |
-| `MEMORY_FILE` | `"memory.json"` | Path to the JSON file, relative to the working directory. |
+| `MEMORY_FILE` | `PROJECT_ROOT / "memory.json"` | Fixed path to the JSON file — not relative to the working directory, and outside `WORKSPACE_DIR`. |
 | `MEMORY_MAX_ENTRIES` | `500` | Oldest entries are dropped once the file exceeds this many. |
 | `MEMORY_MAX_TEXT_CHARS` | `1000` | Per-entry text is truncated to this length before saving. |
 | `MEMORY_MAX_RECALL_RESULTS` | `10` | `recall_memory()` returns at most this many matches (most recent first). |

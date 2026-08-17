@@ -24,7 +24,7 @@ Reads an int from an env var. The literal string `"none"`
 | Constant | Env var | Default | Meaning |
 |---|---|---|---|
 | `LOG_ENABLED` | `LOG_ENABLED` | `True` | Master switch. `False` → `get_logger()` returns a no-op `NullChatLogger`, zero file I/O. |
-| `LOG_DIR` | `LOG_DIR` | `Path("logs")` | Folder logs are written into. |
+| `LOG_DIR` | `LOG_DIR` | `<project_root>/logs` | Folder logs are written into. Fixed at the project root (`Path(__file__).resolve().parent.parent`, since this file lives in `agent/`), not relative to the working directory — so it no longer depends on which directory the agent is launched from. |
 | `LOG_FILE_MODE` | `LOG_FILE_MODE` | `"per_run"` | `"per_run"` → one new file per session (`{agent}_{timestamp}.jsonl`). `"single"` → everything appends to one file (subject to rotation). |
 | `SINGLE_LOG_FILENAME` | `SINGLE_LOG_FILENAME` | `"chat.jsonl"` | Filename used in `"single"` mode. |
 | `LOG_FORMAT` | — | `"jsonl"` | Fixed; one JSON object per line (streamable, tailable). |

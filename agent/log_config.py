@@ -33,8 +33,13 @@ def _env_int_or_none(name: str, default):
 # (a no-op logger is used instead, so no file I/O happens at all).
 LOG_ENABLED = _env_bool("LOG_ENABLED", True)
 
-# Folder logs are written into, relative to the working directory.
-LOG_DIR = Path(os.getenv("LOG_DIR", "logs"))
+# This file lives in agent/, one level under the project root -- fixed
+# there so LOG_DIR no longer depends on the process's working directory
+# at launch (same reasoning as agent_config.WORKSPACE_DIR/MEMORY_FILE).
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# Folder logs are written into. Fixed at <project_root>/logs by default.
+LOG_DIR = Path(os.getenv("LOG_DIR", str(_PROJECT_ROOT / "logs")))
 
 # "per_run"  -> one new file per session, named chat_YYYYmmdd_HHMMSS.jsonl
 # "single"   -> everything appends to one file, chat.jsonl (subject to

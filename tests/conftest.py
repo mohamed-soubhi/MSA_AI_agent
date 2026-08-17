@@ -5,7 +5,7 @@ and surface each test's @pytest.mark.tid id in normal `-v` output.
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "agent")))
 
 
 def pytest_itemcollected(item):

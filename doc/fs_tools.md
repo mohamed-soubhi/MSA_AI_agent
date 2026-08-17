@@ -2,19 +2,46 @@
 
 Sandboxed filesystem tools exposed to the agent as Ollama tool-calling
 functions. All four public tools resolve every path against `BASE_DIR`
-(the directory the process was started from) and refuse anything that
-would land outside it.
+(a fixed `workspace/` folder at the project root — see below) and
+refuse anything that would land outside it.
 
 Docstrings on the tool functions are not just documentation — Ollama
 builds each tool's JSON schema from the function signature and
 docstring, and the model reads that description to decide when/how to
 call it.
 
+## Sandbox-escape fix (agent could read/edit its own source)
+
+**Before**: `BASE_DIR = Path.cwd().resolve()` — the directory the
+process happened to be launched from. This project's agent source
+lived at the repo root and was normally launched from there too, so
+`BASE_DIR` ended up *being* the repo root — meaning the sandbox let the
+agent read and overwrite its own source files (`shared.py`,
+`confirm.py`, `fs_tools.py`, ...) through the exact tools meant to
+sandbox it.
+
+**Fix**: the agent's source now lives in `agent/` (one level under the
+project root), and `BASE_DIR = agent_config.WORKSPACE_DIR` — a fixed
+`<project_root>/workspace/` folder, resolved from `agent_config.py`'s
+own file location (`Path(__file__).resolve().parent.parent`), **not**
+the process's working directory. Two consequences:
+- It no longer matters which directory you launch the agent from — the
+  sandbox root is always the same fixed folder.
+- The agent's own source is structurally outside the sandbox — there is
+  no path a model could construct that resolves back into `agent/`,
+  the same way `../etc/passwd`-style traversal is already blocked.
+
+`fs_tools.py` also creates `BASE_DIR` on import
+(`BASE_DIR.mkdir(parents=True, exist_ok=True)`) so a first run never
+fails because `workspace/` doesn't exist yet. Override the whole
+sandbox location via the `WORKSPACE_DIR` environment variable
+(`agent_config.py`).
+
 ## Module constants
 
 | Name | Value | Purpose |
 |---|---|---|
-| `BASE_DIR` | `Path.cwd().resolve()` | Sandbox root. All paths must resolve inside this. |
+| `BASE_DIR` | `agent_config.WORKSPACE_DIR.resolve()` | Sandbox root — a fixed `<project_root>/workspace/` folder. All paths must resolve inside this. |
 | `MAX_WRITE_BYTES` | `2_000_000` (2 MB) | Hard cap on a single `write_file()` call. Imported from [agent_config.py](agent_config.md), env `MAX_WRITE_BYTES`. |
 | `REQUIRE_CONFIRMATION` | `True` | Gate `write_file`/`create_directory` behind `confirm()`. Set `False` only for unattended/batch runs (which `confirm()` denies anyway, absent a tty). Imported from [agent_config.py](agent_config.md), env `REQUIRE_CONFIRMATION`. |
 | `_WINDOWS_RESERVED` | regex | Matches `CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9` (case-insensitive, with or without extension). |

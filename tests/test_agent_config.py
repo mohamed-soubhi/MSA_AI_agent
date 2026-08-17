@@ -166,7 +166,7 @@ class TestDefaultConstants:
     @pytest.mark.tid("AGENTCFG-024")
     def test_memory_defaults(self):
         assert cfg.MEMORY_ENABLED is True
-        assert cfg.MEMORY_FILE == "memory.json"
+        assert cfg.MEMORY_FILE == str(cfg.PROJECT_ROOT / "memory.json")
         assert cfg.MEMORY_MAX_ENTRIES == 500
         assert cfg.MEMORY_MAX_TEXT_CHARS == 1000
         assert cfg.MEMORY_MAX_RECALL_RESULTS == 10
@@ -177,6 +177,35 @@ class TestDefaultConstants:
         assert "ask_human" in cfg.SYSTEM_PROMPT
         assert "recall_memory" in cfg.SYSTEM_PROMPT
         assert "remember_fact" in cfg.SYSTEM_PROMPT
+
+    @pytest.mark.tid("AGENTCFG-028")
+    def test_project_root_is_parent_of_agent_dir(self):
+        # This file (agent_config.py) lives in agent/; PROJECT_ROOT must
+        # be the directory ONE level up, not the process's cwd.
+        import pathlib
+        assert cfg.PROJECT_ROOT == pathlib.Path(cfg.__file__).resolve().parent.parent
+
+    @pytest.mark.tid("AGENTCFG-029")
+    def test_workspace_dir_default_is_sibling_of_agent_dir(self):
+        assert cfg.WORKSPACE_DIR == cfg.PROJECT_ROOT / "workspace"
+
+    @pytest.mark.tid("AGENTCFG-030")
+    def test_workspace_dir_is_not_inside_agent_source_dir(self):
+        # The whole point of the sandbox fix: the workspace must never
+        # be (or live inside) the directory holding the agent's own
+        # source code.
+        agent_source_dir = cfg.PROJECT_ROOT / "agent"
+        assert not cfg.WORKSPACE_DIR.is_relative_to(agent_source_dir)
+
+    @pytest.mark.tid("AGENTCFG-031")
+    def test_memory_file_is_outside_workspace_dir(self):
+        # memory.json must not be reachable through the agent's own
+        # sandboxed fs_tools (which only ever resolves inside
+        # WORKSPACE_DIR) -- otherwise the agent could read/edit its own
+        # persistent memory through write_file/read_file.
+        import pathlib
+        memory_path = pathlib.Path(cfg.MEMORY_FILE)
+        assert not memory_path.is_relative_to(cfg.WORKSPACE_DIR)
 
 
 class TestSystemPromptOverride:
