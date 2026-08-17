@@ -102,12 +102,12 @@
       align-items: center;
       gap: 6px;
       padding: 4px 12px;
-      background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.25);
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
       border-radius: 9999px;
       font-size: 0.8125rem;
       font-weight: 600;
-      color: var(--accent-blue-light);
+      color: var(--accent-emerald);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -117,7 +117,7 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: var(--accent-blue);
+      background-color: var(--accent-emerald);
     }
 
     h1 {
@@ -573,7 +573,7 @@
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background-color: var(--accent-blue);
+      background-color: var(--accent-emerald);
       border: 3px solid var(--bg-primary);
     }
 
@@ -598,7 +598,7 @@
       padding: 2px 8px;
       border-radius: 4px;
       background: var(--bg-surface);
-      color: var(--accent-blue-light);
+      color: var(--accent-emerald);
     }
 
     footer {
@@ -627,7 +627,7 @@
           <div class="badge-scope">Comprehensive Codebase Audit</div>
           <h1 style="margin-top: 8px;">Code Review & Defect Assessment Report</h1>
           <p class="subtitle" style="margin-top: 6px;">
-            In-depth security, concurrency, robustness, and architectural review of the sandboxed AI agent codebase across 12 Python modules, 367 tests, and supporting utilities.
+            In-depth security, concurrency, robustness, and architectural review of the sandboxed AI agent codebase across 12 Python modules, 370 tests, and supporting utilities.
           </p>
         </div>
       </div>
@@ -635,7 +635,7 @@
         <div class="meta-item"><strong>Date:</strong> 2026-08-17</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
         <div class="meta-item"><strong>Audit Type:</strong> Static Analysis & Architectural Threat Model</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 367 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 370 Passed / 0 Failed (100%)</div>
         <div class="meta-item"><strong>Status:</strong> Hardened & Verified</div>
       </div>
     </div>
@@ -662,7 +662,7 @@
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">367/367</span>
+        <span class="metric-value val-success">370/370</span>
         <span class="metric-desc">100% pass across 11 test modules</span>
       </div>
     </div>
@@ -704,7 +704,7 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">shell_tools.py (lines 72-104)</span>
+              <span class="meta-val">shell_tools.py (lines 72-125)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Vulnerability Type</span>
@@ -747,7 +747,7 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">shell_tools.py (lines 99-116)</span>
+              <span class="meta-val">shell_tools.py (lines 130-160)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
@@ -798,7 +798,7 @@
             </div>
             <div class="meta-row">
               <span class="meta-label">Status</span>
-              <span class="meta-val">Mitigated via select-based non-blocking stdin polling</span>
+              <span class="meta-val">Mitigated via thread-based reader queue polling</span>
             </div>
           </div>
           <div>
@@ -810,7 +810,7 @@
           <div class="recommendation-box">
             <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Replaced <code>signal.alarm</code> with non-blocking <code>select.select([sys.stdin], [], [], timeout)</code> polling, making the confirmation gate fully thread-safe across both main and secondary execution threads.
+              Replaced <code>signal.alarm</code> with a cross-platform daemon thread and queue timeout (<code>_timed_input</code>), making the confirmation gate completely thread-safe across all execution contexts.
             </p>
           </div>
         </div>
@@ -833,7 +833,7 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">memory.py (lines 42-66)</span>
+              <span class="meta-val">memory.py (lines 42-80)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
@@ -841,7 +841,7 @@
             </div>
             <div class="meta-row">
               <span class="meta-label">Status</span>
-              <span class="meta-val">Mitigated via atomic replace &amp; corrupt file backup</span>
+              <span class="meta-val">Mitigated via atomic replace, lock &amp; corrupt file backup</span>
             </div>
           </div>
           <div>
@@ -853,7 +853,7 @@
           <div class="recommendation-box">
             <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Implemented atomic file write via temporary file creation and <code>os.replace()</code>. When unrecoverable JSON corruption occurs, the corrupt file is backed up to <code>.corrupt.bak</code> rather than being discarded.
+              Implemented atomic file write via temporary file creation and <code>os.replace()</code> alongside a <code>threading.Lock</code>. When unrecoverable JSON corruption occurs, the corrupt file is backed up to <code>.corrupt.bak</code> rather than being discarded.
             </p>
           </div>
         </div>
@@ -875,7 +875,7 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target Files</span>
-              <span class="meta-val">fs_tools.py (line 37), memory.py (line 39)</span>
+              <span class="meta-val">fs_tools.py (line 37), memory.py (line 40)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
@@ -918,7 +918,7 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">shared.py (lines 330-337)</span>
+              <span class="meta-val">shared.py (lines 160-185, 350-365)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
@@ -938,7 +938,7 @@
           <div class="recommendation-box">
             <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Integrated n-gram cycle detection (checking 2-step and 3-step periodic sequence repetitions) in <code>shared.py</code> to stop oscillating agents before exhausting iteration limits.
+              Integrated n-gram cycle detection (<code>_detect_cycle</code> checking 2-step and 3-step periodic sequence repetitions) in <code>shared.py</code> to stop oscillating agents before exhausting iteration limits.
             </p>
           </div>
         </div>
@@ -1003,7 +1003,7 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">auto_runner.py</span>
+              <span class="meta-val">auto_runner.py (lines 40-65)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
@@ -1046,7 +1046,7 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">chat_logger.py</span>
+              <span class="meta-val">chat_logger.py (lines 50-80)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
@@ -1066,7 +1066,7 @@
           <div class="recommendation-box">
             <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Added regex-based credential masking in <code>chat_logger._redact_secrets()</code> to mask API tokens, bearer headers, and private key headers.
+              Added regex-based credential masking in <code>chat_logger._mask_secrets()</code> to mask API tokens, bearer headers, and private key headers.
             </p>
           </div>
         </div>
@@ -1081,6 +1081,7 @@
           </div>
           <div class="finding-badges">
             <span class="badge badge-low">Low</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">Robustness</span>
           </div>
         </div>
@@ -1088,27 +1089,27 @@
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">agent_config.py (lines 27-30)</span>
+              <span class="meta-val">agent_config.py (lines 27-50)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
               <span class="meta-val">Uncaught ValueError in Config Parsing</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">Startup crash on malformed env vars</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated with try/except fallback and warning logs</span>
             </div>
           </div>
           <div>
-            <h4 class="finding-section-title">Analysis</h4>
+            <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              Direct <code>int(raw)</code> in config parser can raise <code>ValueError</code> on invalid environment inputs.
+              Direct <code>int(raw)</code> in config parser previously raised unhandled <code>ValueError</code> on invalid environment inputs, crashing module startup.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Roadmap</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Wrap environment variable integer conversions in <code>try...except ValueError</code> fallbacks.
+              Wrapped <code>_env_int</code> and <code>_env_int_or_none</code> in <code>try...except ValueError</code> blocks, logging a warning and falling back to default values.
             </p>
           </div>
         </div>
@@ -1142,9 +1143,9 @@
           <tr>
             <td><code>agent_config.py</code></td>
             <td>Central configuration &amp; env parsing</td>
-            <td>Type-safe defaults</td>
+            <td>Type-safe defaults &amp; error fallback</td>
             <td>Immutable constants</td>
-            <td>40 tests</td>
+            <td>41 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
@@ -1174,7 +1175,7 @@
           <tr>
             <td><code>confirm.py</code></td>
             <td>Human confirmation gate</td>
-            <td>ANSI sanitization &amp; select polling</td>
+            <td>ANSI sanitization &amp; timed reader queue</td>
             <td>Thread-safe non-blocking I/O</td>
             <td>33 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
@@ -1182,7 +1183,7 @@
           <tr>
             <td><code>fs_tools.py</code></td>
             <td>Sandboxed filesystem CRUD tools</td>
-            <td>resolve_path + Win reserved + Symlink check</td>
+            <td>resolve_path + Win reserved + Symlink + MAX_READ</td>
             <td>Stateless I/O</td>
             <td>49 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
@@ -1206,9 +1207,9 @@
           <tr>
             <td><code>memory.py</code></td>
             <td>Cross-session durable memory</td>
-            <td>Atomic replace &amp; corrupt backup</td>
-            <td>Atomic filesystem rename</td>
-            <td>30 tests</td>
+            <td>Atomic replace, thread lock &amp; corrupt backup</td>
+            <td>Thread lock + Atomic rename</td>
+            <td>32 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
@@ -1242,10 +1243,13 @@
         <p class="finding-text">
           &check; Compound shell operator force-ask gate in <code>shell_tools.py</code>.<br/>
           &check; Process group isolation with <code>os.killpg</code> on timeout.<br/>
-          &check; Non-blocking thread-safe <code>select.select</code> confirmation timeout in <code>confirm.py</code>.<br/>
+          &check; Non-blocking thread-safe <code>_timed_input</code> confirmation timeout in <code>confirm.py</code>.<br/>
           &check; Atomic persistence &amp; corruption backup in <code>memory.py</code>.<br/>
           &check; Alternating cycle detection in <code>shared.py</code>.<br/>
-          &check; Secret redaction filter in <code>chat_logger.py</code>.
+          &check; Secret redaction filter in <code>chat_logger.py</code>.<br/>
+          &check; Environment variable parsing fallback in <code>agent_config.py</code>.<br/>
+          &check; Maximum read bytes ceiling in <code>fs_tools.py</code>.<br/>
+          &check; Thread-safe locking in <code>memory.py</code>.
         </p>
       </div>
 

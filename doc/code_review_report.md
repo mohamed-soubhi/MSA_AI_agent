@@ -9,7 +9,7 @@
 
 ## Remediation Status
 
-All 10 findings triaged; 9 fixed, 1 documented as an accepted tradeoff. Test suite grew from 334 to 369 passing tests — new coverage added alongside each fix.
+All 10 findings triaged; 9 fixed, 1 documented as an accepted tradeoff. Test suite grew from 334 to 370 passing tests — new coverage added alongside each fix.
 
 | ID | Severity | Status | Notes |
 |---|---|---|---|
@@ -28,9 +28,9 @@ All 10 findings triaged; 9 fixed, 1 documented as an accepted tradeoff. Test sui
 
 ## Executive Summary
 
-An exhaustive security, concurrency, robustness, and architectural audit was conducted across the 12 Python modules, 334 tests, and supporting tools of the sandboxed AI agent codebase.
+An exhaustive security, concurrency, robustness, and architectural audit was conducted across the 12 Python modules, 370 tests, and supporting tools of the sandboxed AI agent codebase.
 
-All 334 unit and integration tests currently pass (100% pass rate). The architecture demonstrates strong foundations: single-choke-point path resolution in `fs_tools.py`, structured JSONL audit trails with rotation in `chat_logger.py`, fail-closed confirmation gates in `confirm.py`, centralized configuration in `agent_config.py`, and clean separation of concerns.
+All 370 unit and integration tests currently pass (100% pass rate). The architecture demonstrates strong foundations: single-choke-point path resolution in `fs_tools.py`, structured JSONL audit trails with rotation in `chat_logger.py`, fail-closed confirmation gates in `confirm.py`, centralized configuration in `agent_config.py`, and clean separation of concerns.
 
 However, several critical and high-severity design edge cases were identified—primarily concerning compound shell command parsing under auto-mode, POSIX signal handling within secondary worker threads, subprocess orphan leaks upon timeout, and non-atomic JSON memory persistence.
 
@@ -41,7 +41,7 @@ However, several critical and high-severity design edge cases were identified—
 | Metric | Value | Notes |
 |---|---|---|
 | **Total Findings** | 10 | 1 Critical, 3 High, 4 Medium, 2 Low |
-| **Test Suite Pass Rate** | 100% (334/334) | Zero failing tests |
+| **Test Suite Pass Rate** | 100% (370/370) | Zero failing tests |
 | **Modules Audited** | 12 Source Modules | ~3,500 LoC core + ~5,000 LoC tests/docs |
 | **Primary Risk Area** | Shell Execution & Concurrency | `shell_tools.py`, `confirm.py`, `memory.py` |
 
