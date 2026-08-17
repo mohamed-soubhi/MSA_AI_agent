@@ -4,7 +4,7 @@
 **Date:** 2026-08-17  
 **Status:** Active Defects Remediated & Dropped from Backlog  
 **HTML Version:** [code_review_report.html](code_review_report.html)  
-**Test Suite:** 398 Passed / 0 Failed (100%)  
+**Test Suite:** 402 Passed / 0 Failed (100%)  
 
 ---
 
@@ -19,7 +19,7 @@ The active defect backlog currently contains **0 open defects**, and the one pre
 | **Active / Open Defects** | **0** | Clean active backlog |
 | **Remediated & Dropped Issues** | **10** | Resolved in code and verified by test suite |
 | **Documented Design Tradeoffs** | **0** | ARCH-01 (formerly accepted) is now fixed |
-| **Test Suite Pass Rate** | **100% (402/402)** | Zero failing tests across 12 test modules |
+| **Test Suite Pass Rate** | **100% (402/402)** | Zero failing tests across 11 test modules |
 | **Modules Audited** | **12 Source Modules** | ~3,500 LoC core + ~5,500 LoC tests/docs |
 
 ---
@@ -61,7 +61,7 @@ The following 9 issues have been remediated in code and dropped from the active 
 | Module | Primary Responsibility | Safety & Isolation Gate | Concurrency Safety | Test Count | Status |
 |---|---|---|---|---|---|
 | `CLI_agent.py` | Agent CLI orchestrator & REPL loop | Human confirmation / System prompt | Single-threaded loop | 24 tests | **Robust** |
-| `agent_config.py` | Central configuration & env parsing | Type-safe defaults & error fallback | Immutable constants | 41 tests | **Robust** |
+| `agent_config.py` | Central configuration & env parsing | Type-safe defaults & error fallback | Immutable constants | 45 tests | **Robust** |
 | `agent_mode.py` | Single global AUTO_MODE switch | Checked inside confirm() | Global variable (non-TLS) | Integrated | **Robust** |
 | `auto_runner.py` | Plan generation & auto execution | Plan review + System prompt context | Scoped AUTO_MODE flag | 13 tests | **Robust** |
 | `chat_logger.py` | Structured JSONL audit logging | Secret redaction & rotation | Thread lock protected | 44 tests | **Robust** |
