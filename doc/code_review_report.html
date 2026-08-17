@@ -29,29 +29,13 @@
       --accent-rose: #f43f5e;
       --accent-purple: #8b5cf6;
 
-      --badge-critical-bg: rgba(244, 63, 94, 0.15);
-      --badge-critical-text: #fb7185;
-      --badge-critical-border: rgba(244, 63, 94, 0.35);
+      --badge-clean-bg: rgba(16, 185, 129, 0.15);
+      --badge-clean-text: #34d399;
+      --badge-clean-border: rgba(16, 185, 129, 0.35);
 
-      --badge-high-bg: rgba(245, 158, 11, 0.15);
-      --badge-high-text: #fbbf24;
-      --badge-high-border: rgba(245, 158, 11, 0.35);
-
-      --badge-medium-bg: rgba(59, 130, 246, 0.15);
-      --badge-medium-text: #93c5fd;
-      --badge-medium-border: rgba(59, 130, 246, 0.35);
-
-      --badge-low-bg: rgba(16, 185, 129, 0.15);
-      --badge-low-text: #6ee7b7;
-      --badge-low-border: rgba(16, 185, 129, 0.35);
-
-      --badge-solved-bg: rgba(16, 185, 129, 0.2);
-      --badge-solved-text: #34d399;
-      --badge-solved-border: rgba(16, 185, 129, 0.4);
-
-      --badge-doc-bg: rgba(139, 92, 246, 0.2);
+      --badge-doc-bg: rgba(139, 92, 246, 0.15);
       --badge-doc-text: #c084fc;
-      --badge-doc-border: rgba(139, 92, 246, 0.4);
+      --badge-doc-border: rgba(139, 92, 246, 0.35);
 
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -110,8 +94,8 @@
       align-items: center;
       gap: 6px;
       padding: 4px 12px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: var(--badge-clean-bg);
+      border: 1px solid var(--badge-clean-border);
       border-radius: 9999px;
       font-size: 0.8125rem;
       font-weight: 700;
@@ -213,85 +197,41 @@
     .val-info { color: var(--accent-cyan); }
     .val-purple { color: var(--accent-purple); }
 
-    .toolbar {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 16px 20px;
-      margin-bottom: 28px;
+    .clean-state-box {
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.5) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 36px;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
+      align-items: flex-start;
+      gap: 20px;
+      box-shadow: var(--shadow-md);
     }
 
-    .filter-group {
+    .clean-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent-emerald);
     }
 
-    .filter-label {
-      font-size: 0.8125rem;
-      font-weight: 600;
+    .clean-content h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #34d399;
+      margin-bottom: 6px;
+    }
+
+    .clean-content p {
+      font-size: 0.9375rem;
       color: var(--text-secondary);
-      margin-right: 4px;
-    }
-
-    .btn-filter {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      color: var(--text-secondary);
-      padding: 6px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 0.8125rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .btn-filter:hover {
-      background: var(--bg-card-hover);
-      color: var(--text-primary);
-    }
-
-    .btn-filter.active {
-      background: var(--accent-blue);
-      border-color: var(--accent-blue);
-      color: #ffffff;
-    }
-
-    .search-box {
-      position: relative;
-      min-width: 280px;
-    }
-
-    .search-box input {
-      width: 100%;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-sm);
-      padding: 8px 12px 8px 34px;
-      font-size: 0.875rem;
-      color: var(--text-primary);
-      outline: none;
-      transition: border-color 0.2s ease;
-    }
-
-    .search-box input:focus {
-      border-color: var(--accent-blue);
-    }
-
-    .search-box svg {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 16px;
-      height: 16px;
-      fill: var(--text-muted);
+      line-height: 1.6;
     }
 
     .section-title {
@@ -313,18 +253,13 @@
       border-radius: 2px;
     }
 
-    .findings-list {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
     .finding-card {
       background-color: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       overflow: hidden;
       box-shadow: var(--shadow-md);
+      margin-bottom: 24px;
       transition: border-color 0.2s ease;
     }
 
@@ -367,12 +302,6 @@
       color: var(--text-primary);
     }
 
-    .finding-badges {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
     .badge {
       padding: 4px 10px;
       border-radius: 9999px;
@@ -382,41 +311,10 @@
       letter-spacing: 0.04em;
     }
 
-    .badge-critical {
-      background-color: var(--badge-critical-bg);
-      color: var(--badge-critical-text);
-      border: 1px solid var(--badge-critical-border);
-    }
-
-    .badge-high {
-      background-color: var(--badge-high-bg);
-      color: var(--badge-high-text);
-      border: 1px solid var(--badge-high-border);
-    }
-
     .badge-medium {
-      background-color: var(--badge-medium-bg);
-      color: var(--badge-medium-text);
-      border: 1px solid var(--badge-medium-border);
-    }
-
-    .badge-low {
-      background-color: var(--badge-low-bg);
-      color: var(--badge-low-text);
-      border: 1px solid var(--badge-low-border);
-    }
-
-    .badge-category {
-      background-color: var(--bg-surface);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-color);
-      font-weight: 600;
-    }
-
-    .badge-solved {
-      background-color: var(--badge-solved-bg);
-      color: var(--badge-solved-text);
-      border: 1px solid var(--badge-solved-border);
+      background-color: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.35);
     }
 
     .badge-doc {
@@ -477,28 +375,11 @@
       line-height: 1.65;
     }
 
-    .code-block {
-      background-color: #0b1120;
-      border: 1px solid #1e293b;
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      overflow-x: auto;
-      font-family: var(--font-mono);
-      font-size: 0.84rem;
-      color: #e2e8f0;
-      line-height: 1.5;
-    }
-
     .recommendation-box {
-      background-color: rgba(16, 185, 129, 0.08);
-      border-left: 4px solid var(--accent-emerald);
-      padding: 16px;
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    }
-
-    .recommendation-box.doc-box {
       background-color: rgba(139, 92, 246, 0.08);
       border-left: 4px solid var(--accent-purple);
+      padding: 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     }
 
     .recommendation-box p {
@@ -571,70 +452,6 @@
       border: 1px solid rgba(139, 92, 246, 0.3);
     }
 
-    .timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      position: relative;
-      padding-left: 28px;
-      margin-top: 24px;
-    }
-
-    .timeline::before {
-      content: "";
-      position: absolute;
-      top: 8px;
-      bottom: 8px;
-      left: 8px;
-      width: 2px;
-      background-color: var(--border-color);
-    }
-
-    .timeline-item {
-      position: relative;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 20px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .timeline-item::before {
-      content: "";
-      position: absolute;
-      left: -28px;
-      top: 24px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background-color: var(--accent-emerald);
-      border: 3px solid var(--bg-primary);
-    }
-
-    .timeline-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .timeline-title {
-      font-size: 1.0625rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .timeline-tag {
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: var(--bg-surface);
-      color: var(--accent-emerald);
-    }
-
     footer {
       margin-top: 60px;
       padding-top: 24px;
@@ -642,13 +459,6 @@
       text-align: center;
       font-size: 0.875rem;
       color: var(--text-muted);
-    }
-
-    @media (max-width: 768px) {
-      h1 { font-size: 1.75rem; }
-      .toolbar { flex-direction: column; align-items: stretch; }
-      .search-box { width: 100%; }
-      .meta-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -658,19 +468,19 @@
     <div class="container header-content">
       <div class="header-top">
         <div>
-          <div class="badge-scope">Verification Complete — 100% Passed</div>
-          <h1 style="margin-top: 8px;">Code Review & Defect Assessment Report</h1>
+          <div class="badge-scope">Active Defect Backlog Clean — 100% Passed</div>
+          <h1 style="margin-top: 8px;">Code Review & Architecture Audit Report</h1>
           <p class="subtitle" style="margin-top: 6px;">
-            In-depth security, concurrency, robustness, and architectural review of the sandboxed AI agent codebase across 12 Python modules, 370 tests, and supporting utilities.
+            Active defects backlog, architecture assessment, and module verification matrix across 12 Python modules, 392 tests, and supporting utilities.
           </p>
         </div>
       </div>
       <div class="meta-bar">
         <div class="meta-item"><strong>Date:</strong> 2026-08-17</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
-        <div class="meta-item"><strong>Audit Type:</strong> Static Analysis & Architectural Verification</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 370 Passed / 0 Failed (100%)</div>
-        <div class="meta-item"><strong>Status:</strong> 9 Solved & Verified / 1 Documented Tradeoff</div>
+        <div class="meta-item"><strong>Audit State:</strong> Active Defects Remediated &amp; Dropped</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 392 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Architecture Scope:</strong> 1 Documented Design Tradeoff</div>
       </div>
     </div>
   </header>
@@ -680,345 +490,55 @@
     <!-- Executive Summary Metrics -->
     <div class="metrics-grid">
       <div class="metric-card">
-        <span class="metric-label">Total Findings</span>
-        <span class="metric-value val-info" id="metricTotal">10</span>
-        <span class="metric-desc">Identified defects & opportunities</span>
+        <span class="metric-label">Active / Open Defects</span>
+        <span class="metric-value val-success" id="metricActive">0</span>
+        <span class="metric-desc">Zero open vulnerabilities</span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">Solved & Verified in Code</span>
-        <span class="metric-value val-success" id="metricSolved">9</span>
+        <span class="metric-label">Remediated &amp; Dropped</span>
+        <span class="metric-value val-info" id="metricDropped">9</span>
         <span class="metric-desc">Hardened with test coverage</span>
       </div>
       <div class="metric-card">
         <span class="metric-label">Documented Design Tradeoffs</span>
-        <span class="metric-value val-purple" id="metricDoc">1</span>
+        <span class="metric-value val-purple" id="metricTradeoffs">1</span>
         <span class="metric-desc">Single-tenant CLI simplicity</span>
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">370/370</span>
+        <span class="metric-value val-success">392/392</span>
         <span class="metric-desc">100% pass across 11 test modules</span>
       </div>
     </div>
 
-    <!-- Defect Resolution Summary Table -->
-    <h2 class="section-title">Defect Resolution & Verification Matrix</h2>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Defect Title</th>
-            <th>Severity</th>
-            <th>Target Module</th>
-            <th>Status in Code</th>
-            <th>Verification Test Cases</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>SEC-01</code></td>
-            <td>Shell Command Chaining &amp; Operator Bypass</td>
-            <td><span class="badge badge-critical">Critical</span></td>
-            <td><code>shell_tools.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>SHELL-028</code>, <code>SHELL-029</code>, <code>SHELL-030</code>, <code>SHELL-031</code></td>
-          </tr>
-          <tr>
-            <td><code>SEC-02</code></td>
-            <td>Subprocess Group Leak on Timeout</td>
-            <td><span class="badge badge-high">High</span></td>
-            <td><code>shell_tools.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>SHELL-032</code>, <code>SHELL-033</code></td>
-          </tr>
-          <tr>
-            <td><code>ROB-01</code></td>
-            <td>Signal / Thread Conflict in Confirmation Gate</td>
-            <td><span class="badge badge-high">High</span></td>
-            <td><code>confirm.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>CONFIRM-010</code>–<code>CONFIRM-012</code>, <code>CONFIRM-033</code></td>
-          </tr>
-          <tr>
-            <td><code>ROB-02</code></td>
-            <td>Non-Atomic Persistence &amp; Memory Corruption</td>
-            <td><span class="badge badge-high">High</span></td>
-            <td><code>memory.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>MEMORY-019</code>, <code>MEMORY-026</code>, <code>MEMORY-027</code></td>
-          </tr>
-          <tr>
-            <td><code>ARCH-01</code></td>
-            <td>Static Module-Level Path Resolution</td>
-            <td><span class="badge badge-medium">Medium</span></td>
-            <td><code>fs_tools.py</code></td>
-            <td><span class="status-pill doc">DOCUMENTED</span></td>
-            <td>Single-tenant design boundary documented</td>
-          </tr>
-          <tr>
-            <td><code>ROB-03</code></td>
-            <td>Alternating Tool Call Stuck-Loop Blindspot</td>
-            <td><span class="badge badge-medium">Medium</span></td>
-            <td><code>shared.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>SHARED-050</code>, <code>SHARED-051</code>, <code>SHARED-052</code></td>
-          </tr>
-          <tr>
-            <td><code>ROB-04</code></td>
-            <td>Summarizer Context Window Overflow</td>
-            <td><span class="badge badge-medium">Medium</span></td>
-            <td><code>memory.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>MEMORY-028</code>, <code>MEMORY-029</code></td>
-          </tr>
-          <tr>
-            <td><code>UX-01</code></td>
-            <td>Plan Generator Missing System Prompt</td>
-            <td><span class="badge badge-medium">Medium</span></td>
-            <td><code>auto_runner.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>AUTORUN-013</code></td>
-          </tr>
-          <tr>
-            <td><code>SEC-03</code></td>
-            <td>Plaintext Secrets in JSONL Audit Logs</td>
-            <td><span class="badge badge-low">Low</span></td>
-            <td><code>chat_logger.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>CHATLOG-025</code>–<code>CHATLOG-032</code></td>
-          </tr>
-          <tr>
-            <td><code>ROB-05</code></td>
-            <td>Numeric Environment Variable Crash</td>
-            <td><span class="badge badge-low">Low</span></td>
-            <td><code>agent_config.py</code></td>
-            <td><span class="status-pill solved">SOLVED</span></td>
-            <td><code>CONFIG-010</code>, <code>CONFIG-011</code></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Filter & Search Toolbar -->
-    <div class="toolbar">
-      <div class="filter-group">
-        <span class="filter-label">Filter Severity:</span>
-        <button class="btn-filter active" data-filter="all">All (10)</button>
-        <button class="btn-filter" data-filter="critical">Critical (1)</button>
-        <button class="btn-filter" data-filter="high">High (3)</button>
-        <button class="btn-filter" data-filter="medium">Medium (4)</button>
-        <button class="btn-filter" data-filter="low">Low (2)</button>
+    <!-- Active Defect Backlog Status -->
+    <div class="clean-state-box">
+      <div class="clean-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
       </div>
-      <div class="search-box">
-        <svg viewBox="0 0 24 24"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"/></svg>
-        <input type="text" id="searchInput" placeholder="Search findings, files, or keywords..." />
+      <div class="clean-content">
+        <h3>Active Defect Backlog is Clean</h3>
+        <p>
+          All 9 previously identified defects (including compound shell operator gates, process group timeouts, thread-safe confirmation queues, atomic memory persistence, stuck-loop cycle detection, token and secret redactions, environment error fallbacks, and auto-runner system prompt alignments) have been completely resolved, verified with unit and integration tests, and dropped from the active defect backlog.
+        </p>
       </div>
     </div>
 
-    <!-- Detailed Defect Breakdown -->
-    <h2 class="section-title">Detailed Defect Breakdown &amp; Verified Code Solutions</h2>
-    <div class="findings-list" id="findingsContainer">
+    <!-- Documented Design Scope & Architectural Tradeoffs -->
+    <h2 class="section-title">Documented Architectural Scope &amp; Design Tradeoffs</h2>
+    <div class="findings-list">
 
-      <!-- Finding 1: SEC-01 -->
-      <article class="finding-card" data-severity="critical" data-category="Security">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">SEC-01</span>
-            <span class="finding-title">Shell Command Chaining &amp; Operator Bypass in Auto Mode</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-critical">Critical</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Security</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">shell_tools.py (lines 52–71, 116–122)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Vulnerability Type</span>
-              <span class="meta-val">Allowlist Evaluation Bypass via Shell Operators</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">SHELL-028, SHELL-029, SHELL-030, SHELL-031</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              <code>shell_tools.run_command</code> extracts the program name by taking the first token from <code>shlex.split(command)[0]</code>. When compound shell commands were passed (using operators such as <code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, <code>|</code>, <code>&amp;</code>, or backticks/subshells <code>$()</code>), secondary binaries were able to execute in auto-mode without human approval.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Added <code>_COMPOUND_OPERATORS = ("&amp;&amp;", "||", ";", "|", "&amp;", "$(", "`")</code> and <code>_is_compound(command)</code>. Any compound command is intercepted before execution and redirected to <code>confirm(f"Compound/chained command detected, approve anyway?\nrun: {command}", force_ask=True)</code>, forcing human confirmation regardless of auto-mode.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Finding 2: SEC-02 -->
-      <article class="finding-card" data-severity="high" data-category="Security">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">SEC-02</span>
-            <span class="finding-title">Subprocess Process Group Leak on Shell Timeout</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-high">High</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Robustness</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">shell_tools.py (lines 127–156)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">Orphan Subprocess Resource Leak</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">SHELL-032, SHELL-033</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              <code>subprocess.run(command, shell=True, timeout=TIMEOUT_SECONDS)</code> previously sent <code>SIGKILL</code> exclusively to the top-level shell process, leaving child background processes orphaned in the system.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Replaced with <code>subprocess.Popen(..., start_new_session=True)</code> to isolate child processes inside a dedicated process group. On timeout, <code>os.killpg(os.getpgid(proc.pid), signal.SIGKILL)</code> terminates the entire process group.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Finding 3: ROB-01 -->
-      <article class="finding-card" data-severity="high" data-category="Concurrency">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">ROB-01</span>
-            <span class="finding-title">Signal / Thread Safety Conflict in Confirmation Gate</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-high">High</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Concurrency</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">confirm.py (lines 55–92)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">POSIX Signal Handling from Worker Thread</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">CONFIRM-010–CONFIRM-012, CONFIRM-033</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              Calling <code>signal.signal(signal.SIGALRM)</code> inside tools executed on worker threads inside <code>ThreadPoolExecutor</code> raises <code>ValueError: signal only works in main thread</code>.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Replaced <code>signal.alarm</code> with <code>_read_input_with_timeout()</code>, launching a background daemon thread that feeds a <code>queue.Queue</code> with <code>result.get(timeout=timeout_seconds)</code>. Fully thread-safe and cross-platform.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Finding 4: ROB-02 -->
-      <article class="finding-card" data-severity="high" data-category="Robustness">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">ROB-02</span>
-            <span class="finding-title">Non-Atomic Persistence &amp; Memory Corruption Wipe Hazard</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-high">High</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Data Integrity</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">memory.py (lines 43–94)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">Unprotected Overwrite &amp; Cascade File Loss</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">MEMORY-019, MEMORY-026, MEMORY-027</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              Direct write to <code>memory.json</code> without atomic swap previously risked zeroing or corrupting the file if interrupted mid-write, resulting in total memory loss on next startup.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Implemented atomic file write via temporary file creation (<code>.tmp{pid}</code>) and <code>os.replace()</code>. In <code>_load()</code>, if JSON decoding fails, the corrupt file is backed up to <code>.corrupt.bak</code> rather than discarded.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Finding 5: ARCH-01 -->
-      <article class="finding-card" data-severity="medium" data-category="Architecture">
+      <!-- Item: ARCH-01 -->
+      <article class="finding-card">
         <div class="finding-header">
           <div class="finding-title-group">
             <span class="finding-id">ARCH-01</span>
-            <span class="finding-title">Static Module-Level Path &amp; Config Binding</span>
+            <span class="finding-title">Module-Level Static Path Resolution (Single-Workspace CLI Tradeoff)</span>
           </div>
-          <div class="finding-badges">
-            <span class="badge badge-medium">Medium</span>
+          <div>
             <span class="badge badge-doc">DOCUMENTED TRADEOFF</span>
-            <span class="badge badge-category">Architecture</span>
           </div>
         </div>
         <div class="finding-body">
@@ -1028,268 +548,124 @@
               <span class="meta-val">fs_tools.py (lines 37–48)</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">Import-Time Global Path Resolution</span>
+              <span class="meta-label">Design Pattern</span>
+              <span class="meta-val">Import-Time Global Path Resolution (BASE_DIR)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Status</span>
               <span class="meta-val" style="color: #c084fc; font-weight: 700;">DOCUMENTED &amp; ACCEPTED</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Design Scope</span>
-              <span class="meta-val">Single-workspace CLI REPL process boundary</span>
+              <span class="meta-label">Deployment Boundary</span>
+              <span class="meta-val">Single-process, single-workspace CLI REPL</span>
             </div>
           </div>
           <div>
-            <h4 class="finding-section-title">Architectural Analysis</h4>
+            <h4 class="finding-section-title">Architectural Scope</h4>
             <p class="finding-text">
-              <code>BASE_DIR = Path.cwd().resolve()</code> is resolved once at import time. This is a deliberate design simplicity choice for a single-workspace CLI. Multi-tenant servers should encapsulate paths in an injectable context object.
+              <code>BASE_DIR = Path.cwd().resolve()</code> is evaluated once at import time. This is an intentional design simplicity choice for a single-process CLI REPL where <code>cwd</code> remains constant for the lifetime of the process. If the agent is ever embedded into a long-lived multi-tenant service running concurrent distinct workspaces in a single process, workspace paths should be encapsulated in an injectable <code>WorkspaceContext</code>.
             </p>
           </div>
-          <div class="recommendation-box doc-box">
+          <div class="recommendation-box">
             <h4 class="finding-section-title" style="color: var(--accent-purple);">Design Documentation</h4>
             <p>
-              Documented directly in <code>fs_tools.py</code> and architecture reports as an accepted tradeoff for the single-user CLI deployment model.
+              Documented directly in <code>fs_tools.py</code> code comments and architectural reference guides as an accepted design boundary for single-workspace CLI usage.
             </p>
           </div>
         </div>
       </article>
 
-      <!-- Finding 6: ROB-03 -->
-      <article class="finding-card" data-severity="medium" data-category="Robustness">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">ROB-03</span>
-            <span class="finding-title">Alternating Tool Call Stuck-Loop Blindspot</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-medium">Medium</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Agent Loop</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">shared.py (lines 163–180, 353–366)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">ReAct Loop Stuck Detection Limitation</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">SHARED-050, SHARED-051, SHARED-052</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              Stuck loop detection previously only checked single repeating tool calls, failing to detect alternating cycle patterns (A &rarr; B &rarr; A &rarr; B or A &rarr; B &rarr; C &rarr; A &rarr; B &rarr; C).
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Integrated <code>_detect_cycle(signatures, period, repeats)</code> in <code>shared.py</code> to check 2-step and 3-step periodic sequence repetitions, stopping oscillating agents before exhausting iteration limits.
-            </p>
-          </div>
-        </div>
-      </article>
+    </div>
 
-      <!-- Finding 7: ROB-04 -->
-      <article class="finding-card" data-severity="medium" data-category="Robustness">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">ROB-04</span>
-            <span class="finding-title">Unbounded History Growth &amp; Summarization Context Bloat</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-medium">Medium</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Robustness</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">memory.py (lines 184–213)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">Unbounded Context Window Accumulation</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">MEMORY-028, MEMORY-029</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              Context in long multi-turn sessions accumulates. End-of-session auto-summarization previously sent all historical conversation turns to Ollama, risking prompt overflow.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              In <code>memory.save_session_summary</code>, the conversation is windowed: <code>windowed_messages = messages[-MEMORY_SUMMARY_MAX_MESSAGES:]</code> (default 40 messages), safeguarding the LLM context length at shutdown.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Finding 8: UX-01 -->
-      <article class="finding-card" data-severity="medium" data-category="Architecture">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">UX-01</span>
-            <span class="finding-title">Auto-Mode Plan Generator Disconnected from System Prompt</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-medium">Medium</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">UX / Logic</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">auto_runner.py (lines 41–65)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">Missing System Persona in Planning Stage</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">AUTORUN-013</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              <code>_generate_plan</code> in <code>auto_runner.py</code> previously formulated plans without knowledge of system guidelines and non-interactive tool flags.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Prepended <code>SYSTEM_PROMPT</code> to planning messages so the planner understands all tool conventions and non-interactive rules before generating plans.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Finding 9: SEC-03 -->
-      <article class="finding-card" data-severity="low" data-category="Security">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">SEC-03</span>
-            <span class="finding-title">Secret &amp; Token Exposure in Plaintext Audit Logs</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-low">Low</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Security</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">chat_logger.py (lines 44–80)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">Unredacted Sensitive Data Logging</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">CHATLOG-025–CHATLOG-032</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              Tool arguments and model outputs logged to disk previously contained unmasked API keys, tokens, and credentials.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Added regex-based credential masking in <code>chat_logger._mask_secrets()</code> to mask API tokens, bearer headers, private keys, and <code>.env</code> password lines.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Finding 10: ROB-05 -->
-      <article class="finding-card" data-severity="low" data-category="Robustness">
-        <div class="finding-header">
-          <div class="finding-title-group">
-            <span class="finding-id">ROB-05</span>
-            <span class="finding-title">Environment Variable Parsing Crash on Malformed Numeric Values</span>
-          </div>
-          <div class="finding-badges">
-            <span class="badge badge-low">Low</span>
-            <span class="badge badge-solved">SOLVED IN CODE</span>
-            <span class="badge badge-category">Robustness</span>
-          </div>
-        </div>
-        <div class="finding-body">
-          <div class="meta-grid">
-            <div class="meta-row">
-              <span class="meta-label">Target File</span>
-              <span class="meta-val">agent_config.py (lines 30–48)</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Defect Type</span>
-              <span class="meta-val">Uncaught ValueError in Config Parsing</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #34d399; font-weight: 700;">SOLVED &amp; VERIFIED</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Test Verification</span>
-              <span class="meta-val">CONFIG-010, CONFIG-011</span>
-            </div>
-          </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
-            <p class="finding-text">
-              Direct <code>int(raw)</code> in config parser previously raised unhandled <code>ValueError</code> on invalid environment inputs, crashing module startup.
-            </p>
-          </div>
-          <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Implemented Code Solution</h4>
-            <p>
-              Wrapped <code>_env_int</code> in a <code>try...except ValueError</code> block, logging a warning and falling back gracefully to the documented default.
-            </p>
-          </div>
-        </div>
-      </article>
-
+    <!-- Remediation History Summary Table -->
+    <h2 class="section-title">Remediated &amp; Dropped Defects History</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Defect Title</th>
+            <th>Severity</th>
+            <th>Remediated in File</th>
+            <th>Solution Mechanism</th>
+            <th>Verification Test Cases</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>SEC-01</code></td>
+            <td>Shell Command Chaining &amp; Operator Bypass</td>
+            <td><span class="badge badge-medium">Critical</span></td>
+            <td><code>shell_tools.py</code></td>
+            <td><code>_is_compound()</code> detection + <code>force_ask=True</code> gate</td>
+            <td><code>SHELL-028</code>–<code>SHELL-031</code></td>
+          </tr>
+          <tr>
+            <td><code>SEC-02</code></td>
+            <td>Subprocess Group Leak on Timeout</td>
+            <td><span class="badge badge-medium">High</span></td>
+            <td><code>shell_tools.py</code></td>
+            <td><code>start_new_session=True</code> + <code>os.killpg()</code></td>
+            <td><code>SHELL-032</code>–<code>SHELL-033</code></td>
+          </tr>
+          <tr>
+            <td><code>ROB-01</code></td>
+            <td>Signal / Thread Conflict in Confirmation Gate</td>
+            <td><span class="badge badge-medium">High</span></td>
+            <td><code>confirm.py</code></td>
+            <td>Thread-safe <code>_read_input_with_timeout()</code> daemon queue</td>
+            <td><code>CONFIRM-010</code>–<code>CONFIRM-012</code>, <code>CONFIRM-033</code></td>
+          </tr>
+          <tr>
+            <td><code>ROB-02</code></td>
+            <td>Non-Atomic Persistence &amp; Memory Corruption</td>
+            <td><span class="badge badge-medium">High</span></td>
+            <td><code>memory.py</code></td>
+            <td>Atomic tempfile + <code>os.replace()</code> &amp; <code>.corrupt.bak</code> backup</td>
+            <td><code>MEMORY-019</code>, <code>MEMORY-026</code>–<code>MEMORY-027</code></td>
+          </tr>
+          <tr>
+            <td><code>ROB-03</code></td>
+            <td>Alternating Tool Call Stuck-Loop Blindspot</td>
+            <td><span class="badge badge-medium">Medium</span></td>
+            <td><code>shared.py</code></td>
+            <td>2-gram and 3-gram cycle detection (<code>_detect_cycle</code>)</td>
+            <td><code>SHARED-050</code>–<code>SHARED-052</code></td>
+          </tr>
+          <tr>
+            <td><code>ROB-04</code></td>
+            <td>Summarizer Context Window Overflow</td>
+            <td><span class="badge badge-medium">Medium</span></td>
+            <td><code>memory.py</code></td>
+            <td>Conversation windowing (<code>MEMORY_SUMMARY_MAX_MESSAGES</code>)</td>
+            <td><code>MEMORY-028</code>–<code>MEMORY-029</code></td>
+          </tr>
+          <tr>
+            <td><code>UX-01</code></td>
+            <td>Plan Generator Missing System Prompt</td>
+            <td><span class="badge badge-medium">Medium</span></td>
+            <td><code>auto_runner.py</code></td>
+            <td><code>SYSTEM_PROMPT</code> prepended to planning prompt</td>
+            <td><code>AUTORUN-013</code></td>
+          </tr>
+          <tr>
+            <td><code>SEC-03</code></td>
+            <td>Plaintext Secrets in JSONL Audit Logs</td>
+            <td><span class="badge badge-medium">Low</span></td>
+            <td><code>chat_logger.py</code></td>
+            <td><code>_mask_secrets()</code> regex redaction suite</td>
+            <td><code>CHATLOG-025</code>–<code>CHATLOG-032</code></td>
+          </tr>
+          <tr>
+            <td><code>ROB-05</code></td>
+            <td>Numeric Environment Variable Crash</td>
+            <td><span class="badge badge-medium">Low</span></td>
+            <td><code>agent_config.py</code></td>
+            <td><code>_env_int</code> wrapped in <code>try...except ValueError</code></td>
+            <td><code>CONFIG-010</code>, <code>CONFIG-011</code></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Module Architecture & Quality Matrix -->
@@ -1312,7 +688,7 @@
             <td>Agent CLI orchestrator &amp; REPL loop</td>
             <td>Human confirmation / System prompt</td>
             <td>Single-threaded loop</td>
-            <td>18 tests</td>
+            <td>24 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
@@ -1382,17 +758,17 @@
           <tr>
             <td><code>memory.py</code></td>
             <td>Cross-session durable memory</td>
-            <td>Atomic replace, thread lock &amp; corrupt backup</td>
+            <td>Atomic replace, thread lock, score search &amp; deduplication</td>
             <td>Thread lock + Atomic rename</td>
-            <td>32 tests</td>
+            <td>43 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
             <td><code>shared.py</code></td>
             <td>ReAct loop, Ollama wrapper &amp; timeout</td>
-            <td>N-gram cycle stuck-loop detection</td>
+            <td>N-gram cycle detection &amp; token accumulator</td>
             <td>ThreadPoolExecutor per tool</td>
-            <td>52 tests</td>
+            <td>57 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
@@ -1411,48 +787,9 @@
 
   <footer>
     <div class="container">
-      <p>AI Agent Framework Code Review Report &bull; Generated 2026-08-17 &bull; Verified in Codebase</p>
+      <p>AI Agent Framework Code Review Report &bull; Generated 2026-08-17 &bull; Active Backlog Clean</p>
     </div>
   </footer>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const filterButtons = document.querySelectorAll(".btn-filter");
-      const searchInput = document.getElementById("searchInput");
-      const cards = document.querySelectorAll(".finding-card");
-
-      let currentFilter = "all";
-      let searchQuery = "";
-
-      function updateVisibility() {
-        cards.forEach(card => {
-          const severity = card.getAttribute("data-severity");
-          const text = card.textContent.toLowerCase();
-          const matchesFilter = (currentFilter === "all" || severity === currentFilter);
-          const matchesSearch = searchQuery === "" || text.includes(searchQuery);
-
-          if (matchesFilter && matchesSearch) {
-            card.style.display = "block";
-          } else {
-            card.style.display = "none";
-          }
-        });
-      }
-
-      filterButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-          filterButtons.forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          currentFilter = btn.getAttribute("data-filter");
-          updateVisibility();
-        });
-      });
-
-      searchInput.addEventListener("input", (e) => {
-        searchQuery = e.target.value.toLowerCase().trim();
-        updateVisibility();
-      });
-    });
-  </script>
 </body>
 </html>
