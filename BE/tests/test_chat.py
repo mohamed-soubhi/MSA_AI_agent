@@ -6,6 +6,8 @@ throughout with a fake OllamaAgent; no real Ollama server needed.
 Also covers logging: every message is written through the agent's own
 chat_logger.py (see chat.py's module docstring) -- LOG_DIR is pointed
 at an isolated tmp_path so no test ever writes into the real logs/.
+Same isolation for memory.MEMORY_PATH, since token usage now also
+accumulates into memory.json.
 """
 
 import json
@@ -18,10 +20,17 @@ from app.core import agent_bridge  # noqa: F401 -- import first, adds agent/ to 
 from app.main import create_app
 
 import log_config  # noqa: E402 -- must come after agent_bridge's sys.path insert
+import memory  # noqa: E402
 
 
 class FakeStreamingAgent:
-    """Stand-in for OllamaAgent -- chat_stream() yields scripted chunks."""
+    """Stand-in for OllamaAgent -- chat_stream() yields scripted chunks.
+
+    total_tokens increments by (prompt_eval_count + eval_count) from
+    stream_stats once the stream completes, mirroring
+    shared.OllamaAgent.chat_stream()'s real behavior -- lets tests
+    verify the resulting memory.json delta.
+    """
 
     def __init__(self, chunks=None, raise_after=None, stream_stats=None):
         self._chunks = chunks if chunks is not None else ["Hello", ", ", "world!"]
@@ -29,6 +38,7 @@ class FakeStreamingAgent:
         self.received_messages = None
         self.model = "test-model"
         self.last_stream_stats = stream_stats
+        self.total_tokens = 0
 
     def chat_stream(self, messages):
         self.received_messages = messages
@@ -36,16 +46,23 @@ class FakeStreamingAgent:
             if self._raise_after is not None and i == self._raise_after:
                 raise RuntimeError("model exploded")
             yield chunk
+        if self.last_stream_stats:
+            self.total_tokens += (
+                (self.last_stream_stats.get("prompt_eval_count") or 0)
+                + (self.last_stream_stats.get("eval_count") or 0)
+            )
 
 
 @pytest.fixture(autouse=True)
 def reset_chat_state(monkeypatch, tmp_path):
     """Every test gets a fresh conversation, a fresh fake agent, an
-    isolated log directory, and a clean chat_logger singleton -- all of
-    chat.py's module-level state that would otherwise bleed across tests."""
+    isolated log directory + memory file, and a clean chat_logger
+    singleton -- all of chat.py's module-level state that would
+    otherwise bleed across tests."""
     chat_api._messages = [{"role": "system", "content": agent_bridge.CHAT_SYSTEM_PROMPT}]
     chat_api._chat_logger = None
     monkeypatch.setattr(log_config, "LOG_DIR", tmp_path)
+    monkeypatch.setattr(memory, "MEMORY_PATH", tmp_path / "memory.json")
     fake_agent = FakeStreamingAgent()
     monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
     yield fake_agent
@@ -213,3 +230,56 @@ def test_no_message_sent_means_no_log_file_created(tmp_path):
     client().get("/api/chat/history")
     client().get("/chat")
     assert list(tmp_path.glob("*.jsonl")) == []
+
+
+# --------------------------------------------------------------------------
+# Token usage -- saved into the same memory.json the CLI agent uses
+# --------------------------------------------------------------------------
+
+def test_stream_saves_token_delta_to_memory(monkeypatch):
+    fake_agent = FakeStreamingAgent(stream_stats={"prompt_eval_count": 30, "eval_count": 12})
+    monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
+
+    client().post("/api/chat/stream", json={"message": "hi"})
+
+    assert memory.load_token_usage() == 42
+
+
+def test_second_message_adds_to_running_total(monkeypatch):
+    fake_agent = FakeStreamingAgent(stream_stats={"prompt_eval_count": 10, "eval_count": 5})
+    monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
+
+    client().post("/api/chat/stream", json={"message": "first"})
+    client().post("/api/chat/stream", json={"message": "second"})
+
+    # Same fake agent instance -> total_tokens accumulates across both
+    # calls; memory.json should reflect the SUM of both deltas (30),
+    # not just the second call's raw total_tokens value.
+    assert memory.load_token_usage() == 30
+
+
+def test_no_stream_stats_means_no_memory_write(monkeypatch):
+    # A backend that never sends a done=True chunk -- last_stream_stats
+    # stays None, total_tokens never moves, nothing should be saved.
+    fake_agent = FakeStreamingAgent(stream_stats=None)
+    monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
+
+    client().post("/api/chat/stream", json={"message": "hi"})
+
+    assert memory.load_token_usage() == 0
+
+
+def test_error_mid_stream_still_saves_whatever_tokens_were_used(monkeypatch):
+    # Partial output before a failure may still have consumed tokens
+    # (the failure is mid-generation, not mid-request) -- but this fake
+    # only sets total_tokens on a clean finish, so a failure here means
+    # delta stays 0. Real chat_stream() would only have counted
+    # anything if a done=True chunk actually arrived, which a raised
+    # exception mid-stream means it didn't -- so 0 is the correct,
+    # honest answer, not a bug.
+    broken_agent = FakeStreamingAgent(chunks=["partial ", "more"], raise_after=1)
+    monkeypatch.setattr(agent_bridge, "_agent", broken_agent)
+
+    client().post("/api/chat/stream", json={"message": "hi"})
+
+    assert memory.load_token_usage() == 0

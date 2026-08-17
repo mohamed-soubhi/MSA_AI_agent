@@ -58,6 +58,8 @@ FIELDS: list[Field] = [
           "Transient network errors get this many retries."),
     Field("CHAT_RETRY_BACKOFF_SECONDS", "Chat / Ollama", "Retry backoff (s)", "int", "agent",
           "Linear backoff multiplier between retries."),
+    Field("CHAT_STREAM_IDLE_TIMEOUT_SECONDS", "Chat / Ollama", "Stream idle timeout (s)", "int", "agent",
+          "chat_stream() fails if no chunk arrives within this many seconds (a stall, not a total-duration cap)."),
 
     # -- Tool loop (shared.py run_agent) --------------------------------
     Field("MAX_ITERATIONS", "Tool loop", "Max iterations", "int", "agent",
@@ -182,6 +184,7 @@ def _snapshot(ac, lc) -> dict[str, str]:
         "CHAT_TIMEOUT_SECONDS": _render(ac.CHAT_TIMEOUT_SECONDS),
         "CHAT_MAX_RETRIES": _render(ac.CHAT_MAX_RETRIES),
         "CHAT_RETRY_BACKOFF_SECONDS": _render(ac.CHAT_RETRY_BACKOFF_SECONDS),
+        "CHAT_STREAM_IDLE_TIMEOUT_SECONDS": _render(ac.CHAT_STREAM_IDLE_TIMEOUT_SECONDS),
         "MAX_ITERATIONS": _render(ac.MAX_ITERATIONS),
         "MAX_WALL_SECONDS": _render(ac.MAX_WALL_SECONDS),
         "TOOL_TIMEOUT_SECONDS": _render(ac.TOOL_TIMEOUT_SECONDS),

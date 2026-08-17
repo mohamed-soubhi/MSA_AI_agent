@@ -65,9 +65,20 @@ Cumulative `prompt_eval_count + eval_count` across every successful
 `CLI_agent.py` creates exactly one instance per run, this is
 effectively "tokens used this session" — read once by the host CLI at
 shutdown (see `CLI_agent.md` and `memory.md`'s
-`save_token_usage()`). Not reset between calls; not touched by
-`chat_stream()` (streaming responses aren't used by `CLI_agent.py`,
-and per-chunk token accounting would need different handling).
+`save_token_usage()`). Not reset between calls. Also incremented by
+`chat_stream()`'s final `done=True` chunk — see `last_stream_stats`
+below.
+
+### `last_stream_stats` (instance attribute)
+
+`None` until the first `chat_stream()` call completes with a
+`done=True` chunk, then a `dict` of that chunk's
+`total_duration`/`load_duration`/`prompt_eval_count`/
+`prompt_eval_duration`/`eval_count`/`eval_duration` fields (overwritten
+each call, not accumulated). `chat_stream()` itself only yields plain
+text — this is how a caller (e.g. `BE/app/api/chat.py`) recovers the
+same token/timing stats a non-streaming `chat()` response carries,
+after fully consuming the generator.
 
 ### `_extract_token_count(response) -> int`
 
@@ -84,6 +95,17 @@ piece (`stream=True`). Intentionally **not** retried — once content has
 partially streamed to the caller, retrying would duplicate output
 already shown. Still gets the same friendly-`RuntimeError` treatment on
 failure as `chat()`.
+
+**Idle timeout**: a background daemon thread does the actual network
+iteration and puts each chunk on a `queue.Queue`; the generator does
+`queue.get(timeout=CHAT_STREAM_IDLE_TIMEOUT_SECONDS)` in a loop (same
+pattern as `confirm.py`'s `_read_input_with_timeout()`). This is an
+*idle* timeout, not a total-duration cap — a long-but-healthy stream
+never trips it as long as chunks keep arriving; only a genuine stall
+(no chunk for the configured window) raises
+`RuntimeError("... stopped responding ...")`. If it fires, the
+background thread is abandoned still blocked on the network read —
+harmless, since it's a daemon thread and can't block process exit.
 
 ## Tool-calling loop internals
 

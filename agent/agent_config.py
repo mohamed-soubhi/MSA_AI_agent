@@ -102,6 +102,7 @@ DEFAULT_MODEL = os.getenv("WORKSHOP_MODEL", "glm-5.2:cloud")
 CHAT_TIMEOUT_SECONDS = _env_int("CHAT_TIMEOUT_SECONDS", 60)
 CHAT_MAX_RETRIES = _env_int("CHAT_MAX_RETRIES", 2)
 CHAT_RETRY_BACKOFF_SECONDS = _env_int("CHAT_RETRY_BACKOFF_SECONDS", 2)
+CHAT_STREAM_IDLE_TIMEOUT_SECONDS = _env_int("CHAT_STREAM_IDLE_TIMEOUT_SECONDS", 60)  # no chunk within this window = hung stream
 
 # --------------------------------------------------------------------------
 # Agent tool loop (shared.py — run_agent)

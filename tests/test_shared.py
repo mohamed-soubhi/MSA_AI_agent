@@ -344,6 +344,31 @@ class TestOllamaAgentChatStream:
         with pytest.raises(RuntimeError, match="Could not reach Ollama model 'test-model'"):
             list(agent.chat_stream([{"role": "user", "content": "hi"}]))
 
+    @pytest.mark.tid("SHARED-061")
+    def test_stall_raises_runtime_error_after_idle_timeout(self, monkeypatch):
+        # A "stream" that blocks forever (never yields, never raises) --
+        # simulates a hung Ollama connection. Patch the idle timeout down
+        # so the test doesn't actually wait a full CHAT_STREAM_IDLE_TIMEOUT_SECONDS.
+        import shared as shared_module
+        monkeypatch.setattr(shared_module, "CHAT_STREAM_IDLE_TIMEOUT_SECONDS", 0.05)
+
+        class HangingStream:
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                time.sleep(10)
+                raise StopIteration
+
+        class HangingClient:
+            def chat(self, **kwargs):
+                return HangingStream()
+
+        agent = OllamaAgent(model="test-model")
+        agent.client = HangingClient()
+        with pytest.raises(RuntimeError, match="stopped responding"):
+            list(agent.chat_stream([{"role": "user", "content": "hi"}]))
+
     @pytest.mark.tid("SHARED-058")
     def test_last_stream_stats_none_before_any_call(self):
         agent = OllamaAgent(model="test-model")

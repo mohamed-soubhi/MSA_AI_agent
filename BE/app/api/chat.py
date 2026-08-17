@@ -15,6 +15,11 @@ whether a session came from the CLI or this chat page. One "session"
 here = one conversation: the log file opens on the first message after
 startup or a reset, and POST /reset closes it out with
 session_end(reason="new_chat") before starting a fresh one.
+
+Token usage also accumulates into the SAME memory.json the CLI agent
+uses (memory.save_token_usage()) -- one running "tokens used all-time"
+total, shared regardless of whether the tokens came from the CLI or
+this chat page.
 """
 
 import json
@@ -27,6 +32,7 @@ from pydantic import BaseModel
 
 from app.core.agent_bridge import CHAT_SYSTEM_PROMPT, get_agent
 from chat_logger import get_logger
+from memory import save_token_usage
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -113,6 +119,7 @@ def stream_chat(request: ChatRequest) -> StreamingResponse:
     logger = _get_chat_logger(agent.model)
     logger.user_message(request.message)
     logger.model_call_start(len(snapshot), tools=[])
+    tokens_before = agent.total_tokens
 
     def event_generator():
         full_text_parts: list[str] = []
@@ -138,6 +145,15 @@ def stream_chat(request: ChatRequest) -> StreamingResponse:
                 # too, with no changes needed to chat_logger.py itself.
                 stats = agent.last_stream_stats or {}
                 logger.model_response(answer, [], response=SimpleNamespace(**stats))
+            # agent.total_tokens is cumulative across this whole BE
+            # process's lifetime (one shared OllamaAgent -- see
+            # agent_bridge.get_agent()), not per-message -- save only
+            # THIS exchange's delta, since save_token_usage() itself
+            # ADDS to the running total already in memory.json rather
+            # than overwriting it.
+            delta = agent.total_tokens - tokens_before
+            if delta > 0:
+                save_token_usage(delta)
         yield f"data: {json.dumps({'done': True})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

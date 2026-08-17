@@ -18,6 +18,8 @@ import hashlib
 import inspect
 import json
 import logging
+import queue
+import threading
 import time
 import traceback
 import uuid
@@ -27,6 +29,7 @@ from ollama import Client
 from chat_logger import NullChatLogger
 from agent_config import (
     DEFAULT_MODEL, CHAT_TIMEOUT_SECONDS, CHAT_MAX_RETRIES, CHAT_RETRY_BACKOFF_SECONDS,
+    CHAT_STREAM_IDLE_TIMEOUT_SECONDS,
     MAX_ITERATIONS, MAX_WALL_SECONDS, TOOL_TIMEOUT_SECONDS, MAX_REPEAT_CALLS,
     MAX_OBSERVATION_CHARS,
 )
@@ -160,19 +163,63 @@ class OllamaAgent:
         and self.last_stream_stats (overwritten), readable by the caller
         once the generator is fully consumed.
 
+        IDLE timeout, not total-duration timeout: a background thread
+        does the actual network iteration and puts each chunk on a
+        queue; this generator does queue.get(timeout=...) in a loop. A
+        long-but-healthy stream (chunks keep arriving) never trips the
+        timeout no matter how long it runs in total -- only a genuine
+        stall (no chunk for CHAT_STREAM_IDLE_TIMEOUT_SECONDS) does. If
+        it fires, the background thread is abandoned still blocked on
+        the network read; harmless since it's a daemon thread and can't
+        block process exit -- same accepted tradeoff as confirm.py's
+        _read_input_with_timeout().
+
         NOTE: intentionally NOT retried, same reasoning as before — once
         a stream has partially yielded content to the caller, retrying
         would duplicate output already shown/used. It DOES get the same
-        friendly-error treatment as chat(), so a failure mid-stream is
-        still a clear RuntimeError rather than a raw traceback.
+        friendly-error treatment as chat(), so a failure mid-stream (or
+        an idle timeout) is still a clear RuntimeError rather than a
+        raw traceback or a hung request.
         """
+        chunk_queue = queue.Queue()
+        SENTINEL_DONE = object()
+
+        def _reader():
+            try:
+                stream = self.client.chat(
+                    model=self.model,
+                    messages=messages,
+                    stream=True,
+                )
+                for chunk in stream:
+                    chunk_queue.put(("chunk", chunk))
+                chunk_queue.put(("done", None))
+            except Exception as exc:
+                chunk_queue.put(("error", exc))
+
+        thread = threading.Thread(target=_reader, daemon=True)
+        thread.start()
+
         try:
-            stream = self.client.chat(
-                model=self.model,
-                messages=messages,
-                stream=True,
-            )
-            for chunk in stream:
+            while True:
+                try:
+                    kind, payload = chunk_queue.get(timeout=CHAT_STREAM_IDLE_TIMEOUT_SECONDS)
+                except queue.Empty:
+                    logger.error(
+                        "chat_stream_idle_timeout model=%s timeout=%s",
+                        self.model, CHAT_STREAM_IDLE_TIMEOUT_SECONDS,
+                    )
+                    raise RuntimeError(
+                        f"Ollama model '{self.model}' stopped responding "
+                        f"(no data for {CHAT_STREAM_IDLE_TIMEOUT_SECONDS}s)"
+                    )
+
+                if kind == "error":
+                    raise payload
+                if kind == "done":
+                    return
+
+                chunk = payload
                 if getattr(chunk, "done", False):
                     self.total_tokens += _extract_token_count(chunk)
                     self.last_stream_stats = {
@@ -184,6 +231,8 @@ class OllamaAgent:
                     }
                 yield chunk.message.content
 
+        except RuntimeError:
+            raise
         except Exception as exc:
             logger.error("chat_stream_failed model=%s error=%s", self.model, exc)
             raise RuntimeError(
