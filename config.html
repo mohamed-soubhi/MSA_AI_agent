@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Configuration</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #181b22;
+    --panel-2: #1f232c;
+    --border: #2a2f3a;
+    --text: #e6e8ee;
+    --muted: #9aa3b2;
+    --accent: #6ea8fe;
+    --accent-2: #8b5cf6;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: linear-gradient(180deg, rgba(15,17,21,.96), rgba(15,17,21,.82));
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .2px; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .spacer { flex: 1; }
+  .search {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 7px 12px; font-size: 13px; width: 220px;
+  }
+  .search:focus { outline: none; border-color: var(--accent); }
+  button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; font-weight: 500;
+    transition: background .15s, border-color .15s, transform .05s;
+  }
+  button:hover { background: #272c37; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); color: #0b1220; border-color: var(--accent); }
+  button.primary:hover { background: #84b6ff; }
+  button.ghost { background: transparent; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 24px; }
+
+  .section {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    margin-bottom: 18px; overflow: hidden;
+  }
+  .section > summary {
+    list-style: none; cursor: pointer; padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid transparent;
+  }
+  .section[open] > summary { border-bottom-color: var(--border); }
+  .section > summary::-webkit-details-marker { display: none; }
+  .section .chev { color: var(--muted); transition: transform .15s; }
+  .section[open] > summary .chev { transform: rotate(90deg); }
+  .section h2 { font-size: 14px; margin: 0; font-weight: 600; }
+  .section .src { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .section .count { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+  .fields { padding: 8px 18px 18px; display: grid; gap: 14px; }
+  .field { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; align-items: start; }
+  .field .label { font-weight: 600; font-family: var(--mono); font-size: 13px; }
+  .field .desc { color: var(--muted); font-size: 12px; grid-column: 1; }
+  .field .controls { grid-column: 2; display: flex; align-items: center; gap: 8px; }
+  .field .default { color: var(--muted); font-size: 11px; font-family: var(--mono); }
+  .field .reset-btn {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 11px; padding: 2px 6px; border-radius: 6px;
+  }
+  .field .reset-btn:hover { color: var(--text); background: var(--panel-2); }
+
+  input[type=text], input[type=number], textarea {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--mono);
+    width: 100%; transition: border-color .15s;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.45; }
+  .field input[type=text], .field input[type=number] { max-width: 260px; }
+  .field.full input[type=text], .field.full textarea { max-width: none; }
+
+  .switch { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    width: 40px; height: 22px; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 999px; position: relative; transition: background .15s;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    background: var(--muted); border-radius: 50%; transition: transform .15s, background .15s;
+  }
+  .switch input:checked + .track { background: rgba(110,168,254,.25); border-color: var(--accent); }
+  .switch input:checked + .track::after { transform: translateX(18px); background: var(--accent); }
+
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .tag.int { color: var(--accent); border-color: rgba(110,168,254,.4); }
+  .tag.bool { color: var(--good); border-color: rgba(74,222,128,.4); }
+  .tag.str { color: var(--warn); border-color: rgba(251,191,36,.4); }
+  .tag.list { color: var(--accent-2); border-color: rgba(139,92,246,.4); }
+  .tag.none { color: var(--danger); border-color: rgba(248,113,113,.4); }
+
+  .dirty-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); display: inline-block; margin-left: 6px; opacity: 0; transition: opacity .15s; }
+  .field.dirty .dirty-dot { opacity: 1; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(5,7,10,.7); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; z-index: 50; padding: 24px;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    width: min(720px, 100%); max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal header { position: static; background: var(--panel); }
+  .modal textarea { border-radius: 0; border: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); min-height: 320px; }
+  .modal .footer { padding: 12px 16px; display: flex; gap: 8px; justify-content: flex-end; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 60;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .hidden { display: none !important; }
+  footer.foot { color: var(--muted); font-size: 12px; text-align: center; padding: 10px 0 30px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Agent Configuration</h1>
+    <div class="sub">Edit <code>agent_config.py</code> knobs &amp; export as environment variables</div>
+  </div>
+  <div class="spacer"></div>
+  <input class="search" id="search" type="text" placeholder="Filter settings…">
+  <div class="btns">
+    <button class="ghost" id="resetAll">Reset all</button>
+    <button class="primary" id="exportBtn">Export .env</button>
+  </div>
+</header>
+
+<main id="root"></main>
+
+<footer class="foot">Self-contained editor · values map 1:1 to the env vars read by <code>agent_config.py</code></footer>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <header>
+      <h1>Exported environment variables</h1>
+      <div class="spacer"></div>
+      <div class="btns">
+        <button id="copyBtn">Copy</button>
+        <button id="downloadBtn">Download .env</button>
+        <button class="ghost" id="closeOverlay">Close</button>
+      </div>
+    </header>
+    <textarea id="exportText" spellcheck="false" readonly></textarea>
+    <div class="footer"><span class="sub" id="exportInfo"></span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Schema: mirrors agent_config.py. Each entry describes one setting so the
+// UI can render the right control, validate it, and emit the matching env var.
+// kind: int | bool | str | list | set | int_or_none | text (multiline)
+// ---------------------------------------------------------------------------
+const SECTIONS = [
+  {
+    title: "Ollama / chat", src: "shared.py — OllamaAgent", fields: [
+      { key: "WORKSHOP_MODEL",        const: "DEFAULT_MODEL",            kind: "str",         def: "glm-5.2:cloud", desc: "Default model name sent to the chat backend." },
+      { key: "CHAT_TIMEOUT_SECONDS",  const: "CHAT_TIMEOUT_SECONDS",     kind: "int",         def: 60,   desc: "Per-request timeout for a chat call." },
+      { key: "CHAT_MAX_RETRIES",      const: "CHAT_MAX_RETRIES",         kind: "int",         def: 2,    desc: "How many times to retry a failed chat request." },
+      { key: "CHAT_RETRY_BACKOFF_SECONDS", const: "CHAT_RETRY_BACKOFF_SECONDS", kind: "int", def: 2, desc: "Backoff (seconds) between chat retries." },
+    ]
+  },
+  {
+    title: "Agent tool loop", src: "shared.py — run_agent", fields: [
+      { key: "MAX_ITERATIONS",        const: "MAX_ITERATIONS",        kind: "int", def: 40,   desc: "Safety cap on total agent rounds — never loop forever." },
+      { key: "MAX_WALL_SECONDS",       const: "MAX_WALL_SECONDS",     kind: "int", def: 600,  desc: "Hard ceiling on total run time (wall clock)." },
+      { key: "TOOL_TIMEOUT_SECONDS",   const: "TOOL_TIMEOUT_SECONDS", kind: "int", def: 30,   desc: "No single tool call may block longer than this." },
+      { key: "MAX_REPEAT_CALLS",       const: "MAX_REPEAT_CALLS",     kind: "int", def: 3,    desc: "Same (tool, args) repeated this many times is treated as stuck." },
+      { key: "MAX_OBSERVATION_CHARS",  const: "MAX_OBSERVATION_CHARS", kind: "int", def: 4000, desc: "Cap on how many chars a tool result adds to context." },
+    ]
+  },
+  {
+    title: "Filesystem tools", src: "fs_tools.py", fields: [
+      { key: "MAX_WRITE_BYTES",        const: "MAX_WRITE_BYTES",       kind: "int",  def: 2000000, desc: "Max bytes allowed per write_file() call (default ~2 MB)." },
+      { key: "REQUIRE_CONFIRMATION",    const: "REQUIRE_CONFIRMATION",  kind: "bool", def: true,    desc: "Gate write_file / create_directory behind confirm()." },
+    ]
+  },
+  {
+    title: "Shell tools", src: "shell_tools.py", fields: [
+      { key: "SHELL_ALLOWED",         const: "SHELL_ALLOWED",  kind: "set",  def: ["python","python3","ls","cat","echo","pip","pytest","node","npm","mkdir","cd"], desc: "Commands the agent is allowed to run (allowlist)." },
+      { key: "SHELL_BLOCKED",         const: "SHELL_BLOCKED",  kind: "list", def: ["rm ","rm-","sudo","mkfs","dd ",":(){","> /dev","curl ","wget ","chmod ","mv /"], desc: "Substrings that block a command (blocklist)." },
+      { key: "SHELL_TIMEOUT_SECONDS", const: "SHELL_TIMEOUT_SECONDS",   kind: "int", def: 120, desc: "Hard timeout for a single shell command." },
+      { key: "SHELL_MAX_OUTPUT_LINES", const: "SHELL_MAX_OUTPUT_LINES", kind: "int", def: 50,  desc: "Cap on how many output lines are kept." },
+    ]
+  },
+  {
+    title: "confirm()", src: "confirm.py", fields: [
+      { key: "CONFIRM_TIMEOUT_SECONDS", const: "CONFIRM_TIMEOUT_SECONDS", kind: "int_or_none", def: 120, desc: "Seconds before a confirm prompt auto-decides. Use 'none' for no timeout." },
+      { key: "CONFIRM_MAX_ACTION_LEN",  const: "CONFIRM_MAX_ACTION_LEN",  kind: "int", def: 400, desc: "Max chars of the action text shown in a confirm prompt." },
+    ]
+  },
+  {
+    title: "Auto mode", src: "auto_runner.py", fields: [
+      { key: "MAX_AUTO_TOOL_CALLS", const: "MAX_AUTO_TOOL_CALLS", kind: "int", def: 30, desc: "Cap on tool calls in a single auto-run." },
+    ]
+  },
+  {
+    title: "Memory", src: "memory.py", fields: [
+      { key: "MEMORY_ENABLED",            const: "MEMORY_ENABLED",            kind: "bool", def: true,     desc: "Turn the long-term memory store on/off." },
+      { key: "MEMORY_FILE",               const: "MEMORY_FILE",               kind: "str",  def: "memory.json", desc: "Path to the memory file (relative to cwd)." },
+      { key: "MEMORY_MAX_ENTRIES",        const: "MEMORY_MAX_ENTRIES",        kind: "int",  def: 500,  desc: "Oldest entries drop past this count." },
+      { key: "MEMORY_MAX_TEXT_CHARS",     const: "MEMORY_MAX_TEXT_CHARS",     kind: "int",  def: 1000, desc: "Per-entry text cap." },
+      { key: "MEMORY_MAX_RECALL_RESULTS", const: "MEMORY_MAX_RECALL_RESULTS", kind: "int",  def: 10,   desc: "Cap on recall_memory() output count." },
+      { key: "MEMORY_SUMMARY_MAX_MESSAGES", const: "MEMORY_SUMMARY_MAX_MESSAGES", kind: "int", def: 40, desc: "Most-recent messages sent when summarizing a session." },
+    ]
+  },
+  {
+    title: "System prompt", src: "09_full_agent.py", full: true, fields: [
+      { key: "SYSTEM_PROMPT", const: "SYSTEM_PROMPT", kind: "text", def:
+`You are an AI software engineering assistant.
+
+You have access to tools for listing, reading, and writing files,
+creating directories, running terminal commands, and asking the human
+for clarification or a choice when something is ambiguous.
+
+Rules:
+- Always prefer non-interactive terminal commands.
+- Never run commands that wait for user input.
+- If a command has a non-interactive flag (such as --yes, --template, --force), use it.
+- Before running a command, think about whether it could block.
+- If a command fails, inspect the error and fix the problem.
+- If a request is ambiguous, use ask_human or ask_human_choice instead of guessing.
+- Keep changes as small as possible.
+- Do not call run_command unless it is necessary.
+- Do not invent tool results.
+- At the start of a task, consider calling recall_memory to check for
+  relevant facts from past sessions.
+- Call remember_fact when you learn something durable worth keeping for
+  future sessions (a user preference, a decision made, a fact about the
+  project) -- not for throwaway details.`, desc: "Wholesale persona / ruleset. Overrides the whole prompt." },
+    ]
+  },
+];
+
+// ---- helpers ----------------------------------------------------------------
+const $ = (sel, root=document) => root.querySelector(sel);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; };
+const TAG_LABEL = { int:"int", bool:"bool", str:"str", list:"list", set:"set", "int_or_none":"int|none", text:"text" };
+
+function defaultValue(f) {
+  if (f.kind === "list" || f.kind === "set") return f.def.join(", ");
+  if (f.kind === "bool") return f.def ? "true" : "false";
+  if (f.kind === "int_or_none") return f.def === null ? "none" : String(f.def);
+  return String(f.def);
+}
+
+function parseValue(f, raw) {
+  raw = (raw ?? "").trim();
+  switch (f.kind) {
+    case "int": {
+      if (raw === "") return { ok:false, err:"empty" };
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return { ok:false, err:"must be an integer" };
+      return { ok:true, value:n };
+    }
+    case "int_or_none": {
+      if (raw.toLowerCase() === "none") return { ok:true, value:null };
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return { ok:false, err:"integer or 'none'" };
+      return { ok:true, value:n };
+    }
+    case "bool":
+      return { ok:true, value: raw === true || raw === "true" };
+    case "list":
+      return { ok:true, value: raw.split(",").map(s=>s.trim()).filter(Boolean) };
+    case "set":
+      return { ok:true, value: [...new Set(raw.split(",").map(s=>s.trim()).filter(Boolean))] };
+    case "str":
+    case "text":
+    default:
+      return { ok:true, value: raw };
+  }
+}
+
+function valuesEqual(a, b) {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((v,i)=>v===b[i]);
+  }
+  return a === b;
+}
+
+function isDefault(f, value) {
+  if (f.kind === "list" || f.kind === "set") {
+    const cur = Array.isArray(value) ? value : [];
+    return cur.length === f.def.length && cur.every((v,i)=>v===f.def[i]);
+  }
+  if (f.kind === "bool") return !!value === !!f.def;
+  if (f.kind === "int_or_none") return value === f.def;
+  return value === f.def;
+}
+
+// env-var serialization for export
+function envValue(f, value) {
+  if (f.kind === "bool") return value ? "1" : "0";
+  if (f.kind === "list" || f.kind === "set") return value.join(",");
+  if (f.kind === "int_or_none") return value === null ? "none" : String(value);
+  return String(value);
+}
+
+// ---- state ------------------------------------------------------------------
+const state = {};      // key -> current parsed value
+const inputs = {};     // key -> { row, set(v), getRaw(), markDirty() }
+
+// ---- render -----------------------------------------------------------------
+function render() {
+  const root = $("#root");
+  root.innerHTML = "";
+  for (const sec of SECTIONS) {
+    const details = el("details", "section");
+    if (sec.title === "Ollama / chat" || sec.title === "Agent tool loop") details.open = true;
+    const summary = el("summary");
+    summary.appendChild(el("span","chev","▸"));
+    const titles = el("div"); titles.style.display="flex"; titles.style.flexDirection="column"; titles.style.gap="2px";
+    titles.appendChild(el("h2","",sec.title));
+    titles.appendChild(el("span","src",sec.src));
+    summary.appendChild(titles);
+    summary.appendChild(el("span","count",`${sec.fields.length} setting${sec.fields.length>1?"s":""}`));
+    details.appendChild(summary);
+
+    const grid = el("div","fields");
+    for (const f of sec.fields) {
+      grid.appendChild(renderField(f, !!sec.full));
+    }
+    details.appendChild(grid);
+    root.appendChild(details);
+  }
+}
+
+function renderField(f, full) {
+  const row = el("div", "field" + (full ? " full" : ""));
+  row.dataset.key = f.key;
+
+  const left = el("div");
+  const labelRow = el("div"); labelRow.style.display="flex"; labelRow.style.alignItems="center"; labelRow.style.gap="8px";
+  labelRow.appendChild(el("span","label",f.key));
+  labelRow.appendChild(el("span","tag "+f.kind, TAG_LABEL[f.kind]||f.kind));
+  labelRow.appendChild(el("span","dirty-dot"));
+  left.appendChild(labelRow);
+  left.appendChild(el("div","desc",f.desc));
+  row.appendChild(left);
+
+  const controls = el("div","controls");
+  const def = el("span","default", "default: " + defaultValue(f));
+  const reset = el("button","reset-btn","↺ reset");
+  reset.title = "Reset to default";
+  reset.addEventListener("click", () => setField(f, f.def, true));
+
+  let inputEl;
+  if (f.kind === "bool") {
+    const sw = el("label","switch");
+    const cb = el("input"); cb.type="checkbox"; cb.checked = !!f.def;
+    sw.appendChild(cb); sw.appendChild(el("span","track"));
+    inputEl = sw;
+    inputs[f.key] = {
+      row,
+      getRaw: () => cb.checked,
+      set: (v) => { cb.checked = !!v; },
+      focus: () => cb.focus(),
+    };
+    cb.addEventListener("change", () => onInput(f));
+  } else if (f.kind === "text") {
+    const ta = el("textarea"); ta.spellcheck = false; ta.value = f.def;
+    inputEl = ta;
+    inputs[f.key] = {
+      row,
+      getRaw: () => ta.value,
+      set: (v) => { ta.value = v; },
+      focus: () => ta.focus(),
+    };
+    ta.addEventListener("input", () => onInput(f));
+  } else if (f.kind === "list" || f.kind === "set") {
+    const ta = el("textarea"); ta.spellcheck = false; ta.value = f.def.join(", ");
+    inputEl = ta;
+    inputs[f.key] = {
+      row,
+      getRaw: () => ta.value,
+      set: (v) => { ta.value = (Array.isArray(v)?v:f.def).join(", "); },
+      focus: () => ta.focus(),
+    };
+    ta.addEventListener("input", () => onInput(f));
+  } else {
+    const inp = el("input");
+    inp.type = (f.kind === "int") ? "number" : "text";
+    inp.value = defaultValue(f);
+    if (f.kind === "int_or_none") inp.placeholder = "integer or none";
+    inputEl = inp;
+    inputs[f.key] = {
+      row,
+      getRaw: () => inp.value,
+      set: (v) => { inp.value = (v===null?"none":String(v)); },
+      focus: () => inp.focus(),
+    };
+    inp.addEventListener("input", () => onInput(f));
+  }
+
+  controls.appendChild(def);
+  controls.appendChild(reset);
+  // stack the control under label-row on full width (text)
+  if (full) {
+    row.classList.add("full");
+    const ctrlWrap = el("div"); ctrlWrap.style.gridColumn="1 / -1";
+    ctrlWrap.appendChild(inputEl);
+    left.appendChild(ctrlWrap);
+    // controls (default/reset) sit on the label row
+    labelRowFor(left).appendChild(controls);
+  } else {
+    controls.insertBefore(inputEl, def);
+    row.appendChild(controls);
+  }
+
+  // init state
+  const parsed = parseValue(f, inputs[f.key].getRaw());
+  state[f.key] = parsed.value;
+  return row;
+}
+
+function labelRowFor(leftDiv) {
+  return leftDiv.firstChild; // the labelRow div
+}
+
+function setField(f, value, silent) {
+  inputs[f.key].set(value);
+  if (!silent) onInput(f); else { state[f.key] = parseValue(f, inputs[f.key].getRaw()).value; markDirty(f); }
+}
+
+function onInput(f) {
+  const res = parseValue(f, inputs[f.key].getRaw());
+  if (!res.ok) {
+    inputs[f.key].row.style.opacity = 1;
+    inputs[f.key].row.querySelector(".desc").textContent = f.desc + "  ⚠ " + res.err;
+    inputs[f.key].row.querySelector(".desc").style.color = "var(--danger)";
+    return;
+  }
+  inputs[f.key].row.querySelector(".desc").textContent = f.desc;
+  inputs[f.key].row.querySelector(".desc").style.color = "";
+  state[f.key] = res.value;
+  markDirty(f);
+}
+
+function markDirty(f) {
+  const dirty = !isDefault(f, state[f.key]);
+  inputs[f.key].row.classList.toggle("dirty", dirty);
+}
+
+// ---- export -----------------------------------------------------------------
+function buildExport(onlyDirty) {
+  const lines = ["# Generated by config.html — export before running the agent.", "# Each line sets the env var that agent_config.py reads at startup.", ""];
+  let count = 0;
+  for (const sec of SECTIONS) {
+    let sectionLines = [];
+    for (const f of sec.fields) {
+      const val = state[f.key];
+      if (onlyDirty && isDefault(f, val)) continue;
+      sectionLines.push(`export ${f.key}=${shellQuote(envValue(f, val))}`);
+      count++;
+    }
+    if (sectionLines.length) {
+      lines.push(`# --- ${sec.title} (${sec.src}) ---`);
+      lines.push(...sectionLines, "");
+    }
+  }
+  return { text: lines.join("\n").trimEnd() + "\n", count };
+}
+
+function shellQuote(s) {
+  // single-quote safe for shell; text prompts contain newlines/quotes
+  return "'" + String(s).replace(/'/g, "'\\''") + "'";
+}
+
+// ---- filter -----------------------------------------------------------------
+function applyFilter(q) {
+  q = q.trim().toLowerCase();
+  for (const sec of SECTIONS) {
+    let anyVisible = false;
+    for (const f of sec.fields) {
+      const row = inputs[f.key].row;
+      const hit = !q || f.key.toLowerCase().includes(q) || f.desc.toLowerCase().includes(q) || f.const.toLowerCase().includes(q);
+      row.classList.toggle("hidden", !hit);
+      if (hit) anyVisible = true;
+    }
+    const details = inputs[sec.fields[0].key].row.closest("details");
+    details.classList.toggle("hidden", !anyVisible);
+    if (q && anyVisible) details.open = true;
+  }
+}
+
+// ---- toast ------------------------------------------------------------------
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+// ---- wire up ----------------------------------------------------------------
+render();
+
+$("#search").addEventListener("input", (e) => applyFilter(e.target.value));
+$("#resetAll").addEventListener("click", () => {
+  for (const sec of SECTIONS) for (const f of sec.fields) setField(f, f.def, true);
+  for (const sec of SECTIONS) for (const f of sec.fields) markDirty(f);
+  toast("Reset all to defaults");
+});
+
+const overlay = $("#overlay");
+$("#exportBtn").addEventListener("click", () => {
+  const { text, count } = buildExport(false);
+  $("#exportText").value = text;
+  $("#exportInfo").textContent = `${count} setting${count!==1?"s":""} included`;
+  overlay.classList.add("show");
+});
+$("#closeOverlay").addEventListener("click", () => overlay.classList.remove("show"));
+overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.classList.remove("show"); });
+
+$("#copyBtn").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("#exportText").value); toast("Copied to clipboard"); }
+  catch { const ta=$("#exportText"); ta.removeAttribute("readonly"); ta.select(); document.execCommand("copy"); ta.setAttribute("readonly",""); toast("Copied"); }
+});
+$("#downloadBtn").addEventListener("click", () => {
+  const blob = new Blob([$("#exportText").value], { type:"text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = el("a"); a.href = url; a.download = ".env"; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast("Downloaded .env");
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && overlay.classList.contains("show")) overlay.classList.remove("show");
+  if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+    e.preventDefault(); $("#search").focus();
+  }
+});
+</script>
+</body>
+</html>
