@@ -4,7 +4,7 @@
 **Date:** 2026-08-17  
 **Status:** Active Defects Remediated & Dropped from Backlog  
 **HTML Version:** [code_review_report.html](code_review_report.html)  
-**Test Suite:** 406 Passed / 0 Failed (100%)  
+**Test Suite:** 413 Passed / 0 Failed (100%)  
 
 ---
 
@@ -19,7 +19,7 @@ The active defect backlog currently contains **0 open defects**, and the one pre
 | **Active / Open Defects** | **0** | Clean active backlog |
 | **Remediated & Dropped Issues** | **10** | Resolved in code and verified by test suite |
 | **Documented Design Tradeoffs** | **0** | ARCH-01 (formerly accepted) is now fixed |
-| **Test Suite Pass Rate** | **100% (406/406)** | Zero failing tests across 11 test modules |
+| **Test Suite Pass Rate** | **100% (413/413)** | Zero failing tests across 11 test modules |
 | **Modules Audited** | **12 Source Modules** | ~3,500 LoC core + ~5,500 LoC tests/docs |
 
 ---
@@ -65,9 +65,9 @@ The following 9 issues have been remediated in code and dropped from the active 
 | `agent_mode.py` | Single global AUTO_MODE switch | Checked inside confirm() | Global variable (non-TLS) | Integrated | **Robust** |
 | `auto_runner.py` | Plan generation & auto execution | Plan review + System prompt context | Scoped AUTO_MODE flag | 13 tests | **Robust** |
 | `chat_logger.py` | Structured JSONL audit logging | Secret redaction & rotation | Thread lock protected | 44 tests | **Robust** |
-| `confirm.py` | Human confirmation gate | ANSI sanitization & timed reader queue | Thread-safe non-blocking I/O | 39 tests | **Robust** |
+| `confirm.py` | Human confirmation gate | ANSI sanitization & timed reader queue | Thread-safe non-blocking I/O | 42 tests | **Robust** |
 | `fs_tools.py` | Sandboxed filesystem CRUD tools | resolve_path + Win reserved + Symlink check | Stateless I/O | 49 tests | **Robust** |
-| `human_tools.py` | Conversational HITL clarification | Option validation & confirm() delegation | Blocking stdin | 16 tests | **Robust** |
+| `human_tools.py` | Conversational HITL clarification | Option validation & confirm() delegation | Blocking stdin | 20 tests | **Robust** |
 | `log_config.py` | Logging configuration switches | Env var overrides | Immutable constants | 25 tests | **Robust** |
 | `memory.py` | Cross-session durable memory | Atomic replace, score search & deduplication | Thread lock + Atomic rename | 43 tests | **Robust** |
 | `shared.py` | ReAct loop, Ollama wrapper & timeout | N-gram cycle detection & token accumulator | ThreadPoolExecutor per tool | 61 tests | **Robust** |
