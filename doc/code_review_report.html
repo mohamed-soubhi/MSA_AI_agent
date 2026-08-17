@@ -6,7 +6,7 @@
   <title>Code Review & Architecture Audit Report — AI Agent Framework</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg-primary: #0f172a;
@@ -31,23 +31,19 @@
 
       --badge-critical-bg: rgba(244, 63, 94, 0.15);
       --badge-critical-text: #fb7185;
-      --badge-critical-border: rgba(244, 63, 94, 0.3);
+      --badge-critical-border: rgba(244, 63, 94, 0.35);
 
       --badge-high-bg: rgba(245, 158, 11, 0.15);
       --badge-high-text: #fbbf24;
-      --badge-high-border: rgba(245, 158, 11, 0.3);
+      --badge-high-border: rgba(245, 158, 11, 0.35);
 
       --badge-medium-bg: rgba(59, 130, 246, 0.15);
       --badge-medium-text: #93c5fd;
-      --badge-medium-border: rgba(59, 130, 246, 0.3);
+      --badge-medium-border: rgba(59, 130, 246, 0.35);
 
       --badge-low-bg: rgba(16, 185, 129, 0.15);
       --badge-low-text: #6ee7b7;
-      --badge-low-border: rgba(16, 185, 129, 0.3);
-
-      --badge-info-bg: rgba(148, 163, 184, 0.15);
-      --badge-info-text: #cbd5e1;
-      --badge-info-border: rgba(148, 163, 184, 0.3);
+      --badge-low-border: rgba(16, 185, 129, 0.35);
 
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -74,14 +70,12 @@
       padding-bottom: 80px;
     }
 
-    /* Container & Layout */
     .container {
       max-width: 1280px;
       margin: 0 auto;
       padding: 0 24px;
     }
 
-    /* Header */
     header {
       background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
       border-bottom: 1px solid var(--border-color);
@@ -161,7 +155,6 @@
       color: var(--text-secondary);
     }
 
-    /* Metrics Grid */
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -183,7 +176,7 @@
 
     .metric-card:hover {
       transform: translateY(-2px);
-      border-color: var(--border-color);
+      border-color: #475569;
     }
 
     .metric-label {
@@ -211,7 +204,6 @@
     .val-success { color: var(--accent-emerald); }
     .val-info { color: var(--accent-cyan); }
 
-    /* Filter & Search Toolbar */
     .toolbar {
       background-color: var(--bg-card);
       border: 1px solid var(--border-color);
@@ -264,7 +256,7 @@
 
     .search-box {
       position: relative;
-      min-width: 260px;
+      min-width: 280px;
     }
 
     .search-box input {
@@ -293,7 +285,6 @@
       fill: var(--text-muted);
     }
 
-    /* Section Styles */
     .section-title {
       font-size: 1.5rem;
       font-weight: 700;
@@ -313,7 +304,6 @@
       border-radius: 2px;
     }
 
-    /* Finding Cards */
     .findings-list {
       display: flex;
       flex-direction: column;
@@ -409,12 +399,6 @@
       border: 1px solid var(--badge-low-border);
     }
 
-    .badge-info {
-      background-color: var(--badge-info-bg);
-      color: var(--badge-info-text);
-      border: 1px solid var(--badge-info-border);
-    }
-
     .badge-category {
       background-color: var(--bg-surface);
       color: var(--text-secondary);
@@ -486,38 +470,6 @@
       line-height: 1.5;
     }
 
-    .code-diff {
-      padding: 12px 16px;
-      font-family: var(--font-mono);
-      font-size: 0.84rem;
-      background: #0b1120;
-      border-radius: var(--radius-sm);
-      border: 1px solid #1e293b;
-      overflow-x: auto;
-    }
-
-    .diff-del {
-      color: #f87171;
-      background-color: rgba(239, 68, 68, 0.1);
-      display: block;
-      padding: 1px 4px;
-      border-radius: 2px;
-    }
-
-    .diff-add {
-      color: #4ade80;
-      background-color: rgba(34, 197, 94, 0.1);
-      display: block;
-      padding: 1px 4px;
-      border-radius: 2px;
-    }
-
-    .diff-info {
-      color: #94a3b8;
-      display: block;
-      padding: 1px 4px;
-    }
-
     .recommendation-box {
       background-color: rgba(59, 130, 246, 0.08);
       border-left: 4px solid var(--accent-blue);
@@ -530,7 +482,6 @@
       color: var(--text-primary);
     }
 
-    /* Architecture & Testing Analysis Tables */
     .table-container {
       background-color: var(--bg-card);
       border: 1px solid var(--border-color);
@@ -580,7 +531,6 @@
       font-weight: 600;
     }
 
-    /* Roadmap Timeline */
     .timeline {
       display: flex;
       flex-direction: column;
@@ -645,7 +595,6 @@
       color: var(--accent-blue-light);
     }
 
-    /* Footer */
     footer {
       margin-top: 60px;
       padding-top: 24px;
@@ -655,7 +604,6 @@
       color: var(--text-muted);
     }
 
-    /* Responsive */
     @media (max-width: 768px) {
       h1 { font-size: 1.75rem; }
       .toolbar { flex-direction: column; align-items: stretch; }
@@ -673,7 +621,7 @@
           <div class="badge-scope">Comprehensive Codebase Audit</div>
           <h1 style="margin-top: 8px;">Code Review & Defect Assessment Report</h1>
           <p class="subtitle" style="margin-top: 6px;">
-            In-depth security, concurrency, robustness, and architectural review of the sandboxed AI agent codebase across 12 Python modules, 331 tests, and supporting utilities.
+            In-depth security, concurrency, robustness, and architectural review of the sandboxed AI agent codebase across 12 Python modules, 334 tests, and supporting utilities.
           </p>
         </div>
       </div>
@@ -681,7 +629,7 @@
         <div class="meta-item"><strong>Date:</strong> 2026-08-17</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
         <div class="meta-item"><strong>Audit Type:</strong> Static Analysis & Architectural Threat Model</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 331 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 334 Passed / 0 Failed (100%)</div>
         <div class="meta-item"><strong>Code Modifications:</strong> Read-Only Analysis</div>
       </div>
     </div>
@@ -708,7 +656,7 @@
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">331/331</span>
+        <span class="metric-value val-success">334/334</span>
         <span class="metric-desc">100% pass across 11 test modules</span>
       </div>
     </div>
@@ -1028,7 +976,7 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
         <div class="finding-header">
           <div class="finding-title-group">
             <span class="finding-id">ROB-04</span>
-            <span class="finding-title">Unbounded History Growth &amp; Summarization Context Blowup</span>
+            <span class="finding-title">Unbounded History Growth &amp; Summarization Context Bloat</span>
           </div>
           <div class="finding-badges">
             <span class="badge badge-medium">Medium</span>
@@ -1224,7 +1172,7 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
             <td>Central configuration &amp; env parsing</td>
             <td>Type-safe defaults</td>
             <td>Immutable constants</td>
-            <td>37 tests</td>
+            <td>40 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
@@ -1255,7 +1203,7 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
             <td><code>confirm.py</code></td>
             <td>Human confirmation gate</td>
             <td>ANSI sanitization, TTY &amp; timeout check</td>
-            <td>Signal handler (Main thread only)</td>
+            <td>Signal hazard in threads</td>
             <td>32 tests</td>
             <td><span class="status-badge" style="color: var(--accent-amber);">▲ Signal Hazard</span></td>
           </tr>
@@ -1357,7 +1305,6 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
   </footer>
 
   <script>
-    // Interactive Filtering & Search
     document.addEventListener("DOMContentLoaded", () => {
       const filterButtons = document.querySelectorAll(".btn-filter");
       const searchInput = document.getElementById("searchInput");
@@ -1367,7 +1314,6 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
       let searchQuery = "";
 
       function updateVisibility() {
-        let visibleCount = 0;
         cards.forEach(card => {
           const severity = card.getAttribute("data-severity");
           const text = card.textContent.toLowerCase();
@@ -1376,7 +1322,6 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
 
           if (matchesFilter && matchesSearch) {
             card.style.display = "block";
-            visibleCount++;
           } else {
             card.style.display = "none";
           }

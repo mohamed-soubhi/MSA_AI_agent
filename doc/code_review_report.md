@@ -9,9 +9,9 @@
 
 ## Executive Summary
 
-An exhaustive security, concurrency, robustness, and architectural audit was conducted across the 12 Python modules, 331 tests, and supporting tools of the sandboxed AI agent codebase.
+An exhaustive security, concurrency, robustness, and architectural audit was conducted across the 12 Python modules, 334 tests, and supporting tools of the sandboxed AI agent codebase.
 
-All 331 unit and integration tests currently pass (100% pass rate). The architecture demonstrates strong foundations: single-choke-point path resolution in `fs_tools.py`, structured JSONL audit trails with rotation in `chat_logger.py`, fail-closed confirmation gates in `confirm.py`, and clean separation of concerns.
+All 334 unit and integration tests currently pass (100% pass rate). The architecture demonstrates strong foundations: single-choke-point path resolution in `fs_tools.py`, structured JSONL audit trails with rotation in `chat_logger.py`, fail-closed confirmation gates in `confirm.py`, centralized configuration in `agent_config.py`, and clean separation of concerns.
 
 However, several critical and high-severity design edge cases were identified—primarily concerning compound shell command parsing under auto-mode, POSIX signal handling within secondary worker threads, subprocess orphan leaks upon timeout, and non-atomic JSON memory persistence.
 
@@ -22,7 +22,7 @@ However, several critical and high-severity design edge cases were identified—
 | Metric | Value | Notes |
 |---|---|---|
 | **Total Findings** | 10 | 1 Critical, 3 High, 4 Medium, 2 Low |
-| **Test Suite Pass Rate** | 100% (331/331) | Zero failing tests |
+| **Test Suite Pass Rate** | 100% (334/334) | Zero failing tests |
 | **Modules Audited** | 12 Source Modules | ~3,500 LoC core + ~5,000 LoC tests/docs |
 | **Primary Risk Area** | Shell Execution & Concurrency | `shell_tools.py`, `confirm.py`, `memory.py` |
 
@@ -119,7 +119,7 @@ However, several critical and high-severity design edge cases were identified—
 | Module | Purpose | Security Gate | Concurrency | Test Coverage |
 |---|---|---|---|---|
 | `09_full_agent.py` | REPL & Entry point | Confirmation & System Prompt | Single-threaded | 18 tests (Pass) |
-| `agent_config.py` | Configuration constants | Type-safe defaults | Immutable constants | 37 tests (Pass) |
+| `agent_config.py` | Configuration constants | Type-safe defaults | Immutable constants | 40 tests (Pass) |
 | `agent_mode.py` | Global AUTO_MODE toggle | Checked in `confirm()` | Global flag | Integrated (Pass) |
 | `auto_runner.py` | Auto-mode orchestration | Plan approval + Tool cap | Scoped flag toggle | 12 tests (Pass) |
 | `chat_logger.py` | JSONL session logging | Exception swallowing | Thread-locked | 32 tests (Pass) |
