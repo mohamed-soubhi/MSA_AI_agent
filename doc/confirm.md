@@ -57,17 +57,29 @@ logic (see [agent_mode.md](agent_mode.md)).
   times out; re-raises whatever `input()` raised (e.g. `EOFError`)
   otherwise. **Not signal-based** — see ROB-01 below.
 - **`ConfirmTimeout`** — internal exception used to signal the timeout.
+- **`_stdin_lock`** — a process-global `threading.Lock`, held for the
+  duration of one `confirm()` call's input-wait. Prevents two concurrent
+  `confirm()` calls from ever starting two `input()` readers on the same
+  stdin at once — see the stdin race bug fixed below.
 
 ### Control flow
 
 1. If `sys.stdin.isatty()` is `False` → log + return `False` immediately
    (headless/CI/piped context — nobody can approve anything).
-2. Print the sanitized prompt and call
+2. `_stdin_lock.acquire(blocking=False)` — if another `confirm()` call
+   already holds it (see below), log `reason=stdin_busy` and return
+   `False` immediately, **without** printing a prompt or touching
+   `input()`.
+3. Print the sanitized prompt and call
    `_read_input_with_timeout(prompt, timeout_seconds)`.
-3. On `ConfirmTimeout`, `EOFError`, `KeyboardInterrupt`, or any other
-   exception → log + return `False`.
-4. Parse the answer: `answer.strip().lower() in {"", "y", "yes"}` →
-   approved.
+4. On `ConfirmTimeout` → log + return `False`, but **deliberately do
+   NOT release `_stdin_lock`** (see the bug note below — the reader
+   thread is presumed still alive).
+5. On `EOFError`, `KeyboardInterrupt`, or any other exception → release
+   the lock, log + return `False` (in all these cases `input()` itself
+   raised, so the reader thread has already ended).
+6. On success → release the lock, parse the answer:
+   `answer.strip().lower() in {"", "y", "yes"}` → approved.
 
 ### Notes
 
@@ -81,6 +93,30 @@ logic (see [agent_mode.md](agent_mode.md)).
   (background daemon thread + `queue.get(timeout=...)`), which works
   correctly from **any** calling thread and needs no POSIX-only signal
   at all — the timeout now works identically on Windows.
+- **Orphaned-reader stdin race — fixed (found via log analysis,
+  2026-08-17)**: `shared._run_tool_with_timeout` wraps every tool call
+  in its own `TOOL_TIMEOUT_SECONDS` (default 30s), independent of
+  `confirm()`'s own `CONFIRM_TIMEOUT_SECONDS` (default 120s). If a human
+  was still deciding on a `confirm()` prompt when the *tool-level*
+  timeout fired first, the tool call was "abandoned" — but the
+  `confirm()` prompt's background `input()` reader thread did **not**
+  die with it; it kept listening on stdin for up to another 120s. If
+  the model's very next move also needed `confirm()` (a different,
+  unrelated prompt), a **second** reader thread started on the **same**
+  stdin — whichever thread happened to receive the next keystroke was
+  effectively random. Observed symptom: the human answers a prompt, the
+  session goes silent with no further `tool_result` or `session_end` in
+  the JSONL log, because the answer was consumed by the orphaned first
+  reader instead of the live second one.
+  *Fix*: `_stdin_lock` — only one `confirm()` call may ever be waiting
+  on `input()` at a time. If an earlier (possibly orphaned) call still
+  holds it, a new `confirm()` denies immediately with a clear
+  `reason=stdin_busy` log line instead of racing for input. This can
+  occasionally deny a `confirm()` that a human would have approved (if
+  an orphaned prompt is still alive from an earlier abandoned tool
+  call), but that's the project's existing fail-**closed** philosophy
+  applied consistently — an ambiguous situation denies, it never
+  silently guesses which prompt the human meant to answer.
 - If the timeout fires, the background reader thread is left running,
   blocked on `input()` forever with nothing left listening for its
   result. Same accepted tradeoff as
@@ -109,6 +145,21 @@ logic (see [agent_mode.md](agent_mode.md)).
 - **ROB-01 regression test**: `confirm()` called from inside a
   background `threading.Thread` still resolves correctly with a
   timeout set — the exact scenario `signal.alarm()` used to crash on.
+- **Stdin-race regression tests** (`TestStdinLockRace`): reproduces the
+  actual reported bug — a `confirm()` call that times out (leaving its
+  reader thread, and `_stdin_lock`, alive) is immediately followed by a
+  second, unrelated `confirm()` call, which must deny without ever
+  invoking `input()` (verified via a call-recording stub); the denial
+  is logged with `reason=stdin_busy`; the lock is correctly released
+  (and the *next* call proceeds normally) after a normal answer and
+  after `EOFError`; the lock is never touched at all by the no-tty or
+  auto-mode short-circuits (`confirm_mod._stdin_lock.locked()` checked
+  directly).
+  An autouse `reset_stdin_lock` fixture force-releases `_stdin_lock`
+  before and after every test in this file — it's a real process-global
+  lock, and the real-timeout test above deliberately leaves it held on
+  purpose (mirroring the actual bug), which would otherwise leak into
+  every later test.
 - Auto mode: `agent_mode.AUTO_MODE=True` with `force_ask=False` (the
   default) auto-approves without ever calling `input()`; `force_ask=True`
   still prompts even with `AUTO_MODE=True`; `AUTO_MODE=False` (the

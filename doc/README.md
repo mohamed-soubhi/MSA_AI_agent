@@ -103,7 +103,7 @@ python3 -m pytest tests/test_fs_tools.py -v
 python3 tests/generate_report.py
 ```
 
-- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 392 tests, 100% pass rate.
+- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 398 tests, 100% pass rate.
 - **Code Review & Defect Assessment Report (HTML)**: [`code_review_report.html`](code_review_report.html) — interactive audit dashboard.
 - **Code Review & Defect Assessment Report (Markdown)**: [`code_review_report.md`](code_review_report.md) — comprehensive static analysis and defect assessment.
 

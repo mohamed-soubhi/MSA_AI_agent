@@ -24,6 +24,26 @@ def reset_auto_mode():
     agent_mode.AUTO_MODE = False
 
 
+@pytest.fixture(autouse=True)
+def reset_stdin_lock():
+    """Guarantee confirm._stdin_lock starts (and ends) unlocked for every
+    test in this file.
+
+    _stdin_lock is a real, process-global threading.Lock -- one test
+    (the real-timeout case) deliberately leaves it held, on purpose,
+    mirroring the actual orphaned-reader-thread scenario the lock
+    exists to guard against. Without this reset, that held lock would
+    leak into every later test in the same pytest process and make them
+    fail with "stdin_busy" for a reason that has nothing to do with
+    what they're testing.
+    """
+    if confirm_mod._stdin_lock.locked():
+        confirm_mod._stdin_lock.release()
+    yield
+    if confirm_mod._stdin_lock.locked():
+        confirm_mod._stdin_lock.release()
+
+
 # --------------------------------------------------------------------------
 # _sanitize
 # --------------------------------------------------------------------------
@@ -182,6 +202,106 @@ class TestConfirmTimeout:
         worker.start()
         worker.join(timeout=5)
         assert outcome.get("result") is True
+
+
+# --------------------------------------------------------------------------
+# confirm() — stdin lock / orphaned-reader race
+#
+# Regression tests for a real bug found via log analysis (2026-08-17): a
+# tool call abandoned by shared.TOOL_TIMEOUT_SECONDS (30s) while a human
+# was still deciding on a confirm() prompt left that prompt's background
+# input() reader thread alive, still listening on stdin, for up to
+# CONFIRM_TIMEOUT_SECONDS (120s) more. The very next confirm() call (a
+# different, unrelated prompt) started a SECOND input() reader on the
+# same stdin -- two threads racing for one line of input. The human's
+# answer to the second prompt could be silently consumed by the first,
+# orphaned one instead, leaving the second prompt hanging with nothing
+# arriving (observed as: type an answer, session goes silent, no
+# tool_result or session_end ever logged).
+# --------------------------------------------------------------------------
+
+class TestStdinLockRace:
+    @pytest.mark.tid("CONFIRM-024")
+    def test_second_confirm_denied_while_first_still_holds_lock(self, tty, monkeypatch):
+        # Reproduce the bug: first call times out (leaving its reader
+        # thread -- and the lock -- alive), second call must NOT start
+        # its own input() reader to race for the same stdin.
+        def slow_input(prompt):
+            time.sleep(0.3)
+            return "y"
+
+        monkeypatch.setattr("builtins.input", slow_input)
+        first = confirm("first, slow action", timeout_seconds=0.05)
+        assert first is False  # ConfirmTimeout -- lock deliberately left held
+
+        second_input_called = []
+        monkeypatch.setattr(
+            "builtins.input",
+            lambda prompt: second_input_called.append(prompt) or "y",
+        )
+        second = confirm("second, unrelated action", timeout_seconds=1)
+
+        assert second is False
+        assert second_input_called == []  # never raced for stdin
+
+    @pytest.mark.tid("CONFIRM-025")
+    def test_stdin_busy_denial_is_logged(self, tty, monkeypatch, caplog):
+        def slow_input(prompt):
+            time.sleep(0.3)
+            return "y"
+
+        monkeypatch.setattr("builtins.input", slow_input)
+        confirm("first, slow action", timeout_seconds=0.05)
+
+        monkeypatch.setattr("builtins.input", lambda prompt: "y")
+        with caplog.at_level("WARNING", logger="agent.confirm"):
+            confirm("second, unrelated action", timeout_seconds=1)
+
+        assert any("stdin_busy" in r.message for r in caplog.records)
+
+    @pytest.mark.tid("CONFIRM-026")
+    def test_lock_released_after_normal_answer_so_next_call_proceeds(self, tty, monkeypatch):
+        monkeypatch.setattr("builtins.input", lambda prompt: "y")
+        first = confirm("first action", timeout_seconds=None)
+        assert first is True
+
+        second_input_called = []
+        monkeypatch.setattr(
+            "builtins.input",
+            lambda prompt: second_input_called.append(prompt) or "y",
+        )
+        second = confirm("second action", timeout_seconds=None)
+
+        assert second is True
+        assert len(second_input_called) == 1  # got its own real prompt
+
+    @pytest.mark.tid("CONFIRM-027")
+    def test_lock_released_after_eof_so_next_call_proceeds(self, tty, monkeypatch):
+        def raise_eof(prompt):
+            raise EOFError
+
+        monkeypatch.setattr("builtins.input", raise_eof)
+        first = confirm("first action", timeout_seconds=None)
+        assert first is False
+
+        monkeypatch.setattr("builtins.input", lambda prompt: "y")
+        second = confirm("second action", timeout_seconds=None)
+        assert second is True
+
+    @pytest.mark.tid("CONFIRM-028")
+    def test_lock_not_held_after_no_tty_denial(self, monkeypatch):
+        # The no-tty short-circuit returns before ever touching the lock
+        # -- must not leave it (wrongly) held for the next real call.
+        monkeypatch.setattr(confirm_mod.sys.stdin, "isatty", lambda: False)
+        confirm("write file")
+        assert not confirm_mod._stdin_lock.locked()
+
+    @pytest.mark.tid("CONFIRM-029")
+    def test_lock_not_held_after_auto_mode_approval(self, monkeypatch):
+        # Auto-mode short-circuit also never touches the lock.
+        monkeypatch.setattr(agent_mode, "AUTO_MODE", True)
+        confirm("write file")
+        assert not confirm_mod._stdin_lock.locked()
 
 
 # --------------------------------------------------------------------------

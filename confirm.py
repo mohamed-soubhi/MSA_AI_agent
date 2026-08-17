@@ -42,6 +42,38 @@ class ConfirmTimeout(Exception):
     """Raised internally when the human doesn't answer in time."""
 
 
+# BUG (found via log analysis, 2026-08-17): shared._run_tool_with_timeout
+# wraps every tool call (including run_command, which calls confirm())
+# in its OWN timeout -- TOOL_TIMEOUT_SECONDS, default 30s. If a human is
+# still deciding on a confirm() prompt when that 30s fires, the tool call
+# is "abandoned" (shared.py's own documented, accepted tradeoff) -- but
+# confirm()'s _read_input_with_timeout() reader thread does NOT die with
+# it. It keeps calling input() in the background for up to
+# CONFIRM_TIMEOUT_SECONDS (default 120s), still listening on the SAME
+# stdin. If the model's next move also needs confirm() (e.g. the very
+# next command is compound and force-asks), a SECOND reader thread now
+# also calls input() on that same stdin -- two threads racing to read
+# one line. Whichever thread's input() call happens to receive the
+# human's next keystroke is effectively random: the orphaned first
+# prompt could "win" and silently swallow the answer meant for the
+# second one, which then hangs with nothing arriving. Observed
+# symptom: user answers a prompt, the answer seems to vanish, and the
+# session goes silent (no further tool_result, no session_end in the
+# JSONL log) instead of the expected "Blocked: ... not approved."
+#
+# Fix: a single process-wide lock, held for the duration of one
+# confirm() call's input()-wait. A second confirm() invoked while an
+# earlier (possibly orphaned) one still holds it does NOT start a
+# second input() reader to race for the same stdin -- it denies
+# immediately with a clear logged reason instead. This can occasionally
+# deny a confirm() that would have been legitimately approved (if an
+# earlier orphaned prompt is still alive), but that's this project's
+# existing fail-CLOSED philosophy applied consistently -- an ambiguous
+# situation denies, it never silently guesses which prompt the human
+# meant to answer.
+_stdin_lock = threading.Lock()
+
+
 def _sanitize(action: str) -> str:
     """Make `action` safe to print/log: strip control chars, cap length."""
     if not isinstance(action, str):
@@ -142,6 +174,19 @@ def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SEC
         logger.warning("confirm_denied id=%s reason=no_tty", request_id)
         return False
 
+    # Never let two confirm() calls race for the same stdin (see the BUG
+    # note above ConfirmTimeout). Non-blocking: if another call (likely
+    # an orphaned one, abandoned by a tool-level timeout but still alive)
+    # already holds it, deny immediately rather than starting a second
+    # input() reader that could steal or lose the human's next answer.
+    if not _stdin_lock.acquire(blocking=False):
+        logger.warning("confirm_denied id=%s reason=stdin_busy", request_id)
+        return False
+
+    # Set True only when the background reader thread is known to still
+    # be alive (the ConfirmTimeout path) -- see the note above
+    # _stdin_lock for why the lock must stay held in that one case.
+    leave_lock_held = False
     try:
         # Default is YES on empty input (bare Enter) -- shown explicitly
         # in the prompt so a human skimming fast still sees what a blank
@@ -157,16 +202,22 @@ def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SEC
         logger.warning(
             "confirm_denied id=%s reason=timeout_%ss", request_id, timeout_seconds
         )
+        # The reader thread is presumed STILL ALIVE, blocked on input()
+        # -- do not release _stdin_lock, or a later confirm() call could
+        # start a second reader and race it for the same stdin (the
+        # exact bug this lock exists to prevent).
+        leave_lock_held = True
         return False
 
     except EOFError:
         # stdin closed mid-read -> no human to ask -> fail safe (deny).
+        # input() itself raised, so the reader thread has already ended.
         logger.warning("confirm_denied id=%s reason=eof", request_id)
         return False
 
     except KeyboardInterrupt:
         # Human explicitly hit Ctrl-C -> treat as an explicit denial,
-        # not a crash.
+        # not a crash. input() raised, so the reader thread has ended.
         logger.warning("confirm_denied id=%s reason=keyboard_interrupt", request_id)
         return False
 
@@ -175,6 +226,10 @@ def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SEC
         # never let a confirmation gate crash into an unclear state.
         logger.exception("confirm_denied id=%s reason=unexpected_error", request_id)
         return False
+
+    finally:
+        if not leave_lock_held:
+            _stdin_lock.release()
 
     answer = raw_answer.strip().lower()
     # Empty input (bare Enter) counts as approval, same as "y"/"yes".
