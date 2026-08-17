@@ -35,6 +35,33 @@ def test_be_field_reflects_live_settings():
     assert field["value"] == "8000"
 
 
+def test_agent_field_includes_true_default():
+    # Computed via an isolated subprocess (config_schema.agent_defaults()),
+    # not a hand-maintained duplicate -- see that function's docstring.
+    fields = client().get("/api/config").json()["fields"]
+    field = next(f for f in fields if f["key"] == "CHAT_TIMEOUT_SECONDS")
+    assert field["default"] == "60"
+
+
+def test_be_field_includes_true_default():
+    fields = client().get("/api/config").json()["fields"]
+    field = next(f for f in fields if f["key"] == "BE_PORT")
+    assert field["default"] == "8000"
+
+
+def test_default_ignores_a_real_env_var_override(monkeypatch):
+    # The whole point of computing defaults via an isolated subprocess:
+    # an env var set in THIS process must not leak into the reported default.
+    config_schema.agent_defaults.cache_clear()
+    monkeypatch.setenv("CHAT_TIMEOUT_SECONDS", "99999")
+    try:
+        fields = client().get("/api/config").json()["fields"]
+        field = next(f for f in fields if f["key"] == "CHAT_TIMEOUT_SECONDS")
+        assert field["default"] == "60"
+    finally:
+        config_schema.agent_defaults.cache_clear()
+
+
 def test_save_config_writes_agent_env_file(tmp_path, monkeypatch):
     agent_env = tmp_path / "agent.env"
     monkeypatch.setattr(config_schema, "AGENT_ENV_FILE", agent_env)

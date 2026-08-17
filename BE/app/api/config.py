@@ -21,6 +21,7 @@ class ConfigField(BaseModel):
     type: str
     description: str
     value: str
+    default: str
 
 
 class ConfigResponse(BaseModel):

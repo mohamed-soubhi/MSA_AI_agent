@@ -65,6 +65,78 @@
     color: var(--text-dim);
     margin: 2px 0 6px;
   }
+  .field .default {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .field .default button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 1px 8px;
+    font-size: 0.7rem;
+    font-weight: 400;
+    border-radius: 4px;
+    margin-left: 6px;
+    cursor: pointer;
+  }
+  .field .default button:hover { background: var(--border); color: var(--text); }
+  .model-row { display: flex; gap: 8px; position: relative; }
+  .model-row input { flex: 1; }
+  .model-row .load-btn {
+    padding: 8px 14px;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .model-row .load-btn .chevron {
+    display: inline-block;
+    transition: transform 0.15s ease;
+    font-size: 0.7rem;
+  }
+  .model-row .load-btn.open .chevron { transform: rotate(180deg); }
+  .model-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: 320px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    z-index: 30;
+    display: none;
+  }
+  .model-panel.open { display: block; }
+  .model-group-title {
+    position: sticky;
+    top: 0;
+    background: #0f172a;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+  }
+  .model-item {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .model-item:hover { background: var(--border); }
+  .model-item .name { font-family: monospace; font-size: 0.85rem; }
+  .model-item .specs { font-size: 0.75rem; color: var(--text-dim); text-align: right; }
+  .model-empty { padding: 10px 12px; font-size: 0.8125rem; color: var(--text-dim); }
   input[type="text"], input[type="number"], textarea {
     width: 100%;
     background: #0f172a;
@@ -174,6 +246,7 @@ function renderField(f) {
     row.appendChild(label);
     wrap.appendChild(row);
     if (f.description) wrap.appendChild(descEl(f.description));
+    wrap.appendChild(defaultEl(f, input));
     return wrap;
   }
 
@@ -193,7 +266,25 @@ function renderField(f) {
   input.id = f.key;
   input.name = f.key;
   input.value = f.value;
-  wrap.appendChild(input);
+
+  if (f.key === "WORKSHOP_MODEL") {
+    const row = document.createElement("div");
+    row.className = "model-row";
+    row.appendChild(input);
+    const loadBtn = document.createElement("button");
+    loadBtn.type = "button";
+    loadBtn.className = "load-btn";
+    loadBtn.innerHTML = `Load models <span class="chevron">▾</span>`;
+    const panel = modelPanel();
+    row.appendChild(loadBtn);
+    row.appendChild(panel);
+    loadBtn.addEventListener("click", () => toggleModelDropdown(input, loadBtn, panel));
+    wrap.appendChild(row);
+  } else {
+    wrap.appendChild(input);
+  }
+
+  wrap.appendChild(defaultEl(f, input));
   return wrap;
 }
 
@@ -202,6 +293,167 @@ function descEl(text) {
   d.className = "desc";
   d.textContent = text;
   return d;
+}
+
+function defaultEl(f, input) {
+  const d = document.createElement("div");
+  d.className = "default";
+  if (!f.default) {
+    d.textContent = "no built-in default";
+    return d;
+  }
+  const shown = f.default.length > 60 ? f.default.slice(0, 60) + "…" : f.default;
+  d.textContent = `Recommended default: ${shown || "(empty)"}`;
+  if (f.default !== f.value) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Use default";
+    btn.addEventListener("click", () => {
+      if (input.type === "checkbox") {
+        input.checked = f.default === "true";
+      } else {
+        input.value = f.default;
+      }
+    });
+    d.appendChild(btn);
+  }
+  return d;
+}
+
+function modelPanel() {
+  const panel = document.createElement("div");
+  panel.className = "model-panel";
+  return panel;
+}
+
+// Tracks every open model dropdown's {panel, button} so opening one
+// can close any other that's already open (standard dropdown behavior).
+const openModelDropdowns = new Set();
+
+function closeModelDropdown(panel, button) {
+  panel.classList.remove("open");
+  button.classList.remove("open");
+  openModelDropdowns.delete(panel);
+}
+
+function openModelDropdown(panel, button) {
+  panel.classList.add("open");
+  button.classList.add("open");
+  openModelDropdowns.add(panel);
+}
+
+document.addEventListener("click", (event) => {
+  for (const panel of [...openModelDropdowns]) {
+    const row = panel.closest(".model-row");
+    if (row && !row.contains(event.target)) {
+      closeModelDropdown(panel, row.querySelector(".load-btn"));
+    }
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    for (const panel of [...openModelDropdowns]) {
+      closeModelDropdown(panel, panel.closest(".model-row").querySelector(".load-btn"));
+    }
+  }
+});
+
+async function toggleModelDropdown(input, button, panel) {
+  if (panel.classList.contains("open")) {
+    closeModelDropdown(panel, button);
+    return;
+  }
+
+  // Close any other open model dropdown first.
+  for (const other of [...openModelDropdowns]) {
+    closeModelDropdown(other, other.closest(".model-row").querySelector(".load-btn"));
+  }
+
+  if (panel.dataset.loaded === "true") {
+    openModelDropdown(panel, button);
+    return;
+  }
+
+  button.disabled = true;
+  const originalHTML = button.innerHTML;
+  button.textContent = "Loading…";
+  try {
+    const [knownRes, catalogRes] = await Promise.all([
+      fetch("/api/models"),
+      fetch("/api/models/catalog"),
+    ]);
+    const known = await knownRes.json();
+    const catalog = await catalogRes.json();
+    panel.innerHTML = "";
+
+    let anyShown = false;
+
+    if (known.error) {
+      panel.appendChild(errorEl("Could not reach local Ollama: " + known.error));
+    } else {
+      if (known.local.length) { renderModelGroup(panel, "Local", known.local, input); anyShown = true; }
+      if (known.cloud.length) { renderModelGroup(panel, "Cloud (in use)", known.cloud, input); anyShown = true; }
+    }
+
+    if (catalog.error) {
+      panel.appendChild(errorEl("Could not reach Ollama Cloud catalog: " + catalog.error));
+    } else if (catalog.models.length) {
+      renderModelGroup(panel, "Cloud catalog (browse all)", catalog.models, input);
+      anyShown = true;
+    }
+
+    if (!anyShown && !known.error && !catalog.error) {
+      panel.appendChild(errorEl("No models found."));
+    }
+
+    panel.dataset.loaded = "true";
+    openModelDropdown(panel, button);
+  } catch (err) {
+    panel.innerHTML = "";
+    panel.appendChild(errorEl("Error loading models: " + err.message));
+    openModelDropdown(panel, button);
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalHTML;
+  }
+}
+
+function errorEl(text) {
+  const p = document.createElement("div");
+  p.className = "model-empty";
+  p.textContent = text;
+  return p;
+}
+
+function renderModelGroup(panel, title, models, input) {
+  if (!models || models.length === 0) return;
+  const heading = document.createElement("div");
+  heading.className = "model-group-title";
+  heading.textContent = `${title} (${models.length})`;
+  panel.appendChild(heading);
+
+  for (const m of models) {
+    const item = document.createElement("div");
+    item.className = "model-item";
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = m.name;
+    const specs = document.createElement("span");
+    specs.className = "specs";
+    const parts = [m.size_human];
+    if (m.parameter_size) parts.push(m.parameter_size);
+    if (m.quantization_level) parts.push(m.quantization_level);
+    if (m.family) parts.push(m.family);
+    specs.textContent = parts.filter(Boolean).join(" · ");
+    item.appendChild(name);
+    item.appendChild(specs);
+    item.addEventListener("click", () => {
+      input.value = m.name;
+      closeModelDropdown(panel, panel.closest(".model-row").querySelector(".load-btn"));
+    });
+    panel.appendChild(item);
+  }
 }
 
 async function saveConfig(event) {

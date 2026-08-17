@@ -14,16 +14,18 @@ BE/
 │   ├── main.py           — FastAPI app factory (create_app()) + module-level `app`
 │   ├── api/
 │   │   ├── health.py      — GET /health
-│   │   └── config.py      — GET/POST /api/config (interactive config editor's API)
+│   │   ├── config.py      — GET/POST /api/config (interactive config editor's API)
+│   │   └── models.py      — GET /api/models (local + cloud Ollama models, with specs)
 │   ├── core/
 │   │   ├── config.py         — Settings (pydantic-settings), BE_-prefixed env vars
-│   │   └── config_schema.py  — field list + .env read/write for the config editor
+│   │   └── config_schema.py  — field list + .env read/write + default-value resolver
 │   └── static/
 │       └── config.html    — the editor page itself (served at GET /config)
 ├── tests/
 │   ├── conftest.py         — adds BE/ to sys.path (same pattern as tests/conftest.py)
 │   ├── test_health.py
-│   └── test_config.py
+│   ├── test_config.py
+│   └── test_models.py
 ├── nginx/
 │   └── nginx.conf          — reverse proxy: Nginx :80 → Uvicorn 127.0.0.1:8000
 ├── requirements.txt
@@ -58,6 +60,47 @@ Nginx, `http://<host>/config`) while the BE service is running.
 - Values are double-quoted and escaped on write, so `SYSTEM_PROMPT`'s
   embedded newlines round-trip correctly through `python-dotenv` on
   the next load.
+- **Recommended defaults, shown per field**: a small "Recommended
+  default: ..." hint (with a one-click "Use default" button) appears
+  under every field, alongside its current value. For agent-side
+  fields, this is **not** a hand-maintained duplicate list — see
+  `config_schema.agent_defaults()` below.
+- **"Load models" dropdown** on the Model field, backed by two
+  endpoints fetched in parallel:
+  - `GET /api/models` — asks the local Ollama server for every model
+    it already knows about (`ollama.Client().list()`), split into
+    **Local** (pulled, fully on this machine — real specs: size,
+    parameter count, quantization, family) and **Cloud (in use)**
+    (already registered, name ends in `:cloud`, no local specs to
+    show).
+  - `GET /api/models/catalog` — browses Ollama's full **public** cloud
+    catalog directly from `ollama.com/api/tags` (verified live: 19
+    models, unauthenticated), independent of what's already
+    pulled/registered — shown as **"Cloud catalog (browse all)"**.
+    Sends `OLLAMA_API_KEY` (a plain, unprefixed env var — Ollama's own
+    convention, not `BE_`-namespaced) as a Bearer token if set; not
+    required today, but a `401` from that endpoint surfaces a clear
+    "set OLLAMA_API_KEY" message rather than a raw error.
+  Click any entry in any group to fill the Model field with its tag.
+  Either endpoint being unreachable shows its own error line instead
+  of breaking the whole dropdown.
+
+### `config_schema.agent_defaults()` — drift-safe default values
+
+Rather than a second, hand-maintained list of default values (which
+could silently fall out of sync whenever `agent_config.py`/
+`log_config.py` change), the "Recommended default" shown for every
+agent-side field is computed by actually **re-importing those two
+files fresh, in an isolated subprocess**, with `load_dotenv()`
+neutralized and every agent-target env var stripped from that
+subprocess's environment first. Whatever the resulting Python
+attributes are — straight from the real source, not a copy — is the
+default shown in the UI. Cached for the life of the BE process
+(`functools.lru_cache`; restart to pick up an actual code change to a
+default). BE-side (`BE_*`) defaults don't need this — pydantic-settings
+already keeps a field's declared default separate from its
+env-file-overridden value, so those are read directly off
+`Settings.model_fields`.
 
 See [agent_config.md](agent_config.md) for the full settings reference.
 
@@ -114,9 +157,10 @@ processes never collide if they ever share an environment.
 
 ## Not done yet (deliberately out of scope for this scaffold)
 
-- No agent wiring — `/health` is the only route. The chat API (however
-  it ends up shaped — REST, WebSocket, SSE) needs its own design pass
-  once the UI's requirements are clearer.
+- No agent wiring — `/health`, `/config`, and `/api/models` are the
+  only routes. The chat API (however it ends up shaped — REST,
+  WebSocket, SSE) needs its own design pass once the UI's requirements
+  are clearer.
 - No auth.
 - No Dockerfile / containerization.
 - No CI config for this service specifically.

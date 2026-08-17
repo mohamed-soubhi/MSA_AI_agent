@@ -21,8 +21,11 @@ exactly as asked for ("saved in .env that can be loaded when
 restart") -- this is a deliberate simplicity choice, not an oversight.
 """
 
+import json
+import subprocess
 import sys
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 BE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -148,6 +151,71 @@ FIELDS: list[Field] = [
 _FIELDS_BY_KEY = {f.key: f for f in FIELDS}
 
 
+def _render(value) -> str:
+    """Render any agent_config.py/log_config.py value type as the plain
+    string an .env file (and this form) uses."""
+    if isinstance(value, (set, frozenset)):
+        return ",".join(sorted(value))
+    if isinstance(value, list):
+        return ",".join(value)
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _snapshot(ac, lc) -> dict[str, str]:
+    """Pull every agent-target field's value out of already-imported
+    agent_config/log_config modules. ONE mapping, reused for two very
+    different purposes:
+      - _current_agent_values() below feeds it the REAL, already-loaded
+        modules -- .env + env vars + built-ins, whichever won.
+      - agent_defaults() feeds it modules imported in a clean subprocess
+        with .env loading neutralized and relevant env vars stripped --
+        the TRUE built-in defaults, straight from the source, with zero
+        hand-maintained duplicate list to fall out of sync when
+        agent_config.py/log_config.py change (see agent_defaults()).
+    """
+    return {
+        "WORKSHOP_MODEL": _render(ac.DEFAULT_MODEL),
+        "CHAT_TIMEOUT_SECONDS": _render(ac.CHAT_TIMEOUT_SECONDS),
+        "CHAT_MAX_RETRIES": _render(ac.CHAT_MAX_RETRIES),
+        "CHAT_RETRY_BACKOFF_SECONDS": _render(ac.CHAT_RETRY_BACKOFF_SECONDS),
+        "MAX_ITERATIONS": _render(ac.MAX_ITERATIONS),
+        "MAX_WALL_SECONDS": _render(ac.MAX_WALL_SECONDS),
+        "TOOL_TIMEOUT_SECONDS": _render(ac.TOOL_TIMEOUT_SECONDS),
+        "MAX_REPEAT_CALLS": _render(ac.MAX_REPEAT_CALLS),
+        "MAX_OBSERVATION_CHARS": _render(ac.MAX_OBSERVATION_CHARS),
+        "WORKSPACE_DIR": _render(str(ac.WORKSPACE_DIR)),
+        "MAX_WRITE_BYTES": _render(ac.MAX_WRITE_BYTES),
+        "REQUIRE_CONFIRMATION": _render(ac.REQUIRE_CONFIRMATION),
+        "SHELL_ALLOWED": _render(ac.SHELL_ALLOWED),
+        "SHELL_BLOCKED": _render(ac.SHELL_BLOCKED),
+        "SHELL_TIMEOUT_SECONDS": _render(ac.SHELL_TIMEOUT_SECONDS),
+        "SHELL_MAX_OUTPUT_LINES": _render(ac.SHELL_MAX_OUTPUT_LINES),
+        "CONFIRM_TIMEOUT_SECONDS": _render(ac.CONFIRM_TIMEOUT_SECONDS),
+        "CONFIRM_MAX_ACTION_LEN": _render(ac.CONFIRM_MAX_ACTION_LEN),
+        "MAX_AUTO_TOOL_CALLS": _render(ac.MAX_AUTO_TOOL_CALLS),
+        "MEMORY_ENABLED": _render(ac.MEMORY_ENABLED),
+        "MEMORY_FILE": _render(str(ac.MEMORY_FILE)),
+        "MEMORY_MAX_ENTRIES": _render(ac.MEMORY_MAX_ENTRIES),
+        "MEMORY_MAX_TEXT_CHARS": _render(ac.MEMORY_MAX_TEXT_CHARS),
+        "MEMORY_MAX_RECALL_RESULTS": _render(ac.MEMORY_MAX_RECALL_RESULTS),
+        "MEMORY_SUMMARY_MAX_MESSAGES": _render(ac.MEMORY_SUMMARY_MAX_MESSAGES),
+        "SYSTEM_PROMPT": _render(ac.SYSTEM_PROMPT),
+        "LOG_ENABLED": _render(lc.LOG_ENABLED),
+        "LOG_DIR": _render(str(lc.LOG_DIR)),
+        "LOG_FILE_MODE": _render(lc.LOG_FILE_MODE),
+        "SINGLE_LOG_FILENAME": _render(lc.SINGLE_LOG_FILENAME),
+        "MAX_FIELD_CHARS": _render(lc.MAX_FIELD_CHARS),
+        "MAX_LOG_FILE_BYTES": _render(lc.MAX_LOG_FILE_BYTES),
+        "LOG_MODEL_TIMING": _render(lc.LOG_MODEL_TIMING),
+        "ECHO_TO_TERMINAL": _render(lc.ECHO_TO_TERMINAL),
+        "MASK_SECRETS": _render(lc.MASK_SECRETS),
+    }
+
+
 def _current_agent_values() -> dict[str, str]:
     """Read the live, currently-in-effect values from agent_config.py /
     log_config.py -- reflects .env + real env vars + built-in defaults,
@@ -155,54 +223,55 @@ def _current_agent_values() -> dict[str, str]:
     import agent_config as ac
     import log_config as lc
 
-    def render(value) -> str:
-        if isinstance(value, (set, frozenset)):
-            return ",".join(sorted(value))
-        if isinstance(value, list):
-            return ",".join(value)
-        if value is None:
-            return ""
-        if isinstance(value, bool):
-            return "true" if value else "false"
-        return str(value)
+    return _snapshot(ac, lc)
 
-    return {
-        "WORKSHOP_MODEL": render(ac.DEFAULT_MODEL),
-        "CHAT_TIMEOUT_SECONDS": render(ac.CHAT_TIMEOUT_SECONDS),
-        "CHAT_MAX_RETRIES": render(ac.CHAT_MAX_RETRIES),
-        "CHAT_RETRY_BACKOFF_SECONDS": render(ac.CHAT_RETRY_BACKOFF_SECONDS),
-        "MAX_ITERATIONS": render(ac.MAX_ITERATIONS),
-        "MAX_WALL_SECONDS": render(ac.MAX_WALL_SECONDS),
-        "TOOL_TIMEOUT_SECONDS": render(ac.TOOL_TIMEOUT_SECONDS),
-        "MAX_REPEAT_CALLS": render(ac.MAX_REPEAT_CALLS),
-        "MAX_OBSERVATION_CHARS": render(ac.MAX_OBSERVATION_CHARS),
-        "WORKSPACE_DIR": render(str(ac.WORKSPACE_DIR)),
-        "MAX_WRITE_BYTES": render(ac.MAX_WRITE_BYTES),
-        "REQUIRE_CONFIRMATION": render(ac.REQUIRE_CONFIRMATION),
-        "SHELL_ALLOWED": render(ac.SHELL_ALLOWED),
-        "SHELL_BLOCKED": render(ac.SHELL_BLOCKED),
-        "SHELL_TIMEOUT_SECONDS": render(ac.SHELL_TIMEOUT_SECONDS),
-        "SHELL_MAX_OUTPUT_LINES": render(ac.SHELL_MAX_OUTPUT_LINES),
-        "CONFIRM_TIMEOUT_SECONDS": render(ac.CONFIRM_TIMEOUT_SECONDS),
-        "CONFIRM_MAX_ACTION_LEN": render(ac.CONFIRM_MAX_ACTION_LEN),
-        "MAX_AUTO_TOOL_CALLS": render(ac.MAX_AUTO_TOOL_CALLS),
-        "MEMORY_ENABLED": render(ac.MEMORY_ENABLED),
-        "MEMORY_FILE": render(str(ac.MEMORY_FILE)),
-        "MEMORY_MAX_ENTRIES": render(ac.MEMORY_MAX_ENTRIES),
-        "MEMORY_MAX_TEXT_CHARS": render(ac.MEMORY_MAX_TEXT_CHARS),
-        "MEMORY_MAX_RECALL_RESULTS": render(ac.MEMORY_MAX_RECALL_RESULTS),
-        "MEMORY_SUMMARY_MAX_MESSAGES": render(ac.MEMORY_SUMMARY_MAX_MESSAGES),
-        "SYSTEM_PROMPT": render(ac.SYSTEM_PROMPT),
-        "LOG_ENABLED": render(lc.LOG_ENABLED),
-        "LOG_DIR": render(str(lc.LOG_DIR)),
-        "LOG_FILE_MODE": render(lc.LOG_FILE_MODE),
-        "SINGLE_LOG_FILENAME": render(lc.SINGLE_LOG_FILENAME),
-        "MAX_FIELD_CHARS": render(lc.MAX_FIELD_CHARS),
-        "MAX_LOG_FILE_BYTES": render(lc.MAX_LOG_FILE_BYTES),
-        "LOG_MODEL_TIMING": render(lc.LOG_MODEL_TIMING),
-        "ECHO_TO_TERMINAL": render(lc.ECHO_TO_TERMINAL),
-        "MASK_SECRETS": render(lc.MASK_SECRETS),
-    }
+
+_DEFAULTS_SNAPSHOT_SCRIPT = """
+import json, sys
+sys.path.insert(0, {agent_dir!r})
+sys.path.insert(0, {be_dir!r})
+import dotenv
+dotenv.load_dotenv = lambda *a, **k: False  # neutralize -- want pure code defaults, not agent/.env
+import agent_config as ac
+import log_config as lc
+from app.core.config_schema import _snapshot
+print(json.dumps(_snapshot(ac, lc)))
+"""
+
+
+@lru_cache
+def agent_defaults() -> dict[str, str]:
+    """The TRUE built-in defaults for every agent-target field, computed
+    by importing agent_config.py/log_config.py fresh in an isolated
+    subprocess -- .env loading neutralized, and every relevant env var
+    stripped from that subprocess's environment first, so neither an
+    exported env var nor agent/.env can leak into the result.
+
+    Deliberately NOT a hand-maintained duplicate list: whatever
+    agent_config.py/log_config.py's literal defaults are, THIS is what
+    shows up next to each field in the editor -- automatically, even if
+    those files change later. Cached for this BE process's lifetime
+    (defaults don't change while it's running); restart the BE service
+    to pick up a code change to the defaults themselves.
+    """
+    import os as _os
+
+    agent_keys = {f.key for f in FIELDS if f.target == "agent"}
+    clean_env = {k: v for k, v in _os.environ.items() if k not in agent_keys}
+
+    script = _DEFAULTS_SNAPSHOT_SCRIPT.format(agent_dir=str(AGENT_DIR), be_dir=str(BE_DIR))
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True, text=True, timeout=15, env=clean_env,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr[-2000:])
+        return json.loads(result.stdout)
+    except Exception:
+        # Defaults are a "nice to have" hint in the UI -- never let a
+        # failure to compute them break the editor itself.
+        return {}
 
 
 def _current_be_values() -> dict[str, str]:
@@ -217,6 +286,22 @@ def _current_be_values() -> dict[str, str]:
     }
 
 
+def be_defaults() -> dict[str, str]:
+    """The BE_* fields' built-in defaults. No subprocess needed here --
+    unlike the agent side, pydantic-settings already keeps a field's
+    declared default separate from whatever env_file/env var overrode
+    it, so this just reads Settings' own field metadata directly."""
+    from app.core.config import Settings
+
+    fields = Settings.model_fields
+    return {
+        "BE_HOST": str(fields["host"].default),
+        "BE_PORT": str(fields["port"].default),
+        "BE_CORS_ORIGINS": str(fields["cors_origins"].default),
+        "BE_LOG_LEVEL": str(fields["log_level"].default),
+    }
+
+
 def current_values() -> dict[str, str]:
     """All fields' current effective values, keyed by env var name."""
     values = {}
@@ -225,10 +310,22 @@ def current_values() -> dict[str, str]:
     return values
 
 
+def default_values() -> dict[str, str]:
+    """All fields' built-in default values, keyed by env var name --
+    what the field would be if no .env/env var override existed."""
+    values = {}
+    values.update(agent_defaults())
+    values.update(be_defaults())
+    return values
+
+
 def get_form_schema() -> list[dict]:
-    """Field metadata + current value, ready to serialize as JSON for
-    the /config page's form."""
+    """Field metadata + current value + built-in default, ready to
+    serialize as JSON for the /config page's form. `default` is shown
+    beside each field as a recommendation -- what you'd get by leaving
+    it unset."""
     values = current_values()
+    defaults = default_values()
     return [
         {
             "key": f.key,
@@ -237,6 +334,7 @@ def get_form_schema() -> list[dict]:
             "type": f.type,
             "description": f.description,
             "value": values.get(f.key, ""),
+            "default": defaults.get(f.key, ""),
         }
         for f in FIELDS
     ]

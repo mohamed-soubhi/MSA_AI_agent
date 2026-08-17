@@ -104,7 +104,15 @@ You'll see every setting across the whole project — chat/Ollama
 timeouts, the tool loop, filesystem/sandbox limits, shell allow/block
 lists, the confirmation gate, memory, the full system prompt, logging,
 and the BE server itself — grouped into sections, pre-filled with
-whatever's currently in effect. Edit what you want, click **Save**.
+whatever's currently in effect. Each field also shows a **recommended
+default** underneath, with a one-click "Use default" button. Edit what
+you want, click **Save**.
+
+Next to the Model field, a **"Load models"** button queries your local
+Ollama installation and lists every model it knows about — split into
+**Local** (already pulled, with real specs: size, parameter count,
+quantization) and **Cloud** (resolved via ollama.com). Click one to
+fill the field.
 
 **Important**: saving does **not** apply changes to an already-running
 agent or BE process. Both only read their settings once, at startup.
