@@ -41,10 +41,18 @@ class TestEnvInt:
         assert _env_int("SOME_INT", 42) == 99
 
     @pytest.mark.tid("AGENTCFG-006")
-    def test_non_numeric_string_raises(self, monkeypatch):
+    def test_non_numeric_string_falls_back_to_default(self, monkeypatch):
+        # ROB-05: a malformed env var degrades to the default instead of
+        # crashing agent startup.
         monkeypatch.setenv("SOME_INT", "not-a-number")
-        with pytest.raises(ValueError):
+        assert _env_int("SOME_INT", 42) == 42
+
+    @pytest.mark.tid("AGENTCFG-027")
+    def test_non_numeric_string_logs_a_warning(self, monkeypatch, caplog):
+        monkeypatch.setenv("SOME_INT", "not-a-number")
+        with caplog.at_level("WARNING", logger="agent.config"):
             _env_int("SOME_INT", 42)
+        assert any("env_int_invalid" in record.message for record in caplog.records)
 
 
 class TestEnvIntOrNone:
@@ -162,6 +170,7 @@ class TestDefaultConstants:
         assert cfg.MEMORY_MAX_ENTRIES == 500
         assert cfg.MEMORY_MAX_TEXT_CHARS == 1000
         assert cfg.MEMORY_MAX_RECALL_RESULTS == 10
+        assert cfg.MEMORY_SUMMARY_MAX_MESSAGES == 40
 
     @pytest.mark.tid("AGENTCFG-025")
     def test_system_prompt_default_mentions_core_tools(self):

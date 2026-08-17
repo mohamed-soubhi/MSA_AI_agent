@@ -293,6 +293,35 @@ class TestSaveSessionSummary:
         save_session_summary(agent, messages)
         assert not mem_mod.MEMORY_PATH.exists()
 
+    @pytest.mark.tid("MEMORY-031")
+    def test_summarizer_call_windowed_to_recent_messages(self, monkeypatch):
+        # ROB-04: a long conversation must not send its entire history
+        # to the model in the automatic shutdown-time summary call.
+        monkeypatch.setattr(mem_mod, "MEMORY_SUMMARY_MAX_MESSAGES", 4)
+        agent = FakeAgent()
+        messages = [{"role": "system", "content": "sys"}] + [
+            {"role": "user" if i % 2 == 0 else "assistant", "content": f"turn {i}"}
+            for i in range(10)
+        ]
+        save_session_summary(agent, messages)
+        sent_messages, _ = agent.chat_calls[0]
+        # 4 windowed messages + 1 appended summarization request = 5.
+        assert len(sent_messages) == 5
+        assert sent_messages[0]["content"] == "turn 6"
+        assert sent_messages[-2]["content"] == "turn 9"
+
+    @pytest.mark.tid("MEMORY-032")
+    def test_short_conversation_under_window_sent_in_full(self):
+        agent = FakeAgent()
+        messages = [
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "hello"},
+        ]
+        save_session_summary(agent, messages)
+        sent_messages, _ = agent.chat_calls[0]
+        assert len(sent_messages) == 4  # all 3 original + 1 appended request
+
     @pytest.mark.tid("MEMORY-025")
     def test_disabled_memory_skips_entirely(self, monkeypatch):
         monkeypatch.setattr(mem_mod, "MEMORY_ENABLED", False)

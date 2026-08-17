@@ -13,7 +13,10 @@ log_config.py stays separate on purpose: it's a distinct concern
 (logging) that already had its own file before this one existed.
 """
 
+import logging
 import os
+
+logger = logging.getLogger("agent.config")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -25,9 +28,23 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 def _env_int(name: str, default: int) -> int:
-    """Read a plain int from an env var, or fall back to default."""
+    """Read a plain int from an env var, or fall back to default.
+
+    ROB-05: a non-numeric value logs a warning and falls back to
+    `default` instead of raising -- a typo'd env var degrades the one
+    affected setting to its documented default rather than crashing
+    agent startup before a single tool call has run. (Deliberately
+    scoped to this helper only -- _env_int_or_none's "raise on garbage"
+    behavior for its literal-'none' handling is untouched.)
+    """
     raw = os.getenv(name)
-    return int(raw) if raw is not None else default
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning("env_int_invalid name=%s raw=%r default=%s", name, raw, default)
+        return default
 
 
 def _env_int_or_none(name: str, default):
@@ -112,6 +129,12 @@ MEMORY_FILE = os.getenv("MEMORY_FILE", "memory.json")          # relative to cwd
 MEMORY_MAX_ENTRIES = _env_int("MEMORY_MAX_ENTRIES", 500)        # oldest entries drop past this
 MEMORY_MAX_TEXT_CHARS = _env_int("MEMORY_MAX_TEXT_CHARS", 1000)  # per-entry text cap
 MEMORY_MAX_RECALL_RESULTS = _env_int("MEMORY_MAX_RECALL_RESULTS", 10)  # cap on recall_memory() output
+# ROB-04: save_session_summary() sends this many of the MOST RECENT
+# messages to the model, not the full unbounded conversation history --
+# a long multi-turn session could otherwise overflow the model's
+# context window on the one call that happens automatically, with no
+# human in the loop to notice or intervene.
+MEMORY_SUMMARY_MAX_MESSAGES = _env_int("MEMORY_SUMMARY_MAX_MESSAGES", 40)
 
 # --------------------------------------------------------------------------
 # System prompt (09_full_agent.py)

@@ -20,7 +20,7 @@ existed.
 | Helper | Behavior |
 |---|---|
 | `_env_bool(name, default)` | `"1"`/`"true"`/`"yes"`/`"on"` (case-insensitive, trimmed) → `True`; anything else present → `False`; missing → `default`. |
-| `_env_int(name, default)` | `int(raw)` if set, else `default`. Raises `ValueError` on a non-numeric value. |
+| `_env_int(name, default)` | `int(raw)` if set, else `default`. A non-numeric value logs a warning and falls back to `default` rather than raising (ROB-05). |
 | `_env_int_or_none(name, default)` | Literal `"none"` (case-insensitive) → `None`; missing → `default`; otherwise `int(raw)`. |
 | `_env_set(name, default)` | Comma-separated env value → a `set` of trimmed, non-empty items; missing → `default`. |
 | `_env_list(name, default)` | Same as `_env_set` but returns a `list` (order preserved); missing → `default`. |
@@ -88,6 +88,7 @@ existed.
 | `MEMORY_MAX_ENTRIES` | `MEMORY_MAX_ENTRIES` | `500` |
 | `MEMORY_MAX_TEXT_CHARS` | `MEMORY_MAX_TEXT_CHARS` | `1000` |
 | `MEMORY_MAX_RECALL_RESULTS` | `MEMORY_MAX_RECALL_RESULTS` | `10` |
+| `MEMORY_SUMMARY_MAX_MESSAGES` | `MEMORY_SUMMARY_MAX_MESSAGES` | `40` |
 
 See [memory.md](memory.md) for what each setting controls.
 
@@ -109,8 +110,9 @@ replacing their whole list rather than merging with the default.
 ## Test coverage (`tests/test_agent_config.py`)
 
 - Each `_env_*` helper: default value when the env var is unset, every
-  parseable form, and (for `_env_int`/`_env_int_or_none`) a bad value
-  raising `ValueError`.
+  parseable form. `_env_int`: a bad value logs a warning and falls back
+  to `default` (ROB-05). `_env_int_or_none`: a bad value still raises
+  `ValueError` — out of scope for ROB-05, untouched.
 - `_env_set`/`_env_list`: comma-splitting, whitespace trimming, empty
   items dropped, set-vs-list return type, order preserved for the list
   variant.

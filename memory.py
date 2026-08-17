@@ -32,7 +32,7 @@ from pathlib import Path
 
 from agent_config import (
     MEMORY_ENABLED, MEMORY_FILE, MEMORY_MAX_ENTRIES,
-    MEMORY_MAX_TEXT_CHARS, MEMORY_MAX_RECALL_RESULTS,
+    MEMORY_MAX_TEXT_CHARS, MEMORY_MAX_RECALL_RESULTS, MEMORY_SUMMARY_MAX_MESSAGES,
 )
 
 logger = logging.getLogger("agent.memory")
@@ -191,6 +191,14 @@ def save_session_summary(agent, messages: list[dict]) -> None:
     write_file/run_command. Skips conversations too short to be worth
     summarizing (e.g. the user typed "exit" immediately).
 
+    ROB-04: only the last MEMORY_SUMMARY_MAX_MESSAGES messages are sent
+    to the summarizer, not the full conversation -- `messages` grows
+    unboundedly across a long CLI session, and this is the one call
+    that happens automatically at shutdown with no human watching for
+    an overflow. A summary of "roughly what happened recently" is good
+    enough for cross-session memory; it doesn't need the entire
+    transcript.
+
     Failures here are swallowed to a log warning -- losing a summary
     must never crash the shutdown path.
     """
@@ -201,7 +209,8 @@ def save_session_summary(agent, messages: list[dict]) -> None:
     if len(real_turns) < 2:
         return
 
-    summarizer_messages = messages + [{
+    windowed_messages = messages[-MEMORY_SUMMARY_MAX_MESSAGES:]
+    summarizer_messages = windowed_messages + [{
         "role": "user",
         "content": (
             "Summarize this conversation in 2-4 sentences, for your own "

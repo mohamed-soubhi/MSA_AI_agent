@@ -106,18 +106,22 @@ losing a summary must never crash the shutdown path in
 
 ## Test coverage (`tests/test_memory.py`)
 
-25 tests (`MEMORY-001` .. `MEMORY-025`), covering:
+32 tests (`MEMORY-001` .. `MEMORY-032`), covering:
 - `remember_fact`: writes, appends (not overwrites), tag
   normalization, text truncation, entry-count trimming, empty/whitespace
   input rejected, disabled-memory no-op.
 - `recall_memory`: empty-store message, substring match (case
   insensitive), tag filter (any-of), query+tag AND combination, no-match
   message, result cap, disabled-memory message, corrupt-file
-  resilience.
+  resilience, corrupt-file backup preservation.
+- Atomic writes: `_save()` goes through `os.replace()` (not a direct
+  write), no leftover `.tmp*` file after a save, valid JSON after
+  repeated saves.
 - `save_session_summary`: writes a `"summary"` entry, skips under-two-turn
   conversations, offers no tools to the summarizer call, swallows a
   `chat()` failure without raising, skips on empty model output,
-  disabled-memory no-op.
+  disabled-memory no-op, windows to `MEMORY_SUMMARY_MAX_MESSAGES` on a
+  long conversation, sends a short conversation in full.
 
 `tests/test_full_agent_main.py` additionally covers the wiring: both
 tools present in `tool_map` (`FULLAGENT-007`/`008`, now nine tools), and
@@ -126,11 +130,10 @@ but **not** the crash path (`FULLAGENT-012`–`014`).
 
 ## Architectural & Persistence Notes
 
-From the [Code Review & Defect Assessment Report](code_review_report.md):
+Findings from the [Code Review & Defect Assessment Report](code_review_report.md) touching this module — both now fixed (see that report's Remediation Status table for the full list):
 
-1. **Non-Atomic File Persistence (ROB-02)**:
-   `_save()` directly writes to `memory.json`. An unhandled interruption mid-write renders the JSON file unparseable, which triggers `_load()`'s fallback to `[]` and subsequent wipe of all memories.
-   *Mitigation Roadmap*: Write to temporary file with atomic `os.replace()`, and retain a `.corrupt.bak` backup.
-2. **Multi-Turn Context Sizing (ROB-04)**:
-   `save_session_summary` sends the entire session history to `agent.chat()`. For long multi-turn interactions, windowing should be applied before summarization.
+1. **Non-Atomic File Persistence (ROB-02) — fixed**:
+   `_save()` now writes to a temp file (`memory.json.tmp<pid>`) and atomically swaps it into place with `os.replace()`, so an interrupted write can never leave `memory.json` half-written. A corrupt file found on load is preserved as `memory.json.corrupt.bak` before `_load()` falls back to an empty list, so nothing is silently lost.
+2. **Multi-Turn Context Sizing (ROB-04) — fixed (summarizer only)**:
+   `save_session_summary` now sends only the last `MEMORY_SUMMARY_MAX_MESSAGES` (default 40, see `agent_config.py`) messages to `agent.chat()`, not the full session history. The live `messages` list `run_agent()` itself uses was deliberately left unbounded — trimming it would cost the model visibility into earlier turns it may still need mid-conversation.
 

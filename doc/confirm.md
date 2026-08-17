@@ -50,34 +50,42 @@ logic (see [agent_mode.md](agent_mode.md)).
   `CONFIRM_MAX_ACTION_LEN`), appending
   `" …[truncated]"` when cut. Prevents a crafted `action` from rewriting
   the terminal, hiding text, or scrolling the real question off screen.
-- **`_timeout_handler(signum, frame)`** — SIGALRM handler; raises
-  `ConfirmTimeout`.
-- **`ConfirmTimeout`** — internal exception used to unwind `input()` on
-  timeout.
+- **`_read_input_with_timeout(prompt, timeout_seconds)`** — runs
+  `input(prompt)` on a background **daemon thread**, communicated back
+  via a `queue.Queue`; the caller waits with `queue.get(timeout=
+  timeout_seconds)`. Raises `ConfirmTimeout` if the queue wait itself
+  times out; re-raises whatever `input()` raised (e.g. `EOFError`)
+  otherwise. **Not signal-based** — see ROB-01 below.
+- **`ConfirmTimeout`** — internal exception used to signal the timeout.
 
 ### Control flow
 
 1. If `sys.stdin.isatty()` is `False` → log + return `False` immediately
    (headless/CI/piped context — nobody can approve anything).
-2. Arm a `SIGALRM` for `timeout_seconds` (if set and supported).
-3. Print the sanitized prompt and call `input()`.
-4. On `ConfirmTimeout`, `EOFError`, `KeyboardInterrupt`, or any other
+2. Print the sanitized prompt and call
+   `_read_input_with_timeout(prompt, timeout_seconds)`.
+3. On `ConfirmTimeout`, `EOFError`, `KeyboardInterrupt`, or any other
    exception → log + return `False`.
-5. `finally`: always disarm the alarm and restore the previous SIGALRM
-   handler, so no pending alarm leaks into unrelated code.
-6. Parse the answer: `answer.strip().lower() in {"", "y", "yes"}` →
+4. Parse the answer: `answer.strip().lower() in {"", "y", "yes"}` →
    approved.
 
 ### Notes
 
-- SIGALRM is POSIX-only; on platforms without it (e.g. native Windows),
-  the timeout is silently skipped and `input()` blocks indefinitely.
-- **Thread Safety & Signal Handlers (ROB-01)**: `signal.signal(signal.SIGALRM)`
-  is only supported on the interpreter's main thread. When tools run
-  in secondary threads (e.g. via `shared._run_tool_with_timeout`), calling
-  `signal.signal()` raises a `ValueError`, which `confirm()` catches to
-  safely deny the action (fail-closed).
-  *Roadmap*: Replace `signal.alarm` with non-blocking terminal I/O (`select.select`).
+- **Thread Safety & Signal Handlers (ROB-01) — fixed**: the original
+  implementation used `signal.signal(signal.SIGALRM)` / `signal.alarm()`
+  for the timeout, which only works on the interpreter's **main**
+  thread — calling it from a worker thread (e.g. a tool running inside
+  `shared._run_tool_with_timeout`'s `ThreadPoolExecutor`) raised
+  `ValueError`, silently denying the action instead of actually timing
+  out. The fix replaces that with `_read_input_with_timeout()`
+  (background daemon thread + `queue.get(timeout=...)`), which works
+  correctly from **any** calling thread and needs no POSIX-only signal
+  at all — the timeout now works identically on Windows.
+- If the timeout fires, the background reader thread is left running,
+  blocked on `input()` forever with nothing left listening for its
+  result. Same accepted tradeoff as
+  `shared._run_tool_with_timeout`'s "abandoned" worker thread — it's a
+  daemon thread, so it can't block process exit.
 - Every call site (`fs_tools.write_file`, `fs_tools.create_directory`,
   `shell_tools.run_command`, `human_tools.approve_action`,
   `auto_runner.run_with_auto_mode`) passes a fresh, specific action
@@ -93,9 +101,14 @@ logic (see [agent_mode.md](agent_mode.md)).
 - All yes/no answer variants (case, whitespace, bare Enter).
 - EOFError, KeyboardInterrupt, and generic exception during `input()`.
 - Sanitization applied to the actual prompt shown to the user.
-- Timeout path (skipped on non-POSIX platforms lacking `SIGALRM`).
-- Alarm is disarmed after both success and timeout.
-- `timeout_seconds=None` disables the alarm entirely.
+- Timeout path: `ConfirmTimeout` raised synchronously, and a genuine
+  "input() outlives the timeout window" case exercising the real
+  `queue.get(timeout=...)` wait.
+- `timeout_seconds=None` disables the timeout entirely (blocks on
+  `input()`, same as before).
+- **ROB-01 regression test**: `confirm()` called from inside a
+  background `threading.Thread` still resolves correctly with a
+  timeout set — the exact scenario `signal.alarm()` used to crash on.
 - Auto mode: `agent_mode.AUTO_MODE=True` with `force_ask=False` (the
   default) auto-approves without ever calling `input()`; `force_ask=True`
   still prompts even with `AUTO_MODE=True`; `AUTO_MODE=False` (the

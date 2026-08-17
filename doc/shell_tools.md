@@ -23,13 +23,18 @@ before it touches anything.
    Checking the full string catches a chained/injected command riding
    behind an allowlisted program, e.g. `python3 -c '...'; rm -rf .` is
    caught by `"rm "` even though `python3` alone is allowlisted.
-3. **`confirm()`** — every *other* (non-blocklisted) command still goes
-   through the normal `confirm()` gate: auto-approves in auto mode (the
-   plan already covered it) or asks in step mode. Same hard gate used
-   everywhere else in this project (see [confirm.md](confirm.md)).
+3. **`confirm()`** — every *other* (non-blocklisted, non-compound)
+   command still goes through the normal `confirm()` gate: auto-approves
+   in auto mode (the plan already covered it) or asks in step mode. Same
+   hard gate used everywhere else in this project (see
+   [confirm.md](confirm.md)). A command containing a shell chaining or
+   substitution operator (`&&`, `||`, `;`, `|`, `&`, `$(`, backtick) is
+   treated the same as a blocklist hit — it always `force_ask`s a real
+   human, never silently auto-approves (SEC-01, see below).
 4. **Timeout** (`TIMEOUT_SECONDS = 120`) — a command that hangs (waiting
-   on stdin, an infinite loop) is killed rather than blocking the agent
-   loop forever.
+   on stdin, an infinite loop) is killed, **together with its entire
+   process group** (SEC-02, see below), rather than blocking the agent
+   loop forever or leaving an orphaned child process running.
 
 **Honest limitation, stated rather than hidden**: layers 1–2 can be
 talked around by an *allowed* interpreter (`python3`, `node`) running
@@ -79,17 +84,37 @@ stderr means something different than a zero exit with noisy stderr.
    {command}", force_ask=True)`. If denied →
    `"Blocked: command contains a forbidden pattern and was not
    approved."` If approved, execution proceeds as normal.
-5. **Layer 3** (only reached when layer 2 didn't trigger): `confirm(f"run:
-   {command}")`; denied → `"Command cancelled by user."`
-6. **Layer 4 + execution**: `subprocess.run(command, shell=True,
-   cwd=BASE_DIR, capture_output=True, text=True,
-   timeout=TIMEOUT_SECONDS)`.
-   - On completion: `_format_result(result.returncode, result.stdout, result.stderr)`.
-   - `subprocess.TimeoutExpired`: a killed process has no real exit
-     code, but may still have partial output captured before the kill —
+5. **SEC-01 compound-operator check** (only reached when layer 2 didn't
+   trigger): `_is_compound(command)` — `True` if the command contains
+   `&&`, `||`, `;`, `|`, `&`, `$(`, or a backtick. If so →
+   `confirm(f"Compound/chained command detected, approve anyway?\nrun:
+   {command}", force_ask=True)`; denied → `"Blocked: compound/chained
+   command was not approved."` This closes the gap where layer 1 only
+   ever checked the *first* token — a chained command like `echo hi &&
+   /bin/bash -c '...'` used to pass layer 1 (`echo` is allowlisted),
+   skip layer 2 if no `BLOCKED` substring matched, and reach the plain
+   `confirm()` below — which auto-approves in auto mode. Now it always
+   force-asks, same as a blocklist hit.
+6. **Layer 3** (only reached when neither layer 2 nor the compound
+   check triggered): `confirm(f"run: {command}")`; denied →
+   `"Command cancelled by user."`
+7. **Layer 4 + execution**: `subprocess.Popen(command, shell=True,
+   cwd=BASE_DIR, stdout=PIPE, stderr=PIPE, text=True,
+   start_new_session=True)`, then `proc.communicate(timeout=
+   TIMEOUT_SECONDS)`. `start_new_session=True` puts the shell in its own
+   process group (SEC-02).
+   - On completion: `_format_result(proc.returncode, stdout, stderr)`.
+   - `subprocess.TimeoutExpired`: `os.killpg(os.getpgid(proc.pid),
+     signal.SIGKILL)` kills the **whole process group** — the shell
+     *and* anything it spawned — not just the immediate `/bin/sh`
+     (SEC-02 fix; previously a timed-out `npm run dev`-style command
+     left its child running, orphaned, in the background). A
+     `ProcessLookupError`/`PermissionError`/`OSError` from `killpg`
+     (process already exited on its own) is caught and logged, not
+     raised. `proc.communicate()` (no timeout) is called again after
+     the kill to drain whatever partial output exists —
      `_format_result(None, partial_stdout, partial_stderr, note=f"Timed
-     out after {TIMEOUT_SECONDS}s and was killed.")` rather than
-     discarding whatever ran before the kill.
+     out after {TIMEOUT_SECONDS}s and was killed.")`.
    - Any other exception: `_format_result(None, "", "", note=f"Could
      not run command: {error}")`.
 
@@ -131,8 +156,9 @@ stderr:
 
 ## Test coverage (`tests/test_shell_tools.py`)
 
-`subprocess.run` and `confirm()` are fully mocked — no real commands
-ever run.
+`subprocess.Popen` and `confirm()` are fully mocked (via a `FakePopen`
+test double driven by `.communicate()`) — no real commands or OS
+process groups are ever touched.
 
 - Empty/whitespace-only command, unparseable (unbalanced quotes) input.
 - Allowlist: rejected program, path-prefix stripping
@@ -143,25 +169,37 @@ ever run.
   text — approved lets the command through to execution, denied returns
   the "not approved" message; confirmed the layer-3 `confirm()` call is
   **not** made when layer 2 already handled the confirmation.
-- Confirmation gate (non-blocklisted commands): cancellation on denial,
-  and the exact `"run: {command}"` text passed through to `confirm()`.
+- **Compound operator force-ask (SEC-01)**: each operator (`&&`, `||`,
+  `;`, `|`, `&`, `$(`, backtick) individually routes through
+  `confirm(..., force_ask=True)` with the "Compound/chained command
+  detected" text; approved lets the command execute; a simple command
+  with no operator does **not** force-ask (plain `confirm(action)`,
+  no kwargs); `_is_compound()` unit-tested directly for every operator.
+- Confirmation gate (non-blocklisted, non-compound commands):
+  cancellation on denial, and the exact `"run: {command}"` text passed
+  through to `confirm()`.
 - Execution: `exit_code`/`stdout`/`stderr` fields present and correct,
   `cwd=BASE_DIR` sandboxing, independent per-stream line-based
   truncation past `MAX_OUTPUT_LINES` (keeping the *last* N lines, not
-  the first), `"(empty)"` placeholder for a blank stream,
-  `TimeoutExpired` preserving partial output plus the timeout `note`,
-  and a generic exception rendered through the same `_format_result()`
-  path with `exit_code: (none — process killed)`.
+  the first), `"(empty)"` placeholder for a blank stream, a generic
+  exception rendered through the same `_format_result()` path with
+  `exit_code: (none — process killed)`.
+- **Timeout + process-group kill (SEC-02)**: `TimeoutExpired` on the
+  first `communicate()` call preserves partial output plus the timeout
+  `note`; `os.killpg(os.getpgid(proc.pid), signal.SIGKILL)` is called
+  with the exact `proc.pid`; a `ProcessLookupError` from `killpg` (the
+  process already exited on its own) does not crash the call and still
+  returns the timeout result.
 
 ## Security Threat Model & Audit Notes
 
-From the [Code Review & Defect Assessment Report](code_review_report.md):
+Findings from the [Code Review & Defect Assessment Report](code_review_report.md) touching this module — both now fixed (see that report's Remediation Status table for the full list):
 
-1. **Compound Command / Shell Operator Chaining (SEC-01)**:
-   Because `shell_tools.py` executes commands with `shell=True` after parsing only `shlex.split(command)[0]`, compound commands using operators like `&&`, `||`, `;`, `|`, or backticks could execute non-allowlisted binaries if chained behind an allowed first token (e.g. `echo ok && /bin/bash -c ...`). In auto mode, Layer 3 auto-approves this.
-   *Mitigation Roadmap*: Parse compound shell statements or restrict to `shell=False` execution with explicit argument arrays.
+1. **Compound Command / Shell Operator Chaining (SEC-01) — fixed**:
+   Because `shell_tools.py` executes commands with `shell=True` after parsing only the *first* token via `shlex.split(command)[0]`, a compound command using operators like `&&`, `||`, `;`, `|`, or backticks could execute a non-allowlisted binary if chained behind an allowed first token (e.g. `echo ok && /bin/bash -c ...`) — and in auto mode, the plain `confirm()` at layer 3 would auto-approve it silently.
+   *Fix*: `_is_compound()` detects any of these operators and force-asks a real human confirm, exactly like a `BLOCKED` pattern — auto mode can no longer silently approve a compound command, regardless of what's hidden after the operator.
 
-2. **Process Group Orphan Management on Timeout (SEC-02)**:
-   When `subprocess.run` times out, Python kills only `/bin/sh`. Background or detached child processes continue running in the background.
-   *Mitigation Roadmap*: Use `start_new_session=True` and `os.killpg` on timeout.
+2. **Process Group Orphan Management on Timeout (SEC-02) — fixed**:
+   When `subprocess.run` timed out, Python killed only `/bin/sh`. Background or detached child processes it spawned continued running, orphaned.
+   *Fix*: switched to `subprocess.Popen(..., start_new_session=True)`; on timeout, `os.killpg(os.getpgid(proc.pid), signal.SIGKILL)` kills the shell's entire process group.
 

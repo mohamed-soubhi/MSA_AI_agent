@@ -7,6 +7,25 @@
 
 ---
 
+## Remediation Status
+
+All 10 findings triaged; 9 fixed, 1 documented as an accepted tradeoff. Test suite grew from 334 to 369 passing tests — new coverage added alongside each fix.
+
+| ID | Severity | Status | Notes |
+|---|---|---|---|
+| SEC-01 | Critical | **Fixed** | `shell_tools.py`: any compound/chained/substitution operator (`&&`, `||`, `;`, `|`, `&`, `$(`, backtick) now always force-asks a real human confirm, even in auto mode. |
+| SEC-02 | High | **Fixed** | `shell_tools.py`: switched to `Popen` + `start_new_session=True`; on timeout, `os.killpg()` kills the whole process group, not just the immediate shell. |
+| ROB-01 | High | **Fixed** | `confirm.py`: timeout now via a background daemon thread + `queue.get(timeout=...)`, not `signal.alarm()` — works correctly when called from a worker thread (e.g. inside `run_agent`'s tool-call `ThreadPoolExecutor`). |
+| ROB-02 | High | **Fixed** | `memory.py`: `_save()` writes to a temp file and atomically swaps it in with `os.replace()`; a corrupt file found on load is preserved as `.corrupt.bak` before falling back to empty. |
+| ARCH-01 | Medium | **Documented, not refactored** | `fs_tools.py`: module-level `BASE_DIR` is a deliberate simplicity choice for this single-process, single-workspace CLI — the concurrent-multi-workspace scenario this finding protects against doesn't occur here. Comment added at the definition explaining the tradeoff. (Note: the report's memory.py citation for this finding was inaccurate — `memory.py` deliberately does not use `BASE_DIR` at all.) |
+| ROB-03 | Medium | **Fixed** | `shared.py`: added `_detect_cycle()`, checked for period 2 and 3 alongside the existing period-1 repeat check — catches an agent oscillating between two or three distinct tool calls, not just identical repeats. |
+| ROB-04 | Medium | **Fixed (summarizer only)** | `memory.py`: `save_session_summary()` now windows to the last `MEMORY_SUMMARY_MAX_MESSAGES` (default 40) messages before calling the model. The live `messages` list used by `run_agent()` itself was deliberately left unbounded — trimming it would cost the model visibility into earlier conversation turns it may still need. |
+| UX-01 | Medium | **Fixed** | `auto_runner.py`: `_generate_plan()` now seeds `SYSTEM_PROMPT` (from `agent_config.py`) ahead of the planning request, same as the execution phase. |
+| SEC-03 | Low | **Fixed** | `chat_logger.py`: added `_mask_secrets()` — regex redaction for private key blocks, JWTs, `sk-`/`AKIA`/`ghp_`-style keys, bearer tokens, and `.env`-style `KEY=value` lines — applied before every field is written to the JSONL log. Toggle: `log_config.MASK_SECRETS`. |
+| ROB-05 | Low | **Fixed** | `agent_config.py`'s `_env_int()` now logs a warning and falls back to the documented default on a non-numeric env var, instead of raising and crashing startup. `_env_int_or_none`'s separate "raise on garbage" behavior was left untouched — out of scope for this finding. |
+
+---
+
 ## Executive Summary
 
 An exhaustive security, concurrency, robustness, and architectural audit was conducted across the 12 Python modules, 334 tests, and supporting tools of the sandboxed AI agent codebase.

@@ -34,6 +34,17 @@ from agent_config import MAX_WRITE_BYTES, REQUIRE_CONFIRMATION
 
 logger = logging.getLogger("agent.fs_tools")
 
+# ARCH-01 (accepted tradeoff, not fixed): computed once at import time,
+# not injectable per call/session. This matters for a multi-tenant
+# server juggling several concurrent workspaces in one process -- this
+# project is a single-process, single-workspace CLI REPL where cwd is
+# fixed for the whole life of the process, so that scenario never
+# actually arises here. Making this an injectable WorkspaceContext would
+# touch fs_tools.py, shell_tools.py (imports BASE_DIR from here),
+# auto_runner.py, and 09_full_agent.py, plus every test that currently
+# monkeypatches this constant directly -- a lot of risk and churn for a
+# problem this deployment model doesn't have. Revisit if this ever runs
+# as a long-lived multi-workspace service instead of a one-shot CLI.
 BASE_DIR = Path.cwd().resolve()
 
 # MAX_WRITE_BYTES and REQUIRE_CONFIRMATION now live in agent_config.py —
