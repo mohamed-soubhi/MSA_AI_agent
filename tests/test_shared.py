@@ -344,6 +344,43 @@ class TestOllamaAgentChatStream:
         with pytest.raises(RuntimeError, match="Could not reach Ollama model 'test-model'"):
             list(agent.chat_stream([{"role": "user", "content": "hi"}]))
 
+    @pytest.mark.tid("SHARED-058")
+    def test_last_stream_stats_none_before_any_call(self):
+        agent = OllamaAgent(model="test-model")
+        assert agent.last_stream_stats is None
+
+    @pytest.mark.tid("SHARED-059")
+    def test_final_done_chunk_populates_stats_and_total_tokens(self):
+        agent = OllamaAgent(model="test-model")
+        chunks = [
+            SimpleNamespace(message=SimpleNamespace(content="a"), done=False),
+            SimpleNamespace(
+                message=SimpleNamespace(content="b"), done=True,
+                total_duration=123, load_duration=45, prompt_eval_count=10,
+                prompt_eval_duration=1, eval_count=5, eval_duration=2,
+            ),
+        ]
+        agent.client = FakeClient([chunks])
+        list(agent.chat_stream([{"role": "user", "content": "hi"}]))
+
+        assert agent.total_tokens == 15  # 10 prompt + 5 eval
+        assert agent.last_stream_stats == {
+            "total_duration": 123, "load_duration": 45, "prompt_eval_count": 10,
+            "prompt_eval_duration": 1, "eval_count": 5, "eval_duration": 2,
+        }
+
+    @pytest.mark.tid("SHARED-060")
+    def test_no_done_chunk_leaves_stats_and_tokens_untouched(self):
+        # A chunk stream with no done=True marker (e.g. a backend that
+        # doesn't send one) must not crash -- just no stats captured.
+        agent = OllamaAgent(model="test-model")
+        chunks = [SimpleNamespace(message=SimpleNamespace(content="a"))]
+        agent.client = FakeClient([chunks])
+        list(agent.chat_stream([{"role": "user", "content": "hi"}]))
+
+        assert agent.total_tokens == 0
+        assert agent.last_stream_stats is None
+
 
 # --------------------------------------------------------------------------
 # run_agent

@@ -1,10 +1,9 @@
 # BE/ — backend service (FastAPI + Uvicorn + Nginx)
 
-Bare scaffold, no agent wiring yet — proves the stack runs end to end
-(`/health` only) so the actual chat API can be designed and added on
-top of a known-working base. A separate top-level folder, sitting next
-to `agent/`, `workspace/`, `tests/`, `doc/` — a permanent part of the
-project, not sandboxed content `agent/` builds.
+Health check, an interactive config editor, and a plain conversational
+chat page over the agent's own `OllamaAgent`. A separate top-level
+folder, sitting next to `agent/`, `workspace/`, `tests/`, `doc/` — a
+permanent part of the project, not sandboxed content `agent/` builds.
 
 ## Layout
 
@@ -15,23 +14,63 @@ BE/
 │   ├── api/
 │   │   ├── health.py      — GET /health
 │   │   ├── config.py      — GET/POST /api/config (interactive config editor's API)
-│   │   └── models.py      — GET /api/models (local + cloud Ollama models, with specs)
+│   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
+│   │   └── chat.py        — GET/POST /api/chat/* (streaming chat, see "Chat page" below)
 │   ├── core/
 │   │   ├── config.py         — Settings (pydantic-settings), BE_-prefixed env vars
-│   │   └── config_schema.py  — field list + .env read/write + default-value resolver
+│   │   ├── config_schema.py  — field list + .env read/write + default-value resolver
+│   │   └── agent_bridge.py   — reuses agent/shared.py's OllamaAgent for chat.py
 │   └── static/
-│       └── config.html    — the editor page itself (served at GET /config)
+│       ├── config.html    — the editor page itself (served at GET /config)
+│       └── chat.html      — the chat page itself (served at GET /chat)
 ├── tests/
 │   ├── conftest.py         — adds BE/ to sys.path (same pattern as tests/conftest.py)
 │   ├── test_health.py
 │   ├── test_config.py
-│   └── test_models.py
+│   ├── test_models.py
+│   └── test_chat.py
 ├── nginx/
 │   └── nginx.conf          — reverse proxy: Nginx :80 → Uvicorn 127.0.0.1:8000
 ├── requirements.txt
 ├── pytest.ini
 └── .env.example
 ```
+
+## Chat page (`GET /chat`)
+
+A two-pane page: chat on the left, an empty placeholder panel on the
+right reserved for content tied to the conversation (not built yet).
+Streams the model's reply token-by-token via Server-Sent Events.
+
+- **No tool-calling yet, on purpose.** `shared.run_agent()` (the
+  tool-calling loop) drives `fs_tools`/`shell_tools` through
+  `confirm()`, which blocks on a real terminal `input()` — that has no
+  meaning inside an HTTP request/response cycle. `app/core/agent_bridge.py`
+  only uses `OllamaAgent.chat_stream()`, which never touches tools or
+  `confirm()` at all. How a human approves a tool call over HTTP is a
+  real, separate design question for later.
+- **One shared `OllamaAgent` instance**, reused across every request in
+  this BE process (`agent_bridge.get_agent()`) — the exact same
+  hardened chat wrapper (timeout/retry/friendly-errors) the CLI agent
+  uses, not a second reimplementation.
+- **One in-memory conversation**, held in `app/api/chat.py`'s
+  module-level `_messages` list. Matches a single local user, same
+  simplicity choice as the CLI agent's one-conversation-per-run design.
+  Cleared by `POST /api/chat/reset` ("New chat" button) or a BE
+  restart — nothing persists to disk.
+- **SSE protocol**: each event is `data: <json>\n\n` —
+  `{"delta": "..."}` per chunk, `{"error": "..."}` if the model call
+  fails partway through, always ending with `{"done": true}`. The
+  client can't use a plain `EventSource` (GET-only, and this needs to
+  POST the message body) — `chat.html` reads the streaming response
+  body manually via `fetch()` + `ReadableStream`.
+- **Logged through the agent's own `chat_logger.py`** — same JSONL
+  format, same `logs/` directory as the CLI agent, including
+  `prompt_eval_count`/`eval_count`/durations (captured from the
+  stream's final chunk via `OllamaAgent.last_stream_stats`, since
+  `chat_stream()` itself only yields plain text — see `shared.py`). One
+  JSONL "session" = one conversation: opens on the first message,
+  closes with `session_end` on `POST /reset` or BE shutdown.
 
 ## Config editor (`GET /config`)
 
@@ -157,10 +196,11 @@ processes never collide if they ever share an environment.
 
 ## Not done yet (deliberately out of scope for this scaffold)
 
-- No agent wiring — `/health`, `/config`, and `/api/models` are the
-  only routes. The chat API (however it ends up shaped — REST,
-  WebSocket, SSE) needs its own design pass once the UI's requirements
-  are clearer.
+- No tool-calling in the chat page — plain conversation only. Wiring
+  `fs_tools`/`shell_tools`/`memory` in means designing how a human
+  approves a tool call over HTTP (`confirm()` blocks on a real terminal
+  today) — a real, separate piece of work.
+- No auth on the chat page itself, nor rate limiting.
 - No auth.
 - No Dockerfile / containerization.
 - No CI config for this service specifically.

@@ -85,16 +85,34 @@ See [memory.md](memory.md).
 ```
 
 Starts Uvicorn on `http://localhost:8000` (override with `BE_HOST`/
-`BE_PORT` env vars or the config editor). Two things exist today:
+`BE_PORT` env vars or the config editor). Three things exist today:
 
 - `GET /health` — liveness check.
+- `GET /chat` — a plain conversational chat page (below).
 - `GET /config` — the interactive config editor (below).
 
 Optionally, put Nginx in front of it as a reverse proxy:
 `nginx -c $(pwd)/BE/nginx/nginx.conf` (requires Uvicorn already
 running). See [BE.md](BE.md).
 
-## 5. Editing configuration (the config editor)
+## 5. Chatting with the model
+
+Open **`http://localhost:8000/chat`**. Type a message, hit Enter (or
+click Send) — the reply streams in token-by-token. Uses whatever model
+`WORKSHOP_MODEL` is currently set to (config editor, "Chat / Ollama"
+section).
+
+**No file/shell tools here** — this is plain conversation with the
+model, not the full agent loop. The CLI (`python3 agent/CLI_agent.py`)
+is still where tool-calling (reading/writing files, running commands)
+happens; the chat page doesn't have that wired in yet.
+
+The right-hand panel is a placeholder for now — reserved for content
+tied to the conversation, not built yet. **New chat** clears history;
+history otherwise survives a page refresh (held in the BE process's
+memory) but resets if the BE service restarts.
+
+## 6. Editing configuration (the config editor)
 
 With the BE service running, open **`http://localhost:8000/config`**
 in a browser (or `http://localhost/config` if you're going through
@@ -128,7 +146,7 @@ names documented in [agent_config.md](agent_config.md) and
 `agent/.env.example` / `BE/.env.example` as a starting point) if you'd
 rather skip the UI.
 
-## 6. Running the tests
+## 7. Running the tests
 
 ```bash
 python3 -m pytest tests/ -v          # agent test suite (402+ tests)
@@ -138,7 +156,7 @@ cd BE && pytest tests/ -v            # BE test suite
 See [README.md](README.md#running-the-tests) for coverage/report-
 generation commands.
 
-## 7. Common tasks
+## 8. Common tasks
 
 | I want to... | Do this |
 |---|---|
@@ -150,7 +168,7 @@ generation commands.
 | Recover from a stuck/looping agent | It self-detects (`MAX_REPEAT_CALLS`, cycle detection) and stops on its own — see [shared.md](shared.md) |
 | See what happened in a past session | `logs/*.jsonl` (one file per session by default) — see [chat_logger.md](chat_logger.md) |
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 - **"Blocked: 'X' is not in the allowlist"** — the agent tried to run a
   program not in `SHELL_ALLOWED`. Add it via the config editor if it's

@@ -90,6 +90,14 @@ class OllamaAgent:
         # creates exactly one OllamaAgent per run. Not reset between
         # chat() calls; the host CLI reads it once at shutdown.
         self.total_tokens = 0
+        # Set by chat_stream() after each call, from the stream's final
+        # chunk (done=True) -- the same prompt_eval_count/eval_count/
+        # duration fields chat()'s response carries, but streaming only
+        # yields plain text chunks (chunk.message.content), so a caller
+        # that wants those stats (e.g. BE/app/api/chat.py's JSONL
+        # logging) reads them from here right after fully consuming the
+        # generator. None until the first chat_stream() call completes.
+        self.last_stream_stats: dict | None = None
 
     def chat(self, messages, tools=None):
         """Send the message history to the model and return one response.
@@ -145,6 +153,13 @@ class OllamaAgent:
         Streaming lets us display text as it is generated instead of
         waiting for the complete response.
 
+        The stream's final chunk (done=True) carries the same token/
+        timing stats a non-streaming chat() response does. This method
+        still only YIELDS plain text (unchanged contract) -- those stats
+        are captured as a side effect into self.total_tokens (added to)
+        and self.last_stream_stats (overwritten), readable by the caller
+        once the generator is fully consumed.
+
         NOTE: intentionally NOT retried, same reasoning as before — once
         a stream has partially yielded content to the caller, retrying
         would duplicate output already shown/used. It DOES get the same
@@ -158,6 +173,15 @@ class OllamaAgent:
                 stream=True,
             )
             for chunk in stream:
+                if getattr(chunk, "done", False):
+                    self.total_tokens += _extract_token_count(chunk)
+                    self.last_stream_stats = {
+                        field: getattr(chunk, field, None)
+                        for field in (
+                            "total_duration", "load_duration", "prompt_eval_count",
+                            "prompt_eval_duration", "eval_count", "eval_duration",
+                        )
+                    }
                 yield chunk.message.content
 
         except Exception as exc:
