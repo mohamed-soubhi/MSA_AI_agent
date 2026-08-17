@@ -63,6 +63,18 @@
     cursor: pointer;
   }
   #new-chat-btn:hover { background: var(--border); color: var(--text); }
+  #auto-approve-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-dim);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    cursor: pointer;
+    align-self: center;
+  }
+  #auto-approve-label input { cursor: pointer; }
+  .countdown { color: var(--text-dim); font-size: 0.75rem; margin-top: 6px; }
   #messages {
     flex: 1;
     overflow-y: auto;
@@ -137,6 +149,57 @@
     text-align: center;
     font-size: 0.875rem;
   }
+  .activity {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .activity-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.8125rem;
+  }
+  .activity-item .kind {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+  .activity-item pre {
+    margin: 4px 0 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+    font-family: ui-monospace, monospace;
+    font-size: 0.8125rem;
+  }
+  .activity-item.error { border-color: var(--err); }
+  .activity-item.pending-request { border-color: var(--accent); background: rgba(59, 130, 246, 0.08); }
+  .activity-item.answered { opacity: 0.6; }
+  .activity-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .activity-actions button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+  .activity-actions button.deny { background: transparent; border: 1px solid var(--err); color: var(--err); }
+  .activity-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .activity-actions input[type="text"] {
+    flex: 1 1 100%;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 0.8125rem;
+  }
 </style>
 </head>
 <body>
@@ -151,19 +214,27 @@
     </header>
     <div id="messages">
       <div class="empty-state" id="empty-state">
-        Ask anything. This is plain conversational chat — no file/shell
-        tools wired in here yet, just the model.
+        Ask anything. The agent can list/read/write files, run terminal
+        commands, and ask you clarifying questions — writes and commands
+        need your approval first (shown on the right).
       </div>
     </div>
     <form id="composer">
       <textarea id="input" placeholder="Message the agent…" rows="1"></textarea>
+      <label id="auto-approve-label">
+        <input type="checkbox" id="auto-approve-toggle" />
+        <span id="auto-approve-text">Auto-approve</span>
+      </label>
       <button type="submit" id="send-btn">Send</button>
     </form>
   </div>
   <div class="side-pane">
-    <h2>Context</h2>
-    <div class="placeholder">
-      This panel will show things related to the conversation — coming soon.
+    <h2>Activity</h2>
+    <div class="activity" id="activity">
+      <div class="placeholder" id="activity-placeholder">
+        Tool calls and their results show up here. Approvals and
+        questions from the agent appear directly in the chat.
+      </div>
     </div>
   </div>
 </div>
@@ -175,6 +246,27 @@ const form = document.getElementById("composer");
 const input = document.getElementById("input");
 const sendBtn = document.getElementById("send-btn");
 const newChatBtn = document.getElementById("new-chat-btn");
+const activityEl = document.getElementById("activity");
+const activityPlaceholder = document.getElementById("activity-placeholder");
+const autoApproveToggle = document.getElementById("auto-approve-toggle");
+const autoApproveText = document.getElementById("auto-approve-text");
+
+// Seeded from BE_AUTO_APPROVE_SECONDS (see app/core/config.py, editable
+// on /config) by loadAutoApproveSeconds() below; 30 is only the
+// fallback if that fetch fails.
+let AUTO_APPROVE_SECONDS = 30;
+
+async function loadAutoApproveSeconds() {
+  try {
+    const res = await fetch("/api/config");
+    const data = await res.json();
+    const field = data.fields.find((f) => f.key === "BE_AUTO_APPROVE_SECONDS");
+    if (field) AUTO_APPROVE_SECONDS = parseInt(field.value, 10) || AUTO_APPROVE_SECONDS;
+  } catch {
+    // fall back to the default above -- not fatal, just less accurate
+  }
+  autoApproveText.textContent = `Auto-approve (${AUTO_APPROVE_SECONDS}s)`;
+}
 
 function addBubble(role, text) {
   emptyState.style.display = "none";
@@ -187,6 +279,140 @@ function addBubble(role, text) {
   messagesEl.appendChild(row);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return bubble;
+}
+
+function addActivity(kind, className) {
+  activityPlaceholder.style.display = "none";
+  const item = document.createElement("div");
+  item.className = `activity-item ${className || ""}`;
+  const kindEl = document.createElement("div");
+  kindEl.className = "kind";
+  kindEl.textContent = kind;
+  item.appendChild(kindEl);
+  activityEl.appendChild(item);
+  activityEl.scrollTop = activityEl.scrollHeight;
+  return item;
+}
+
+function addPre(item, text) {
+  const pre = document.createElement("pre");
+  pre.textContent = text;
+  item.appendChild(pre);
+}
+
+async function respond(requestId, body) {
+  await fetch("/api/chat/respond", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ request_id: requestId, ...body }),
+  });
+}
+
+function addInlineCard(kind, className) {
+  emptyState.style.display = "none";
+  const row = document.createElement("div");
+  row.className = "bubble-row";
+  const item = document.createElement("div");
+  item.className = `bubble activity-item ${className || ""}`;
+  const kindEl = document.createElement("div");
+  kindEl.className = "kind";
+  kindEl.textContent = kind;
+  item.appendChild(kindEl);
+  row.appendChild(item);
+  messagesEl.appendChild(row);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return item;
+}
+
+function addApprovalRequest(event) {
+  const item = addInlineCard("Approval needed", "pending-request");
+  addPre(item, event.action);
+  const actions = document.createElement("div");
+  actions.className = "activity-actions";
+  const approveBtn = document.createElement("button");
+  approveBtn.textContent = "Approve";
+  const denyBtn = document.createElement("button");
+  denyBtn.className = "deny";
+  denyBtn.textContent = "Deny";
+
+  let countdownTimer = null;
+  let countdownEl = null;
+
+  const settle = async (approved) => {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    approveBtn.disabled = true;
+    denyBtn.disabled = true;
+    item.classList.remove("pending-request");
+    item.classList.add("answered");
+    await respond(event.request_id, { approved });
+  };
+  approveBtn.addEventListener("click", () => settle(true));
+  denyBtn.addEventListener("click", () => settle(false));
+  actions.appendChild(approveBtn);
+  actions.appendChild(denyBtn);
+  item.appendChild(actions);
+
+  // Auto-approve: same default as confirm()'s own bare-Enter-means-yes
+  // behavior, just client-side and on a visible countdown instead of a
+  // silent server-side timeout. Only applies to approvals (a yes/no
+  // gate has a sensible default); ask_human/ask_human_choice have no
+  // safe default answer, so they're never auto-answered.
+  if (autoApproveToggle.checked) {
+    let remaining = AUTO_APPROVE_SECONDS;
+    countdownEl = document.createElement("div");
+    countdownEl.className = "countdown";
+    countdownEl.textContent = `Auto-approving in ${remaining}s…`;
+    item.appendChild(countdownEl);
+    countdownTimer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        settle(true);
+        return;
+      }
+      countdownEl.textContent = `Auto-approving in ${remaining}s…`;
+    }, 1000);
+  }
+
+  return item;
+}
+
+function addHumanRequest(event) {
+  const item = addInlineCard(event.kind === "choice" ? "Question (choose)" : "Question", "pending-request");
+  addPre(item, event.question);
+  const actions = document.createElement("div");
+  actions.className = "activity-actions";
+
+  const settle = async (answer) => {
+    Array.from(actions.querySelectorAll("button, input")).forEach((el) => (el.disabled = true));
+    item.classList.remove("pending-request");
+    item.classList.add("answered");
+    await respond(event.request_id, { answer });
+  };
+
+  if (event.kind === "choice" && event.options) {
+    event.options.forEach((option, index) => {
+      const btn = document.createElement("button");
+      btn.textContent = option;
+      btn.addEventListener("click", () => settle(String(index + 1)));
+      actions.appendChild(btn);
+    });
+  } else {
+    const textInput = document.createElement("input");
+    textInput.type = "text";
+    textInput.placeholder = "Your answer…";
+    const submitBtn = document.createElement("button");
+    submitBtn.textContent = "Send";
+    submitBtn.addEventListener("click", () => settle(textInput.value.trim()));
+    textInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); settle(textInput.value.trim()); }
+    });
+    actions.appendChild(textInput);
+    actions.appendChild(submitBtn);
+  }
+  item.appendChild(actions);
+  return item;
 }
 
 async function loadHistory() {
@@ -222,12 +448,15 @@ async function sendMessage(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: text }),
     });
+    if (res.status === 409) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || "a message is already being processed");
+    }
     if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
-    let fullText = "";
 
     while (true) {
       const { done, value } = await reader.read();
@@ -242,16 +471,45 @@ async function sendMessage(event) {
         if (!line.startsWith("data:")) continue;
         const payload = JSON.parse(line.slice(5).trim());
 
-        if (payload.delta) {
-          fullText += payload.delta;
-          assistantBubble.textContent = fullText;
-          messagesEl.scrollTop = messagesEl.scrollHeight;
-        } else if (payload.error) {
-          assistantBubble.classList.remove("pending");
-          assistantBubble.classList.add("error");
-          assistantBubble.textContent = "Error: " + payload.error;
-        } else if (payload.done) {
-          assistantBubble.classList.remove("pending");
+        switch (payload.type) {
+          case "thought":
+            assistantBubble.textContent = payload.content;
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            break;
+          case "tool_call": {
+            const item = addActivity(`Tool: ${payload.name}`);
+            addPre(item, JSON.stringify(payload.arguments, null, 2));
+            break;
+          }
+          case "tool_result": {
+            const item = addActivity(`Result: ${payload.name}`, payload.error ? "error" : "");
+            addPre(item, payload.result);
+            break;
+          }
+          case "approval_request":
+            addApprovalRequest(payload);
+            break;
+          case "approval_timeout":
+            addInlineCard("Approval timed out", "error");
+            break;
+          case "human_request":
+            addHumanRequest(payload);
+            break;
+          case "human_timeout":
+            addInlineCard("Question timed out", "error");
+            break;
+          case "final":
+            assistantBubble.classList.remove("pending");
+            assistantBubble.textContent = payload.content;
+            break;
+          case "error":
+            assistantBubble.classList.remove("pending");
+            assistantBubble.classList.add("error");
+            assistantBubble.textContent = "Error: " + payload.detail;
+            break;
+          case "stream_end":
+            assistantBubble.classList.remove("pending");
+            break;
         }
       }
     }
@@ -270,6 +528,8 @@ async function newChat() {
   messagesEl.innerHTML = "";
   messagesEl.appendChild(emptyState);
   emptyState.style.display = "block";
+  activityEl.querySelectorAll(".activity-item").forEach((el) => el.remove());
+  activityPlaceholder.style.display = "block";
 }
 
 input.addEventListener("input", () => {
@@ -287,6 +547,7 @@ input.addEventListener("keydown", (event) => {
 form.addEventListener("submit", sendMessage);
 newChatBtn.addEventListener("click", newChat);
 loadHistory();
+loadAutoApproveSeconds();
 </script>
 </body>
 </html>

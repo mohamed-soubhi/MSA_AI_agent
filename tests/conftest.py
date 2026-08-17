@@ -4,8 +4,13 @@ and surface each test's @pytest.mark.tid id in normal `-v` output.
 
 import os
 import sys
+import dotenv
+
+# Neutralize load_dotenv during tests so tests verify pristine code defaults
+dotenv.load_dotenv = lambda *args, **kwargs: False
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "agent")))
+
 
 
 def pytest_itemcollected(item):

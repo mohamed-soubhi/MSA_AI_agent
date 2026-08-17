@@ -44,6 +44,13 @@ class Settings(BaseSettings):
 
     log_level: str = "info"
 
+    # Chat page's "Auto-approve" checkbox (see static/chat.html) -- how
+    # long a pending approval_request waits with no human click before
+    # auto-approving. Purely client-side (the countdown/auto-click both
+    # run in the browser); this is just the default seed value the page
+    # fetches from GET /api/config on load.
+    auto_approve_seconds: int = 30
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

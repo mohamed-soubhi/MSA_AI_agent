@@ -346,3 +346,45 @@ class TestAutoMode:
         monkeypatch.setattr(agent_mode, "AUTO_MODE", True)
         # No force_ask passed at all -- should still auto-approve.
         assert confirm("write file") is True
+
+
+# --------------------------------------------------------------------------
+# confirm() — pluggable backend (set_confirm_backend / clear_confirm_backend)
+# --------------------------------------------------------------------------
+
+class TestConfirmBackend:
+    @pytest.mark.tid("CONFIRM-040")
+    def test_set_confirm_backend_routes_to_custom_fn(self):
+        calls = []
+        def mock_backend(action, timeout):
+            calls.append((action, timeout))
+            return True
+
+        confirm_mod.set_confirm_backend(mock_backend)
+        try:
+            res = confirm("restart database", timeout_seconds=45)
+            assert res is True
+            assert len(calls) == 1
+            assert calls[0][0] == "restart database"
+            assert calls[0][1] == 45
+        finally:
+            confirm_mod.clear_confirm_backend()
+
+    @pytest.mark.tid("CONFIRM-041")
+    def test_set_confirm_backend_handles_exception_as_false(self):
+        def crashing_backend(action, timeout):
+            raise RuntimeError("network down")
+
+        confirm_mod.set_confirm_backend(crashing_backend)
+        try:
+            assert confirm("run command") is False
+        finally:
+            confirm_mod.clear_confirm_backend()
+
+    @pytest.mark.tid("CONFIRM-042")
+    def test_clear_confirm_backend_restores_default(self, tty, monkeypatch):
+        confirm_mod.set_confirm_backend(lambda a, t: False)
+        confirm_mod.clear_confirm_backend()
+        monkeypatch.setattr("builtins.input", lambda prompt: "y")
+        assert confirm("run command", timeout_seconds=None) is True
+

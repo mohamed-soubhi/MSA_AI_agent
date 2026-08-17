@@ -133,3 +133,54 @@ class TestApproveAction:
         monkeypatch.setattr(ht_mod, "confirm", lambda action: calls.append(action) or False)
         approve_action("risky action")
         assert len(calls) == 1
+
+
+# --------------------------------------------------------------------------
+# human_tools — pluggable backend (set_human_backend / clear_human_backend)
+# --------------------------------------------------------------------------
+
+class TestHumanBackend:
+    @pytest.mark.tid("HUMAN-017")
+    def test_set_human_backend_routes_ask_human(self):
+        calls = []
+        def mock_backend(kind, question, options):
+            calls.append((kind, question, options))
+            return "Paris"
+
+        ht_mod.set_human_backend(mock_backend)
+        try:
+            assert ask_human("What is the capital?") == "Paris"
+            assert calls == [("ask", "What is the capital?", None)]
+        finally:
+            ht_mod.clear_human_backend()
+
+    @pytest.mark.tid("HUMAN-018")
+    def test_set_human_backend_routes_ask_human_choice(self):
+        calls = []
+        def mock_backend(kind, question, options):
+            calls.append((kind, question, options))
+            return "2"
+
+        ht_mod.set_human_backend(mock_backend)
+        try:
+            assert ask_human_choice("Pick a color", ["red", "green", "blue"]) == "SELECTED: green"
+            assert calls == [("choice", "Pick a color", ["red", "green", "blue"])]
+        finally:
+            ht_mod.clear_human_backend()
+
+    @pytest.mark.tid("HUMAN-019")
+    def test_set_human_backend_invalid_choice_returns_error_string(self):
+        ht_mod.set_human_backend(lambda k, q, opts: "invalid")
+        try:
+            res = ask_human_choice("Pick", ["a", "b"])
+            assert "invalid choice" in res.lower()
+        finally:
+            ht_mod.clear_human_backend()
+
+    @pytest.mark.tid("HUMAN-020")
+    def test_clear_human_backend_restores_terminal(self, monkeypatch):
+        ht_mod.set_human_backend(lambda k, q, opts: "mocked")
+        ht_mod.clear_human_backend()
+        monkeypatch.setattr("builtins.input", lambda prompt: "live input")
+        assert ask_human("Question?") == "live input"
+

@@ -73,6 +73,33 @@ class ConfirmTimeout(Exception):
 # meant to answer.
 _stdin_lock = threading.Lock()
 
+# Pluggable backend, used by BE/app/core/approval_bridge.py to route
+# confirm() over HTTP instead of a real terminal. A plain module-level
+# global (not contextvars) on purpose: this project already has exactly
+# one live conversation/agent at a time (see agent_mode.AUTO_MODE, also
+# a plain global) -- and _run_tool_with_timeout (shared.py) runs each
+# tool call in its OWN ThreadPoolExecutor worker thread, which does NOT
+# inherit a contextvar set on the calling thread. A lock-protected
+# global sidesteps that entirely. Default None -> CLI behavior below is
+# completely unchanged; only BE's background tool-loop thread ever
+# calls set_confirm_backend().
+_backend_lock = threading.Lock()
+_confirm_backend = None
+
+
+def set_confirm_backend(fn) -> None:
+    """Route every confirm() call to fn(clean_action, timeout_seconds) -> bool
+    instead of the terminal, until clear_confirm_backend() is called."""
+    global _confirm_backend
+    with _backend_lock:
+        _confirm_backend = fn
+
+
+def clear_confirm_backend() -> None:
+    global _confirm_backend
+    with _backend_lock:
+        _confirm_backend = None
+
 
 def _sanitize(action: str) -> str:
     """Make `action` safe to print/log: strip control chars, cap length."""
@@ -167,6 +194,16 @@ def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SEC
 
     logger.info("confirm_requested id=%s action=%r auto_mode=%s force_ask=%s",
                 request_id, clean_action, agent_mode.AUTO_MODE, force_ask)
+
+    backend = _confirm_backend
+    if backend is not None:
+        try:
+            approved = bool(backend(clean_action, timeout_seconds))
+        except Exception:
+            logger.exception("confirm_denied id=%s reason=backend_error", request_id)
+            approved = False
+        logger.info("confirm_%s id=%s backend=web", "approved" if approved else "denied", request_id)
+        return approved
 
     # No stdin attached (headless / CI / piped subprocess) -> nobody can
     # approve anything -> fail safe.

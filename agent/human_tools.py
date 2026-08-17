@@ -19,7 +19,37 @@ real gate means there's exactly one approval experience in the whole
 project, not two that can quietly drift apart.
 """
 
+import threading
+
 from confirm import confirm
+
+# Same pluggable-backend pattern as confirm.py's set_confirm_backend --
+# a plain lock-protected global, not contextvars, for the same reason
+# (shared._run_tool_with_timeout runs each tool call in its own
+# ThreadPoolExecutor worker thread, which wouldn't inherit a contextvar
+# set on the calling thread). Default None -> CLI's real input()/print()
+# behavior below is unchanged; only BE's background tool-loop thread
+# ever calls set_human_backend().
+_backend_lock = threading.Lock()
+_human_backend = None
+
+
+def set_human_backend(fn) -> None:
+    """Route ask_human()/ask_human_choice() to fn(kind, question, options) -> str
+    instead of the terminal, until clear_human_backend() is called.
+    kind is "ask" or "choice"; options is None for "ask", the list of
+    choices for "choice". fn must return the human's raw answer (free
+    text for "ask", the chosen number as a string for "choice" -- same
+    shape ask_human_choice already validates below)."""
+    global _human_backend
+    with _backend_lock:
+        _human_backend = fn
+
+
+def clear_human_backend() -> None:
+    global _human_backend
+    with _backend_lock:
+        _human_backend = None
 
 
 def ask_human(question: str) -> str:
@@ -28,6 +58,11 @@ def ask_human(question: str) -> str:
     Args:
         question: The precise question the agent needs answered.
     """
+    backend = _human_backend
+    if backend is not None:
+        response = (backend("ask", question, None) or "").strip()
+        return response or "The human provided no answer. Ask again more clearly."
+
     print(f"\n  [human input needed] {question}")
     response = input("  Your response > ").strip()
     return response or "The human provided no answer. Ask again more clearly."
@@ -42,6 +77,18 @@ def ask_human_choice(question: str, options: list[str]) -> str:
     """
     if len(options) < 2:
         return "ERROR: provide at least two choices."
+
+    backend = _human_backend
+    if backend is not None:
+        response = (backend("choice", question, options) or "").strip()
+        if response.isdigit() and 1 <= int(response) <= len(options):
+            return f"SELECTED: {options[int(response) - 1]}"
+        # No further retry loop here: the backend already blocked once
+        # waiting for a web client's answer (see approval_bridge.py); an
+        # invalid or timed-out answer is reported back to the model as
+        # data, same as any other malformed tool input, rather than
+        # silently looping forever on a human who isn't there.
+        return f"Error: invalid choice {response!r} (expected 1-{len(options)})"
 
     print(f"\n  [human choice needed] {question}")
     for number, option in enumerate(options, start=1):

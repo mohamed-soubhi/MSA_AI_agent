@@ -148,6 +148,8 @@ FIELDS: list[Field] = [
           "Comma-separated origins allowed to call this API. Empty = no cross-origin access."),
     Field("BE_LOG_LEVEL", "Backend server", "Log level", "str", "be",
           "Reserved for when structured BE logging is added."),
+    Field("BE_AUTO_APPROVE_SECONDS", "Chat page", "Auto-approve timeout (s)", "int", "be",
+          "Seconds the chat page's Auto-approve checkbox waits with no click before approving a pending confirm() request."),
 ]
 
 _FIELDS_BY_KEY = {f.key: f for f in FIELDS}
@@ -286,6 +288,7 @@ def _current_be_values() -> dict[str, str]:
         "BE_PORT": str(settings.port),
         "BE_CORS_ORIGINS": settings.cors_origins,
         "BE_LOG_LEVEL": settings.log_level,
+        "BE_AUTO_APPROVE_SECONDS": str(settings.auto_approve_seconds),
     }
 
 
@@ -302,6 +305,7 @@ def be_defaults() -> dict[str, str]:
         "BE_PORT": str(fields["port"].default),
         "BE_CORS_ORIGINS": str(fields["cors_origins"].default),
         "BE_LOG_LEVEL": str(fields["log_level"].default),
+        "BE_AUTO_APPROVE_SECONDS": str(fields["auto_approve_seconds"].default),
     }
 
 

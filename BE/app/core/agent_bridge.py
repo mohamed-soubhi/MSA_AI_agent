@@ -3,13 +3,14 @@ here so the web chat talks to the EXACT same hardened chat wrapper
 (timeout/retry/friendly-errors, see shared.py) the CLI agent uses, not
 a second reimplementation that could drift out of sync.
 
-Deliberately NO tool-calling wired in yet: shared.run_agent() (the
-tool-calling loop) drives fs_tools/shell_tools through confirm(), which
-blocks on a real terminal input() -- that has no meaning inside an
-HTTP request/response cycle. This bridge only uses OllamaAgent.chat_stream(),
-which never touches tools or confirm() at all, so the chat page works
-today without needing to solve "how does a human approve a tool call
-over HTTP" first. That's a real, separate design question for later.
+Tool-calling IS wired in (see tool_bridge.py + approval_bridge.py) --
+run_agent() drives the same 9 tools CLI_agent.py does, with
+confirm()/ask_human()/ask_human_choice() rerouted from a blocking
+terminal input() to an HTTP approve/deny round-trip
+(POST /api/chat/respond) instead. CHAT_SYSTEM_PROMPT is therefore the
+SAME SYSTEM_PROMPT the CLI agent seeds every session with, not a
+separate "no tools here" placeholder -- the chat page has the same
+capabilities now, just approved over HTTP instead of a terminal.
 """
 
 import sys
@@ -22,14 +23,7 @@ if str(AGENT_DIR) not in sys.path:
     sys.path.insert(0, str(AGENT_DIR))
 
 from shared import OllamaAgent  # noqa: E402
-
-CHAT_SYSTEM_PROMPT = (
-    "You are a helpful AI assistant, integrated into this project's web "
-    "chat interface. Tool-calling (file access, running commands) is not "
-    "available in this interface yet -- answer from your own knowledge "
-    "and the conversation so far, and say so plainly if a request would "
-    "require a capability you don't have here."
-)
+from agent_config import SYSTEM_PROMPT as CHAT_SYSTEM_PROMPT  # noqa: E402
 
 _agent_lock = threading.Lock()
 _agent: OllamaAgent | None = None

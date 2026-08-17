@@ -1,9 +1,11 @@
 # BE/ — backend service (FastAPI + Uvicorn + Nginx)
 
-Health check, an interactive config editor, and a plain conversational
-chat page over the agent's own `OllamaAgent`. A separate top-level
-folder, sitting next to `agent/`, `workspace/`, `tests/`, `doc/` — a
-permanent part of the project, not sandboxed content `agent/` builds.
+Health check, an interactive config editor, and a full tool-calling
+chat page over the agent's own `OllamaAgent`/`run_agent()` — the same
+9 tools and confirm() gate `CLI_agent.py` uses, approved over HTTP
+instead of a terminal. A separate top-level folder, sitting next to
+`agent/`, `workspace/`, `tests/`, `doc/` — a permanent part of the
+project, not sandboxed content `agent/` builds.
 
 ## Layout
 
@@ -15,20 +17,24 @@ BE/
 │   │   ├── health.py      — GET /health
 │   │   ├── config.py      — GET/POST /api/config (interactive config editor's API)
 │   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
-│   │   └── chat.py        — GET/POST /api/chat/* (streaming chat, see "Chat page" below)
+│   │   └── chat.py        — GET/POST /api/chat/* (tool-calling chat, see "Chat page" below)
 │   ├── core/
-│   │   ├── config.py         — Settings (pydantic-settings), BE_-prefixed env vars
-│   │   ├── config_schema.py  — field list + .env read/write + default-value resolver
-│   │   └── agent_bridge.py   — reuses agent/shared.py's OllamaAgent for chat.py
+│   │   ├── config.py           — Settings (pydantic-settings), BE_-prefixed env vars
+│   │   ├── config_schema.py    — field list + .env read/write + default-value resolver
+│   │   ├── agent_bridge.py     — reuses agent/shared.py's OllamaAgent for chat.py
+│   │   ├── tool_bridge.py      — the same 9 tools CLI_agent.py wires up
+│   │   └── approval_bridge.py  — ConversationTurn: runs run_agent() on a background
+│   │                              thread, routes confirm()/ask_human() over SSE + HTTP
 │   └── static/
 │       ├── config.html    — the editor page itself (served at GET /config)
 │       └── chat.html      — the chat page itself (served at GET /chat)
 ├── tests/
-│   ├── conftest.py         — adds BE/ to sys.path (same pattern as tests/conftest.py)
+│   ├── conftest.py           — adds BE/ to sys.path (same pattern as tests/conftest.py)
 │   ├── test_health.py
 │   ├── test_config.py
 │   ├── test_models.py
-│   └── test_chat.py
+│   ├── test_chat.py
+│   └── test_approval_bridge.py  — direct unit tests of ConversationTurn's approval/human handoff
 ├── nginx/
 │   └── nginx.conf          — reverse proxy: Nginx :80 → Uvicorn 127.0.0.1:8000
 ├── requirements.txt
@@ -38,39 +44,67 @@ BE/
 
 ## Chat page (`GET /chat`)
 
-A two-pane page: chat on the left, an empty placeholder panel on the
-right reserved for content tied to the conversation (not built yet).
-Streams the model's reply token-by-token via Server-Sent Events.
+A two-pane page: chat on the left, a live **Activity** panel on the
+right showing tool calls, tool results, and any pending
+approval/question. Runs the full tool-calling loop (`shared.run_agent()`)
+over Server-Sent Events, streaming every step back as it happens.
 
-- **No tool-calling yet, on purpose.** `shared.run_agent()` (the
-  tool-calling loop) drives `fs_tools`/`shell_tools` through
-  `confirm()`, which blocks on a real terminal `input()` — that has no
-  meaning inside an HTTP request/response cycle. `app/core/agent_bridge.py`
-  only uses `OllamaAgent.chat_stream()`, which never touches tools or
-  `confirm()` at all. How a human approves a tool call over HTTP is a
-  real, separate design question for later.
+- **Same 9 tools as `CLI_agent.py`, exactly.** `app/core/tool_bridge.py`
+  imports `list_directory`/`read_file`/`write_file`/`create_directory`
+  (`fs_tools.py`), `run_command` (`shell_tools.py`),
+  `ask_human`/`ask_human_choice` (`human_tools.py`), and
+  `remember_fact`/`recall_memory` (`memory.py`) — the same functions
+  `CLI_agent.py`'s `main()` wires up, never reimplemented. Same
+  sandbox (`fs_tools.BASE_DIR` / `WORKSPACE_DIR`), same shell allow/
+  block lists, same everything — only the approval channel differs.
+- **Approval over HTTP, not a terminal.** `confirm()` (`confirm.py`)
+  and `ask_human()`/`ask_human_choice()` (`human_tools.py`) each gained
+  a pluggable backend (`set_confirm_backend()`/`set_human_backend()`,
+  a lock-protected module global — not `contextvars`, since
+  `shared._run_tool_with_timeout` runs every tool call in its own
+  `ThreadPoolExecutor` worker thread, which wouldn't inherit a
+  contextvar set on the calling thread). `app/core/approval_bridge.py`'s
+  `ConversationTurn` runs one `run_agent()` call on a background
+  thread, installs itself as that backend for the duration, and turns
+  every confirm()/ask_human() call into: push an `approval_request`/
+  `human_request` SSE event → block on an internal queue → resume once
+  `POST /api/chat/respond` answers it. The CLI's terminal behavior is
+  completely unchanged (default backend is `None`) — only this BE
+  process ever installs one.
 - **One shared `OllamaAgent` instance**, reused across every request in
   this BE process (`agent_bridge.get_agent()`) — the exact same
   hardened chat wrapper (timeout/retry/friendly-errors) the CLI agent
-  uses, not a second reimplementation.
-- **One in-memory conversation**, held in `app/api/chat.py`'s
-  module-level `_messages` list. Matches a single local user, same
+  uses, not a second reimplementation. `CHAT_SYSTEM_PROMPT` is the same
+  `SYSTEM_PROMPT` the CLI seeds every session with.
+- **One in-memory conversation, one turn at a time.** `app/api/chat.py`'s
+  module-level `_messages` list matches a single local user, same
   simplicity choice as the CLI agent's one-conversation-per-run design.
-  Cleared by `POST /api/chat/reset` ("New chat" button) or a BE
-  restart — nothing persists to disk.
-- **SSE protocol**: each event is `data: <json>\n\n` —
-  `{"delta": "..."}` per chunk, `{"error": "..."}` if the model call
-  fails partway through, always ending with `{"done": true}`. The
-  client can't use a plain `EventSource` (GET-only, and this needs to
-  POST the message body) — `chat.html` reads the streaming response
-  body manually via `fetch()` + `ReadableStream`.
+  Only one `ConversationTurn` may run at once — a second
+  `POST /api/chat/stream` while one is still in flight gets a `409`.
+  Cleared by `POST /api/chat/reset` ("New chat" button, which also
+  cancels any in-flight turn) or a BE restart — nothing persists to
+  disk beyond the JSONL log and `memory.json`'s token counter.
+- **SSE protocol**: each event is `data: <json>\n\n` with a `type`
+  field — `thought` (model text for the round), `tool_call`/
+  `tool_result`, `approval_request`/`approval_timeout`, `human_request`
+  (`kind`: `"ask"` or `"choice"`, with `options` for the latter) /
+  `human_timeout`, `final` (the finished answer), `error`, always
+  ending with `stream_end`. Answer a pending request with
+  `POST /api/chat/respond` — `{"request_id": ..., "approved": true|false}`
+  for `approval_request`, `{"request_id": ..., "answer": "..."}` for
+  `human_request` (a free-text answer for `"ask"`, the chosen option's
+  1-based index as a string for `"choice"`). The client can't use a
+  plain `EventSource` (GET-only, and this needs to POST the message
+  body) — `chat.html` reads the streaming response body manually via
+  `fetch()` + `ReadableStream`.
 - **Logged through the agent's own `chat_logger.py`** — same JSONL
-  format, same `logs/` directory as the CLI agent, including
-  `prompt_eval_count`/`eval_count`/durations (captured from the
-  stream's final chunk via `OllamaAgent.last_stream_stats`, since
-  `chat_stream()` itself only yields plain text — see `shared.py`). One
-  JSONL "session" = one conversation: opens on the first message,
-  closes with `session_end` on `POST /reset` or BE shutdown.
+  format, same `logs/` directory as the CLI agent, including every
+  `tool_call`/`tool_result` and `prompt_eval_count`/`eval_count`/
+  durations per round (`app/core/approval_bridge.py`'s
+  `_EventForwardingLogger` wraps the real `ChatLogger` so every call
+  both writes the normal JSONL record AND pushes the matching SSE
+  event). One JSONL "session" = one conversation: opens on the first
+  message, closes with `session_end` on `POST /reset` or BE shutdown.
 
 ## Config editor (`GET /config`)
 
@@ -196,10 +230,13 @@ processes never collide if they ever share an environment.
 
 ## Not done yet (deliberately out of scope for this scaffold)
 
-- No tool-calling in the chat page — plain conversation only. Wiring
-  `fs_tools`/`shell_tools`/`memory` in means designing how a human
-  approves a tool call over HTTP (`confirm()` blocks on a real terminal
-  today) — a real, separate piece of work.
+- No "auto mode" on the chat page (CLI_agent.py's `auto_mode = True`
+  plan-once-run-to-the-end path, via `auto_runner.py`) — the chat page
+  always runs step mode (confirm before every side effect), same as the
+  CLI's default.
+- No `save_session_summary()` for chat-page conversations — the CLI
+  agent calls this on exit/Ctrl-C to leave a memory.json summary;
+  `POST /api/chat/reset`/BE shutdown don't yet.
 - No auth on the chat page itself, nor rate limiting.
 - No auth.
 - No Dockerfile / containerization.

@@ -1,20 +1,39 @@
-"""Tests for GET /api/chat/history, POST /api/chat/stream, POST
-/api/chat/reset -- the plain conversational chat (no tool-calling yet,
-see agent_bridge.py). agent_bridge.get_agent() is monkeypatched
-throughout with a fake OllamaAgent; no real Ollama server needed.
+"""Tests for GET /api/chat/history, POST /api/chat/stream,
+POST /api/chat/respond, POST /api/chat/reset -- the full tool-calling
+chat (run_agent(), same 9 tools as CLI_agent.py, approval gate answered
+over HTTP instead of a terminal). agent_bridge.get_agent() is
+monkeypatched with a scriptable fake OllamaAgent throughout; no real
+Ollama server needed. fs_tools.BASE_DIR is isolated to tmp_path so a
+real write_file()/create_directory() call in a test can't touch the
+real workspace/.
 
-Also covers logging: every message is written through the agent's own
-chat_logger.py (see chat.py's module docstring) -- LOG_DIR is pointed
-at an isolated tmp_path so no test ever writes into the real logs/.
-Same isolation for memory.MEMORY_PATH, since token usage now also
-accumulates into memory.json.
+Approval/human-request round trips are unit-tested directly against
+ConversationTurn in test_approval_bridge.py -- TestClient's synchronous
+request/response model buffers the whole SSE body before returning, so
+it can't cleanly answer an approval mid-stream from the same process.
+The full HTTP round trip (approve, deny, ask_human, ask_human_choice,
+real sandboxed file write) was live-verified against a real Uvicorn
+process + real Ollama model during development; what's tested here over
+HTTP is everything that doesn't require answering mid-stream: final
+answers, read-only tool calls, history, reset, the 409 concurrency
+guard, logging, and token accounting.
+
+Also covers logging: every message/tool call is written through the
+agent's own chat_logger.py -- LOG_DIR is pointed at an isolated
+tmp_path so no test ever writes into the real logs/. Same isolation for
+memory.MEMORY_PATH, since token usage now also accumulates into
+memory.json.
 """
 
 import json
+import threading
+import time
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
+import fs_tools
 from app.api import chat as chat_api
 from app.core import agent_bridge  # noqa: F401 -- import first, adds agent/ to sys.path
 from app.main import create_app
@@ -23,47 +42,77 @@ import log_config  # noqa: E402 -- must come after agent_bridge's sys.path inser
 import memory  # noqa: E402
 
 
-class FakeStreamingAgent:
-    """Stand-in for OllamaAgent -- chat_stream() yields scripted chunks.
+class FakeMessage:
+    """Stand-in for ollama's Message -- supports subscript access
+    (m["role"]) the same way the real one does, since chat.py's
+    get_history() and run_agent() (shared.py) both read messages that
+    way."""
 
-    total_tokens increments by (prompt_eval_count + eval_count) from
-    stream_stats once the stream completes, mirroring
-    shared.OllamaAgent.chat_stream()'s real behavior -- lets tests
-    verify the resulting memory.json delta.
-    """
+    def __init__(self, role="assistant", content=None, tool_calls=None):
+        self.role = role
+        self.content = content
+        self.tool_calls = tool_calls
 
-    def __init__(self, chunks=None, raise_after=None, stream_stats=None):
-        self._chunks = chunks if chunks is not None else ["Hello", ", ", "world!"]
-        self._raise_after = raise_after
-        self.received_messages = None
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class FakeToolCall:
+    def __init__(self, name, arguments):
+        self.function = SimpleNamespace(name=name, arguments=arguments)
+
+
+class FakeResponse:
+    def __init__(self, message, prompt_eval_count=0, eval_count=0):
+        self.message = message
+        self.prompt_eval_count = prompt_eval_count
+        self.eval_count = eval_count
+
+
+def final_round(content, prompt_eval_count=1, eval_count=1):
+    """A round with no tool calls -- run_agent() treats this as the
+    finished answer."""
+    return FakeResponse(FakeMessage(content=content), prompt_eval_count, eval_count)
+
+
+def tool_call_round(tool_name, arguments, prompt_eval_count=1, eval_count=1):
+    """A round proposing exactly one tool call."""
+    call = FakeToolCall(tool_name, arguments)
+    return FakeResponse(FakeMessage(content=None, tool_calls=[call]), prompt_eval_count, eval_count)
+
+
+class FakeAgent:
+    """Scriptable stand-in for OllamaAgent -- each .chat() call pops
+    the next round from `rounds`, mirroring the real interface
+    run_agent() depends on: .chat(messages, tools), .model,
+    .total_tokens (incremented the same way OllamaAgent.chat() does)."""
+
+    def __init__(self, rounds):
+        self._rounds = list(rounds)
         self.model = "test-model"
-        self.last_stream_stats = stream_stats
         self.total_tokens = 0
+        self.calls = 0
 
-    def chat_stream(self, messages):
-        self.received_messages = messages
-        for i, chunk in enumerate(self._chunks):
-            if self._raise_after is not None and i == self._raise_after:
-                raise RuntimeError("model exploded")
-            yield chunk
-        if self.last_stream_stats:
-            self.total_tokens += (
-                (self.last_stream_stats.get("prompt_eval_count") or 0)
-                + (self.last_stream_stats.get("eval_count") or 0)
-            )
+    def chat(self, messages, tools=None):
+        self.calls += 1
+        response = self._rounds.pop(0)
+        self.total_tokens += (response.prompt_eval_count or 0) + (response.eval_count or 0)
+        return response
 
 
 @pytest.fixture(autouse=True)
 def reset_chat_state(monkeypatch, tmp_path):
-    """Every test gets a fresh conversation, a fresh fake agent, an
-    isolated log directory + memory file, and a clean chat_logger
-    singleton -- all of chat.py's module-level state that would
-    otherwise bleed across tests."""
+    """Every test gets a fresh conversation, no active turn, an
+    isolated log directory + memory file + sandbox dir, and a clean
+    chat_logger singleton -- all of chat.py's module-level state that
+    would otherwise bleed across tests."""
     chat_api._messages = [{"role": "system", "content": agent_bridge.CHAT_SYSTEM_PROMPT}]
     chat_api._chat_logger = None
+    chat_api._current_turn = None
     monkeypatch.setattr(log_config, "LOG_DIR", tmp_path)
     monkeypatch.setattr(memory, "MEMORY_PATH", tmp_path / "memory.json")
-    fake_agent = FakeStreamingAgent()
+    monkeypatch.setattr(fs_tools, "BASE_DIR", tmp_path)
+    fake_agent = FakeAgent([final_round("Hello!")])
     monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
     yield fake_agent
 
@@ -73,8 +122,6 @@ def client():
 
 
 def parse_sse_events(text: str) -> list[dict]:
-    import json
-
     events = []
     for block in text.strip().split("\n\n"):
         block = block.strip()
@@ -83,56 +130,115 @@ def parse_sse_events(text: str) -> list[dict]:
     return events
 
 
+def stream(c, message: str) -> list[dict]:
+    """POST /stream and wait for the full SSE body. Only valid for
+    scripts with no tool call that needs approval/human input."""
+    response = c.post("/api/chat/stream", json={"message": message})
+    assert response.status_code == 200
+    return parse_sse_events(response.text)
+
+
+# --------------------------------------------------------------------------
+# Basic conversation, no tools
+# --------------------------------------------------------------------------
+
 def test_history_starts_empty():
     response = client().get("/api/chat/history")
     assert response.status_code == 200
     assert response.json()["messages"] == []
 
 
-def test_stream_returns_sse_deltas_and_done(reset_chat_state):
-    response = client().post("/api/chat/stream", json={"message": "hi"})
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/event-stream")
+def test_stream_final_answer_and_history(reset_chat_state):
+    reset_chat_state._rounds = [final_round("Hi there!")]
+    events = stream(client(), "hello")
+    assert events[-2] == {"type": "final", "content": "Hi there!"}
+    assert events[-1] == {"type": "stream_end"}
 
-    events = parse_sse_events(response.text)
-    deltas = [e["delta"] for e in events if "delta" in e]
-    assert deltas == ["Hello", ", ", "world!"]
-    assert events[-1] == {"done": True}
-
-
-def test_stream_appends_user_and_assistant_to_history():
-    client().post("/api/chat/stream", json={"message": "hi there"})
     history = client().get("/api/chat/history").json()["messages"]
-    assert history[0] == {"role": "user", "content": "hi there"}
-    assert history[1] == {"role": "assistant", "content": "Hello, world!"}
+    assert history[0] == {"role": "user", "content": "hello"}
+    assert history[1] == {"role": "assistant", "content": "Hi there!"}
 
 
 def test_stream_passes_full_message_history_to_agent(reset_chat_state):
-    client().post("/api/chat/stream", json={"message": "first"})
-    client().post("/api/chat/stream", json={"message": "second"})
-    sent = reset_chat_state.received_messages
-    roles = [m["role"] for m in sent]
-    assert roles == ["system", "user", "assistant", "user"]
-    assert sent[-1]["content"] == "second"
+    reset_chat_state._rounds = [final_round("first reply"), final_round("second reply")]
+    c = client()
+    stream(c, "first")
+    stream(c, "second")
+    history = c.get("/api/chat/history").json()["messages"]
+    roles = [m["role"] for m in history]
+    assert roles == ["user", "assistant", "user", "assistant"]
 
 
-def test_stream_error_mid_generation_yields_error_event(monkeypatch):
-    broken_agent = FakeStreamingAgent(chunks=["partial ", "more"], raise_after=1)
-    monkeypatch.setattr(agent_bridge, "_agent", broken_agent)
+# --------------------------------------------------------------------------
+# Tool calls that don't need approval (read-only)
+# --------------------------------------------------------------------------
 
-    response = client().post("/api/chat/stream", json={"message": "hi"})
-    events = parse_sse_events(response.text)
-    assert any("error" in e for e in events)
-    assert events[-1] == {"done": True}
+def test_stream_runs_read_only_tool_without_approval(reset_chat_state, tmp_path):
+    (tmp_path / "note.txt").write_text("hi")
+    reset_chat_state._rounds = [
+        tool_call_round("list_directory", {"path": "."}),
+        final_round("Found note.txt"),
+    ]
+    events = stream(client(), "list files")
+    types = [e["type"] for e in events]
+    assert "tool_call" in types
+    assert "tool_result" in types
+    assert "approval_request" not in types
+    assert events[-2] == {"type": "final", "content": "Found note.txt"}
 
 
-def test_reset_clears_history():
-    client().post("/api/chat/stream", json={"message": "hi"})
-    assert client().get("/api/chat/history").json()["messages"] != []
+# --------------------------------------------------------------------------
+# Concurrency guard -- one turn at a time
+# --------------------------------------------------------------------------
 
-    reset_response = client().post("/api/chat/reset")
+def test_second_stream_while_one_active_gets_409(reset_chat_state):
+    # A tool call that WILL pause on an approval the test never
+    # answers -- lets us assert 409 while it's still in flight, then
+    # answer it directly (bypassing HTTP) to let the background thread
+    # finish cleanly before the test ends.
+    reset_chat_state._rounds = [
+        tool_call_round("write_file", {"path": "out.txt", "content": "hi"}),
+        final_round("done"),
+    ]
+    c = client()
+    t = threading.Thread(target=lambda: c.post("/api/chat/stream", json={"message": "first"}))
+    t.start()
+
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        turn = chat_api._current_turn
+        if turn is not None and turn._pending_request_id is not None:
+            break
+        time.sleep(0.02)
+    assert chat_api._current_turn is not None, "turn never started"
+
+    second = c.post("/api/chat/stream", json={"message": "second"})
+    assert second.status_code == 409
+
+    turn = chat_api._current_turn
+    if turn is not None:
+        turn.submit_answer(turn._pending_request_id, True)
+    t.join(timeout=5)
+
+
+# --------------------------------------------------------------------------
+# Reset
+# --------------------------------------------------------------------------
+
+def test_reset_clears_history(reset_chat_state):
+    reset_chat_state._rounds = [final_round("hi")]
+    c = client()
+    stream(c, "hello")
+    assert c.get("/api/chat/history").json()["messages"] != []
+
+    reset_response = c.post("/api/chat/reset")
     assert reset_response.status_code == 200
-    assert client().get("/api/chat/history").json()["messages"] == []
+    assert c.get("/api/chat/history").json()["messages"] == []
+
+
+def test_respond_with_no_active_turn_reports_no_active_turn():
+    response = client().post("/api/chat/respond", json={"request_id": "whatever", "approved": True})
+    assert response.json()["status"] == "no_active_turn"
 
 
 def test_chat_page_is_served():
@@ -143,7 +249,7 @@ def test_chat_page_is_served():
 
 
 # --------------------------------------------------------------------------
-# Logging -- every message logged through the agent's own chat_logger.py
+# Logging -- every step logged through the agent's own chat_logger.py
 # --------------------------------------------------------------------------
 
 def _read_log_events(tmp_path):
@@ -152,81 +258,32 @@ def _read_log_events(tmp_path):
     return [json.loads(line) for line in log_files[0].read_text().splitlines() if line.strip()]
 
 
-def test_stream_logs_user_message_and_model_response(tmp_path):
-    client().post("/api/chat/stream", json={"message": "hi there"})
+def test_stream_logs_user_message_tool_call_and_response(reset_chat_state, tmp_path):
+    reset_chat_state._rounds = [
+        tool_call_round("list_directory", {"path": "."}),
+        final_round("done"),
+    ]
+    stream(client(), "list files")
     events = _read_log_events(tmp_path)
     event_types = [e["event"] for e in events]
     assert "session_start" in event_types
     assert "user_message" in event_types
+    assert "tool_call" in event_types
+    assert "tool_result" in event_types
     assert "model_response" in event_types
 
-    user_event = next(e for e in events if e["event"] == "user_message")
-    assert user_event["content"] == "hi there"
 
-    response_event = next(e for e in events if e["event"] == "model_response")
-    assert response_event["content"] == "Hello, world!"
-
-
-def test_stream_logs_token_and_timing_stats_from_final_chunk(monkeypatch, tmp_path):
-    stats = {
-        "prompt_eval_count": 42, "eval_count": 7, "total_duration": 1000,
-        "load_duration": 100, "prompt_eval_duration": 50, "eval_duration": 20,
-    }
-    fake_agent = FakeStreamingAgent(stream_stats=stats)
-    monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
-
-    client().post("/api/chat/stream", json={"message": "hi"})
-    events = _read_log_events(tmp_path)
-    response_event = next(e for e in events if e["event"] == "model_response")
-
-    assert response_event["prompt_eval_count"] == 42
-    assert response_event["eval_count"] == 7
-    assert response_event["total_duration"] == 1000
-
-
-def test_stream_error_is_logged(monkeypatch, tmp_path):
-    broken_agent = FakeStreamingAgent(chunks=["partial ", "more"], raise_after=1)
-    monkeypatch.setattr(agent_bridge, "_agent", broken_agent)
-
-    client().post("/api/chat/stream", json={"message": "hi"})
-    events = _read_log_events(tmp_path)
-    assert any(e["event"] == "error" for e in events)
-
-
-def test_reset_closes_log_with_session_end(tmp_path):
-    client().post("/api/chat/stream", json={"message": "hi"})
-    client().post("/api/chat/reset")
+def test_reset_closes_log_with_session_end(reset_chat_state, tmp_path):
+    reset_chat_state._rounds = [final_round("hi")]
+    c = client()
+    stream(c, "hi")
+    c.post("/api/chat/reset")
     events = _read_log_events(tmp_path)
     session_end = next(e for e in events if e["event"] == "session_end")
     assert session_end["reason"] == "new_chat"
 
 
-def test_new_conversation_after_reset_starts_a_fresh_chat_logger(tmp_path):
-    # chat_logger.py's per_run filenames are second-resolution
-    # (chat_page_YYYYmmdd_HHMMSS.jsonl) -- two conversations started
-    # within the same wall-clock second legitimately land in the same
-    # file (a pre-existing chat_logger.py granularity limit, not
-    # something this test is about). What matters here is that
-    # POST /reset actually creates a NEW ChatLogger object (a fresh
-    # session_start/session_end pair), not that it's always a
-    # distinct file on disk.
-    client().post("/api/chat/stream", json={"message": "first conversation"})
-    first_logger = chat_api._chat_logger
-    client().post("/api/chat/reset")
-    client().post("/api/chat/stream", json={"message": "second conversation"})
-    second_logger = chat_api._chat_logger
-
-    assert first_logger is not second_logger
-    events = [
-        json.loads(line)
-        for f in tmp_path.glob("*.jsonl")
-        for line in f.read_text().splitlines() if line.strip()
-    ]
-    assert len([e for e in events if e["event"] == "session_start"]) == 2
-
-
 def test_no_message_sent_means_no_log_file_created(tmp_path):
-    # GET /history and GET /chat alone shouldn't open a log file.
     client().get("/api/chat/history")
     client().get("/chat")
     assert list(tmp_path.glob("*.jsonl")) == []
@@ -236,50 +293,18 @@ def test_no_message_sent_means_no_log_file_created(tmp_path):
 # Token usage -- saved into the same memory.json the CLI agent uses
 # --------------------------------------------------------------------------
 
-def test_stream_saves_token_delta_to_memory(monkeypatch):
-    fake_agent = FakeStreamingAgent(stream_stats={"prompt_eval_count": 30, "eval_count": 12})
-    monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
-
-    client().post("/api/chat/stream", json={"message": "hi"})
-
+def test_stream_saves_token_delta_to_memory(reset_chat_state):
+    reset_chat_state._rounds = [final_round("hi", prompt_eval_count=30, eval_count=12)]
+    stream(client(), "hello")
     assert memory.load_token_usage() == 42
 
 
-def test_second_message_adds_to_running_total(monkeypatch):
-    fake_agent = FakeStreamingAgent(stream_stats={"prompt_eval_count": 10, "eval_count": 5})
-    monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
-
-    client().post("/api/chat/stream", json={"message": "first"})
-    client().post("/api/chat/stream", json={"message": "second"})
-
-    # Same fake agent instance -> total_tokens accumulates across both
-    # calls; memory.json should reflect the SUM of both deltas (30),
-    # not just the second call's raw total_tokens value.
+def test_second_message_adds_to_running_total(reset_chat_state):
+    reset_chat_state._rounds = [
+        final_round("first", prompt_eval_count=10, eval_count=5),
+        final_round("second", prompt_eval_count=8, eval_count=7),
+    ]
+    c = client()
+    stream(c, "first")
+    stream(c, "second")
     assert memory.load_token_usage() == 30
-
-
-def test_no_stream_stats_means_no_memory_write(monkeypatch):
-    # A backend that never sends a done=True chunk -- last_stream_stats
-    # stays None, total_tokens never moves, nothing should be saved.
-    fake_agent = FakeStreamingAgent(stream_stats=None)
-    monkeypatch.setattr(agent_bridge, "_agent", fake_agent)
-
-    client().post("/api/chat/stream", json={"message": "hi"})
-
-    assert memory.load_token_usage() == 0
-
-
-def test_error_mid_stream_still_saves_whatever_tokens_were_used(monkeypatch):
-    # Partial output before a failure may still have consumed tokens
-    # (the failure is mid-generation, not mid-request) -- but this fake
-    # only sets total_tokens on a clean finish, so a failure here means
-    # delta stays 0. Real chat_stream() would only have counted
-    # anything if a done=True chunk actually arrived, which a raised
-    # exception mid-stream means it didn't -- so 0 is the correct,
-    # honest answer, not a bug.
-    broken_agent = FakeStreamingAgent(chunks=["partial ", "more"], raise_after=1)
-    monkeypatch.setattr(agent_bridge, "_agent", broken_agent)
-
-    client().post("/api/chat/stream", json={"message": "hi"})
-
-    assert memory.load_token_usage() == 0

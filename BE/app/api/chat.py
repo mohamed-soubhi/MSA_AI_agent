@@ -1,20 +1,26 @@
-"""GET /api/chat/history, POST /api/chat/stream, POST /api/chat/reset --
-a plain conversational chat over the agent's own OllamaAgent (see
-app/core/agent_bridge.py for why tool-calling isn't wired in here yet).
+"""GET /api/chat/history, POST /api/chat/stream, POST /api/chat/respond,
+POST /api/chat/reset -- a full tool-calling chat over the agent's own
+run_agent() loop, exactly the same 9 tools CLI_agent.py wires up (see
+app/core/tool_bridge.py), with the same confirm() approval gate --
+except confirm()/ask_human()/ask_human_choice() are answered over HTTP
+(POST /api/chat/respond) instead of a blocking terminal input(). See
+app/core/approval_bridge.py for how that handoff actually works.
 
 Single in-memory conversation, shared by every request to this BE
 process -- matches a single local user, same simplicity choice as the
 CLI agent's one-conversation-per-run design. Restarting the BE process
-clears it; POST /reset clears it on purpose without a restart.
+clears it; POST /reset clears it on purpose without a restart. Only
+ONE tool-calling turn may be in flight at a time (_turn_lock) -- a
+second POST /stream while one is still running gets a 409, same as a
+human can only be asked one confirm() prompt at once.
 
 Every message/reply is logged through the agent's OWN chat_logger.py --
 same JSONL format, same logs/ directory, same fields (including
-prompt_eval_count/eval_count/durations) the CLI agent's sessions
-produce, so `logs/*.jsonl` has one consistent shape regardless of
-whether a session came from the CLI or this chat page. One "session"
-here = one conversation: the log file opens on the first message after
-startup or a reset, and POST /reset closes it out with
-session_end(reason="new_chat") before starting a fresh one.
+prompt_eval_count/eval_count/durations, each tool_call/tool_result)
+the CLI agent's sessions produce. One "session" here = one
+conversation: the log file opens on the first message after startup or
+a reset, and POST /reset closes it out with session_end(reason="new_chat")
+before starting a fresh one.
 
 Token usage also accumulates into the SAME memory.json the CLI agent
 uses (memory.save_token_usage()) -- one running "tokens used all-time"
@@ -24,23 +30,27 @@ this chat page.
 
 import json
 import threading
-from types import SimpleNamespace
 
 from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.core.agent_bridge import CHAT_SYSTEM_PROMPT, get_agent
+from app.core.approval_bridge import ConversationTurn
+from app.core.tool_bridge import TOOL_MAP, TOOLS
 from chat_logger import get_logger
 from memory import save_token_usage
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 _history_lock = threading.Lock()
-_messages: list[dict] = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}]
+_messages: list = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}]
 
 _logger_lock = threading.Lock()
 _chat_logger = None
+
+_turn_lock = threading.Lock()
+_current_turn: ConversationTurn | None = None
 
 
 def _get_chat_logger(model: str):
@@ -66,6 +76,12 @@ class ChatRequest(BaseModel):
     message: str
 
 
+class RespondRequest(BaseModel):
+    request_id: str
+    approved: bool | None = None  # answers an "approval_request" event
+    answer: str | None = None     # answers a "human_request" event
+
+
 class HistoryMessage(BaseModel):
     role: str
     content: str
@@ -75,85 +91,116 @@ class HistoryResponse(BaseModel):
     messages: list[HistoryMessage]
 
 
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
+
+
 @router.get("/history", response_model=HistoryResponse)
 def get_history() -> HistoryResponse:
-    """Every message so far, system prompt excluded (that's an
-    implementation detail, not something the chat UI should render)."""
+    """User/assistant turns only, system prompt excluded and tool
+    messages excluded -- the live tool activity is what the SSE stream
+    itself carries (thought/tool_call/tool_result events), this is just
+    the durable transcript."""
     with _history_lock:
-        visible = [m for m in _messages if m["role"] != "system"]
-        return HistoryResponse(messages=[HistoryMessage(**m) for m in visible])
+        visible = [
+            HistoryMessage(role=m["role"], content=m["content"])
+            for m in _messages
+            if m["role"] in ("user", "assistant") and m["content"]
+        ]
+        return HistoryResponse(messages=visible)
 
 
 @router.post("/reset")
 def reset_chat() -> dict:
     """Start a new conversation -- clears history back to just the
-    system prompt, and closes out the current JSONL log file (if any
-    message was actually sent) so the next conversation starts a fresh
-    one instead of appending to the old one."""
-    global _messages
+    system prompt, cancels any in-flight turn (its background thread
+    finishes on its own, but its result is discarded -- see
+    ConversationTurn.cancelled), and closes out the current JSONL log
+    file (if any message was actually sent)."""
+    global _messages, _current_turn
+    with _turn_lock:
+        if _current_turn is not None:
+            _current_turn.cancelled = True
+            _current_turn = None
     with _history_lock:
         _messages = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}]
     _close_chat_logger(reason="new_chat")
     return {"status": "ok"}
 
 
+@router.post("/respond")
+def respond_to_turn(request: RespondRequest) -> dict:
+    """Answers a pending approval_request (request.approved) or
+    human_request (request.answer) from the currently active turn --
+    see ConversationTurn.submit_answer(). A stale/unknown request_id
+    (e.g. a duplicate click, or an answer arriving after the turn
+    already timed out) is reported back, not raised."""
+    turn = _current_turn
+    if turn is None:
+        return {"status": "no_active_turn"}
+    value = request.approved if request.approved is not None else (request.answer or "")
+    ok = turn.submit_answer(request.request_id, value)
+    return {"status": "ok" if ok else "stale_request"}
+
+
 @router.post("/stream")
-def stream_chat(request: ChatRequest) -> StreamingResponse:
-    """Append the user's message, stream the model's reply back as
-    Server-Sent Events, and append the completed reply to history once
-    streaming finishes.
+def stream_chat(request: ChatRequest):
+    """Append the user's message, run the full tool-calling loop
+    (run_agent(), same as CLI_agent.py's step mode), and stream every
+    step back as Server-Sent Events: `data: <json>\\n\\n` per event,
+    `{"type": "thought", "content": ...}` for model text,
+    `{"type": "tool_call", ...}` / `{"type": "tool_result", ...}` for
+    each tool invocation, `{"type": "approval_request", "request_id":
+    ..., "action": ...}` when confirm() needs a human (answer via
+    POST /respond), `{"type": "human_request", ...}` for
+    ask_human/ask_human_choice, `{"type": "final", "content": ...}` for
+    the finished answer, `{"type": "error", ...}` on failure, and
+    always ending with `{"type": "stream_end"}`.
 
-    Each event is `data: <json>\\n\\n` -- `{"delta": "..."}` for each
-    piece of text as it arrives, `{"error": "..."}` if the model call
-    fails partway through, and a final `{"done": true}` always sent
-    last so the client knows the stream is over. Not using a plain
-    EventSource on the client side (EventSource can only GET, and this
-    needs to POST the message body), so this is consumed via fetch() +
-    a manual ReadableStream reader instead -- see static/chat.html.
+    Not using EventSource client-side (GET-only, and this needs to POST
+    the message body) -- consumed via fetch() + a manual ReadableStream
+    reader instead, see static/chat.html.
     """
-    with _history_lock:
-        _messages.append({"role": "user", "content": request.message})
-        snapshot = list(_messages)
+    global _current_turn
 
-    agent = get_agent()
-    logger = _get_chat_logger(agent.model)
-    logger.user_message(request.message)
-    logger.model_call_start(len(snapshot), tools=[])
+    with _turn_lock:
+        if _current_turn is not None:
+            return JSONResponse(
+                status_code=409,
+                content={"error": "a message is already being processed"},
+            )
+
+        with _history_lock:
+            _messages.append({"role": "user", "content": request.message})
+            snapshot = list(_messages)
+
+        agent = get_agent()
+        logger = _get_chat_logger(agent.model)
+        logger.user_message(request.message)
+
+        turn = ConversationTurn(agent, snapshot, logger, TOOLS, TOOL_MAP)
+        _current_turn = turn
+
     tokens_before = agent.total_tokens
+    turn.start()
 
     def event_generator():
-        full_text_parts: list[str] = []
+        global _messages, _current_turn
         try:
-            for chunk in agent.chat_stream(snapshot):
-                if chunk:
-                    full_text_parts.append(chunk)
-                    yield f"data: {json.dumps({'delta': chunk})}\n\n"
-        except Exception as exc:
-            logger.error("chat_stream_failed", detail=str(exc))
-            yield f"data: {json.dumps({'error': str(exc)})}\n\n"
+            while True:
+                event = turn.events.get()
+                yield _sse(event)
+                if event["type"] == "stream_end":
+                    break
         finally:
-            answer = "".join(full_text_parts)
-            if answer:
+            with _turn_lock:
+                if _current_turn is turn:
+                    _current_turn = None
+            if not turn.cancelled:
                 with _history_lock:
-                    _messages.append({"role": "assistant", "content": answer})
-                # last_stream_stats came from the stream's own final
-                # (done=True) chunk -- wrapped as a plain object so
-                # ChatLogger.model_response()'s existing
-                # _extract_model_timing() (which reads response.<field>
-                # via getattr, same as it does for chat()'s response)
-                # picks up prompt_eval_count/eval_count/durations here
-                # too, with no changes needed to chat_logger.py itself.
-                stats = agent.last_stream_stats or {}
-                logger.model_response(answer, [], response=SimpleNamespace(**stats))
-            # agent.total_tokens is cumulative across this whole BE
-            # process's lifetime (one shared OllamaAgent -- see
-            # agent_bridge.get_agent()), not per-message -- save only
-            # THIS exchange's delta, since save_token_usage() itself
-            # ADDS to the running total already in memory.json rather
-            # than overwriting it.
-            delta = agent.total_tokens - tokens_before
-            if delta > 0:
-                save_token_usage(delta)
-        yield f"data: {json.dumps({'done': True})}\n\n"
+                    _messages = turn.messages
+                delta = agent.total_tokens - tokens_before
+                if delta > 0:
+                    save_token_usage(delta)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
