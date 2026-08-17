@@ -166,6 +166,56 @@ class TestRecallMemory:
         result = recall_memory()
         assert "no memories" in result.lower()
 
+    @pytest.mark.tid("MEMORY-026")
+    def test_corrupt_memory_file_backed_up_before_wipe(self):
+        # ROB-02: don't let the next remember_fact() silently destroy
+        # the only copy of a corrupted-but-maybe-salvageable file.
+        mem_mod.MEMORY_PATH.write_text("not valid json {{{", encoding="utf-8")
+        recall_memory()
+        backup_path = mem_mod.MEMORY_PATH.with_suffix(mem_mod.MEMORY_PATH.suffix + ".corrupt.bak")
+        assert backup_path.exists()
+        assert backup_path.read_text(encoding="utf-8") == "not valid json {{{"
+
+    @pytest.mark.tid("MEMORY-027")
+    def test_missing_file_produces_no_backup(self):
+        recall_memory()
+        backup_path = mem_mod.MEMORY_PATH.with_suffix(mem_mod.MEMORY_PATH.suffix + ".corrupt.bak")
+        assert not backup_path.exists()
+
+
+class TestAtomicWrite:
+    @pytest.mark.tid("MEMORY-028")
+    def test_save_uses_os_replace_not_direct_write(self, monkeypatch):
+        # ROB-02: _save() must go through a temp file + os.replace(),
+        # not a direct write_text() that can be interrupted mid-write.
+        calls = []
+        real_replace = mem_mod.os.replace
+
+        def spy_replace(src, dst):
+            calls.append((str(src), str(dst)))
+            return real_replace(src, dst)
+
+        monkeypatch.setattr(mem_mod.os, "replace", spy_replace)
+        remember_fact("fact one")
+        assert len(calls) == 1
+        src, dst = calls[0]
+        assert dst == str(mem_mod.MEMORY_PATH)
+        assert src != dst  # temp file, not the real path directly
+
+    @pytest.mark.tid("MEMORY-029")
+    def test_no_leftover_temp_file_after_save(self):
+        remember_fact("fact one")
+        leftovers = list(mem_mod.MEMORY_PATH.parent.glob(f"{mem_mod.MEMORY_PATH.name}.tmp*"))
+        assert leftovers == []
+
+    @pytest.mark.tid("MEMORY-030")
+    def test_final_file_is_valid_json_after_multiple_saves(self):
+        for i in range(3):
+            remember_fact(f"fact {i}")
+        # A successful atomic replace always leaves valid, complete JSON.
+        entries = _read_entries(mem_mod.MEMORY_PATH)
+        assert len(entries) == 3
+
 
 # --------------------------------------------------------------------------
 # save_session_summary

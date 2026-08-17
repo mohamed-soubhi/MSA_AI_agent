@@ -57,8 +57,20 @@ class TestGeneratePlan:
     def test_includes_user_request_in_planning_prompt(self):
         agent = FakeAgent(plan_content="plan")
         _generate_plan(agent, "build a REST API")
-        prompt = agent.chat_calls[0]["messages"][0]["content"]
+        prompt = agent.chat_calls[0]["messages"][1]["content"]
         assert "build a REST API" in prompt
+
+    @pytest.mark.tid("AUTORUN-018")
+    def test_seeds_system_prompt_ahead_of_planning_request(self):
+        # UX-01: the planner previously had no idea about the project's
+        # own SYSTEM_PROMPT rules (prefer non-interactive flags, use
+        # recall_memory/remember_fact, etc) -- now it's seeded as the
+        # first message, same as execution.
+        import agent_config
+        agent = FakeAgent(plan_content="plan")
+        _generate_plan(agent, "build a REST API")
+        messages = agent.chat_calls[0]["messages"]
+        assert messages[0] == {"role": "system", "content": agent_config.SYSTEM_PROMPT}
 
 
 class TestRunWithAutoMode:

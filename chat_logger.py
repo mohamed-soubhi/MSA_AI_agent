@@ -22,6 +22,7 @@ Hardening added on top of the original version:
 """
 
 import json
+import re
 import sys
 import threading
 import time
@@ -30,6 +31,53 @@ from datetime import datetime
 from pathlib import Path
 
 import log_config as cfg
+
+
+# SEC-03: patterns for common secret shapes, checked before a field is
+# ever written to the JSONL log. Order matters -- more specific
+# patterns (private key blocks, provider-prefixed API keys) run before
+# the generic "KEY=value" catch-all, so a provider key gets its own
+# clear [REDACTED_...] label rather than falling through to the vaguer
+# one. This is pattern matching on TEXT, same honest limitation as
+# shell_tools.py's BLOCKED list -- it catches recognizable shapes, not
+# every possible secret, and can't reason about what a string "means".
+_SECRET_PATTERNS = [
+    (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"),
+     "[REDACTED_PRIVATE_KEY]"),
+    (re.compile(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"), "[REDACTED_JWT]"),
+    (re.compile(r"sk-[A-Za-z0-9]{20,}"), "[REDACTED_API_KEY]"),
+    (re.compile(r"AKIA[0-9A-Z]{16}"), "[REDACTED_AWS_KEY]"),
+    (re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}"), "[REDACTED_GITHUB_TOKEN]"),
+    (re.compile(r"(?i)Bearer\s+[A-Za-z0-9\-._~+/]+=*"), "Bearer [REDACTED_TOKEN]"),
+    # .env-style "SOME_API_KEY=value" / "PASSWORD: value" lines -- keeps
+    # the variable name (useful for debugging what leaked) but redacts
+    # the value itself. Negative lookahead skips a value that's already
+    # one of the [REDACTED_...] labels above, so a JWT/API-key match
+    # earlier in the list doesn't get double-redacted into the vaguer
+    # generic label here.
+    (re.compile(r"(?im)^([ \t]*[A-Z0-9_]*(?:API_?KEY|SECRET|TOKEN|PASSWORD)[A-Z0-9_]*[ \t]*[:=][ \t]*)(?!\[REDACTED)\S+"),
+     r"\1[REDACTED]"),
+]
+
+
+def _mask_secrets(value):
+    """Redact recognizable secret shapes in `value`, recursively.
+
+    Mirrors _truncate()'s recursion pattern (str/dict/list) so both can
+    be applied the same way in _write(). A no-op (returns `value`
+    unchanged) when log_config.MASK_SECRETS is False.
+    """
+    if not cfg.MASK_SECRETS:
+        return value
+    if isinstance(value, str):
+        for pattern, replacement in _SECRET_PATTERNS:
+            value = pattern.sub(replacement, value)
+        return value
+    if isinstance(value, dict):
+        return {k: _mask_secrets(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_mask_secrets(v) for v in value]
+    return value
 
 
 def _truncate(value):
@@ -144,7 +192,12 @@ class ChatLogger:
             "model": self.model,
             "turn": self.turn_index,
             "event": event,
-            **_truncate(fields),
+            # SEC-03: mask before truncate -- a secret straddling the
+            # truncation boundary should still get caught, and masking
+            # a *shorter* replacement token first keeps the truncation
+            # limit measuring real content, not a secret we're about to
+            # hide anyway.
+            **_truncate(_mask_secrets(fields)),
         }
         try:
             line = json.dumps(record, default=str, ensure_ascii=False)

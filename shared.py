@@ -160,6 +160,26 @@ def _call_signature(name, arguments):
     return hashlib.sha256(f"{name}:{arg_str}".encode()).hexdigest()[:16]
 
 
+def _detect_cycle(signatures, period, repeats):
+    """True if the last `period * repeats` signatures are exactly
+    `repeats` consecutive repetitions of one `period`-length pattern.
+
+    ROB-03: the single-tool repeat check (recent_call_signatures[
+    -MAX_REPEAT_CALLS:].count(sig) >= MAX_REPEAT_CALLS) only catches
+    A,A,A,... -- an agent oscillating A,B,A,B,A,B,... never has any one
+    signature repeat 3 times in a row, so it sails through undetected.
+    period=2 catches that; period=3 catches A,B,C,A,B,C,... the same
+    way. Called with period in (2, 3) alongside the existing period=1
+    check, all sharing the same `repeats` threshold (MAX_REPEAT_CALLS).
+    """
+    window = period * repeats
+    if len(signatures) < window:
+        return False
+    tail = signatures[-window:]
+    pattern = tail[:period]
+    return all(tail[i:i + period] == pattern for i in range(0, window, period))
+
+
 def _parse_arguments(raw_arguments):
     """Normalize tool call arguments to a dict, regardless of whether the
     client library handed us a dict or a JSON string. Never crash the
@@ -330,11 +350,20 @@ def run_agent(agent, messages, tools, tool_map, verbose=True,
                 sig = _call_signature(tool_name, arguments)
                 recent_call_signatures.append(sig)
                 repeat_count = recent_call_signatures[-MAX_REPEAT_CALLS:].count(sig)
-                if repeat_count >= MAX_REPEAT_CALLS:
+                # ROB-03: period=1 is the original "same call N times in a
+                # row" check; periods 2 and 3 additionally catch an agent
+                # oscillating between two or three distinct calls
+                # (A,B,A,B,... or A,B,C,A,B,C,...), which period=1 alone
+                # can never see since no single signature repeats back-to-back.
+                is_stuck = repeat_count >= MAX_REPEAT_CALLS or any(
+                    _detect_cycle(recent_call_signatures, period, MAX_REPEAT_CALLS)
+                    for period in (2, 3)
+                )
+                if is_stuck:
                     logger.warning("agent_run_stopped id=%s reason=stuck_loop tool=%s",
                                    run_id, tool_name)
                     chat_logger.error("stuck_loop", tool=tool_name)
-                    return f"(stopped: repeated identical call to '{tool_name}' — agent appears stuck)"
+                    return f"(stopped: '{tool_name}' is part of a repeating tool-call pattern — agent appears stuck)"
             except ValueError as e:
                 result = f"Error: {e}"
                 chat_logger.tool_result(tool_name, result, tool_start, error=True)

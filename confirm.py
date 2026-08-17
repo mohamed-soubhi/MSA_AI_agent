@@ -14,10 +14,10 @@ no gate at all.
 """
 
 import logging
+import queue
 import re
-import signal
 import sys
-import time
+import threading
 import uuid
 from typing import Optional
 
@@ -52,8 +52,43 @@ def _sanitize(action: str) -> str:
     return cleaned
 
 
-def _timeout_handler(signum, frame):
-    raise ConfirmTimeout()
+def _read_input_with_timeout(prompt: str, timeout_seconds):
+    """Read one line from stdin, bounded by timeout_seconds.
+
+    ROB-01 fix: the original implementation used signal.alarm(), which
+    only works in the main thread of the main interpreter -- calling it
+    from a worker thread (e.g. a tool running inside
+    shared._run_tool_with_timeout's ThreadPoolExecutor) raised
+    ValueError, which confirm()'s own except Exception caught and
+    turned into a silent denial. Running input() on a background daemon
+    thread and waiting on it with queue.get(timeout=...) works
+    correctly from ANY calling thread, main or not, and needs no signal
+    handling at all.
+
+    If the timeout fires, the reader thread is left running, blocked
+    forever on input() with nothing left listening for its result --
+    same accepted tradeoff as shared._run_tool_with_timeout's
+    "abandoned" worker thread. It's a daemon thread, so it can't block
+    process exit, and the next confirm() call gets its own reader.
+    """
+    result: queue.Queue = queue.Queue(maxsize=1)
+
+    def _reader():
+        try:
+            result.put(("ok", input(prompt)))
+        except BaseException as exc:  # EOFError, or anything else input() can raise
+            result.put(("error", exc))
+
+    threading.Thread(target=_reader, daemon=True).start()
+
+    try:
+        status, value = result.get(timeout=timeout_seconds)
+    except queue.Empty:
+        raise ConfirmTimeout()
+
+    if status == "error":
+        raise value
+    return value
 
 
 def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SECONDS, force_ask: bool = False) -> bool:
@@ -107,19 +142,16 @@ def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SEC
         logger.warning("confirm_denied id=%s reason=no_tty", request_id)
         return False
 
-    old_handler = None
     try:
-        # --- Set a hard timeout so a forgotten prompt can't hang the ---
-        # agent indefinitely (SIGALRM is POSIX-only; fine for Linux/RPi).
-        if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
-            old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-            signal.alarm(timeout_seconds)
-
         # Default is YES on empty input (bare Enter) -- shown explicitly
         # in the prompt so a human skimming fast still sees what a blank
         # answer means before they hit Enter.
         prompt = f"  [confirm:{request_id}] {clean_action}\n            Proceed? (Y/n, Enter = yes) "
-        raw_answer = input(prompt)
+        # ROB-01: reads via a background thread + queue, not signal.alarm
+        # -- see _read_input_with_timeout's docstring. Works whether
+        # confirm() is called from the main thread or a tool running
+        # inside a ThreadPoolExecutor worker thread.
+        raw_answer = _read_input_with_timeout(prompt, timeout_seconds)
 
     except ConfirmTimeout:
         logger.warning(
@@ -143,15 +175,6 @@ def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SEC
         # never let a confirmation gate crash into an unclear state.
         logger.exception("confirm_denied id=%s reason=unexpected_error", request_id)
         return False
-
-    finally:
-        # Always disarm the alarm and restore the previous handler,
-        # even on the happy path, so we never leak a pending SIGALRM
-        # into unrelated code later in the process.
-        if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
-            signal.alarm(0)
-            if old_handler is not None:
-                signal.signal(signal.SIGALRM, old_handler)
 
     answer = raw_answer.strip().lower()
     # Empty input (bare Enter) counts as approval, same as "y"/"yes".

@@ -12,7 +12,9 @@ import pytest
 
 import chat_logger as cl_mod
 import log_config as cfg
-from chat_logger import ChatLogger, NullChatLogger, _extract_model_timing, _truncate, get_logger
+from chat_logger import (
+    ChatLogger, NullChatLogger, _extract_model_timing, _mask_secrets, _truncate, get_logger,
+)
 
 
 def read_events(path):
@@ -30,7 +32,92 @@ def isolated_log_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(cfg, "LOG_MODEL_TIMING", True)
     monkeypatch.setattr(cfg, "ECHO_TO_TERMINAL", False)
     monkeypatch.setattr(cfg, "LOG_ENABLED", True)
+    monkeypatch.setattr(cfg, "MASK_SECRETS", True)
     return tmp_path
+
+
+# --------------------------------------------------------------------------
+# _mask_secrets (SEC-03)
+# --------------------------------------------------------------------------
+
+class TestMaskSecrets:
+    @pytest.mark.tid("CHATLOG-033")
+    def test_openai_style_key_redacted(self):
+        result = _mask_secrets("key is sk-abcdefghijklmnopqrstuvwxyz123456")
+        assert "sk-abcdefghijklmnopqrstuvwxyz123456" not in result
+        assert "[REDACTED_API_KEY]" in result
+
+    @pytest.mark.tid("CHATLOG-034")
+    def test_aws_access_key_redacted(self):
+        result = _mask_secrets("AKIAIOSFODNN7EXAMPLE")
+        assert "AKIAIOSFODNN7EXAMPLE" not in result
+        assert "[REDACTED_AWS_KEY]" in result
+
+    @pytest.mark.tid("CHATLOG-035")
+    def test_github_token_redacted(self):
+        result = _mask_secrets("ghp_1234567890abcdefghijklmnopqrstuvwx")
+        assert "ghp_1234567890abcdefghijklmnopqrstuvwx" not in result
+        assert "[REDACTED_GITHUB_TOKEN]" in result
+
+    @pytest.mark.tid("CHATLOG-036")
+    def test_jwt_redacted(self):
+        jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+        result = _mask_secrets(f"token={jwt}")
+        assert jwt not in result
+        assert "[REDACTED_JWT]" in result
+
+    @pytest.mark.tid("CHATLOG-037")
+    def test_bearer_token_redacted(self):
+        result = _mask_secrets("Authorization: Bearer abc123.def456-ghi789")
+        assert "abc123.def456-ghi789" not in result
+        assert "Bearer [REDACTED_TOKEN]" in result
+
+    @pytest.mark.tid("CHATLOG-038")
+    def test_private_key_block_redacted(self):
+        pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAK...\n-----END RSA PRIVATE KEY-----"
+        result = _mask_secrets(pem)
+        assert "MIIBOgIBAAJBAK" not in result
+        assert "[REDACTED_PRIVATE_KEY]" in result
+
+    @pytest.mark.tid("CHATLOG-039")
+    def test_env_style_key_value_redacted(self):
+        result = _mask_secrets("OPENAI_API_KEY=sk-liveSecretValueHere1234")
+        assert "sk-liveSecretValueHere1234" not in result
+        assert "OPENAI_API_KEY=" in result
+        assert "[REDACTED" in result
+
+    @pytest.mark.tid("CHATLOG-040")
+    def test_plain_text_left_untouched(self):
+        assert _mask_secrets("just a normal file listing") == "just a normal file listing"
+
+    @pytest.mark.tid("CHATLOG-041")
+    def test_recurses_into_dict_and_list(self):
+        result = _mask_secrets({"args": ["AKIAIOSFODNN7EXAMPLE", "plain text"]})
+        assert "AKIAIOSFODNN7EXAMPLE" not in result["args"][0]
+        assert result["args"][1] == "plain text"
+
+    @pytest.mark.tid("CHATLOG-042")
+    def test_non_string_values_untouched(self):
+        assert _mask_secrets(42) == 42
+        assert _mask_secrets(None) is None
+
+    @pytest.mark.tid("CHATLOG-043")
+    def test_disabled_via_config_is_a_noop(self, monkeypatch):
+        monkeypatch.setattr(cfg, "MASK_SECRETS", False)
+        secret = "AKIAIOSFODNN7EXAMPLE"
+        assert _mask_secrets(secret) == secret
+
+    @pytest.mark.tid("CHATLOG-044")
+    def test_secret_in_tool_result_masked_on_disk(self, isolated_log_dir):
+        # Integration: a secret in real tool output must never reach the
+        # JSONL file, not just the in-memory _mask_secrets() call.
+        logger = ChatLogger("test_agent", "test-model")
+        start = logger.tool_call("read_file", {"path": ".env"})
+        logger.tool_result("read_file", "AKIAIOSFODNN7EXAMPLE", start, error=False)
+        events = read_events(logger.path)
+        tool_result_event = [e for e in events if e["event"] == "tool_result"][0]
+        assert "AKIAIOSFODNN7EXAMPLE" not in tool_result_event["result"]
+        assert "[REDACTED_AWS_KEY]" in tool_result_event["result"]
 
 
 # --------------------------------------------------------------------------

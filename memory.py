@@ -25,6 +25,7 @@ another sandboxed file the model can point anywhere.
 
 import json
 import logging
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -40,13 +41,29 @@ MEMORY_PATH = Path(MEMORY_FILE)
 
 
 def _load() -> list[dict]:
-    """Read all entries from disk. Missing/corrupt file -> empty list, never raises."""
+    """Read all entries from disk. Missing/corrupt file -> empty list, never raises.
+
+    ROB-02: a corrupt file (e.g. from an interrupted non-atomic write,
+    before this was fixed) is preserved as a `.corrupt.bak` alongside
+    it before we fall back to an empty list -- so a human can still
+    recover it by hand, instead of the next _save() silently
+    overwriting the only copy of whatever was salvageable.
+    """
     if not MEMORY_PATH.exists():
         return []
+    raw = ""
     try:
-        data = json.loads(MEMORY_PATH.read_text(encoding="utf-8"))
+        raw = MEMORY_PATH.read_text(encoding="utf-8")
+        data = json.loads(raw)
     except (json.JSONDecodeError, OSError) as exc:
         logger.warning("memory_load_failed path=%s error=%s", MEMORY_PATH, exc)
+        if raw:  # nothing to back up if read_text() itself failed
+            try:
+                backup_path = MEMORY_PATH.with_suffix(MEMORY_PATH.suffix + ".corrupt.bak")
+                backup_path.write_text(raw, encoding="utf-8")
+                logger.warning("memory_corrupt_backup_written path=%s", backup_path)
+            except OSError:
+                pass  # backup is best-effort; losing it must not block the fallback
         return []
     entries = data.get("entries") if isinstance(data, dict) else None
     return entries if isinstance(entries, list) else []
@@ -54,13 +71,24 @@ def _load() -> list[dict]:
 
 def _save(entries: list[dict]) -> None:
     """Write all entries back to disk. Never raises -- a full disk or
-    permissions error degrades to a log warning, same as chat_logger."""
+    permissions error degrades to a log warning, same as chat_logger.
+
+    ROB-02: writes to a temporary file in the same directory, then
+    atomically swaps it into place with os.replace(). A direct
+    write_text() can be interrupted mid-write (process killed, power
+    loss); os.replace() is atomic on POSIX and Windows, so MEMORY_PATH
+    is always either the old complete file or the new complete file,
+    never a half-written one -- closing the "corrupted file wipes all
+    memories on next load" hazard.
+    """
     try:
         MEMORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-        MEMORY_PATH.write_text(
+        tmp_path = MEMORY_PATH.with_suffix(MEMORY_PATH.suffix + f".tmp{os.getpid()}")
+        tmp_path.write_text(
             json.dumps({"entries": entries}, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
+        os.replace(tmp_path, MEMORY_PATH)
     except OSError as exc:
         logger.warning("memory_save_failed path=%s error=%s", MEMORY_PATH, exc)
 

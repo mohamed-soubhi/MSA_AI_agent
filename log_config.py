@@ -69,3 +69,11 @@ LOG_MODEL_TIMING = _env_bool("LOG_MODEL_TIMING", True)
 # (in addition to writing it to the file). Handy while developing; turn
 # off for a quieter terminal once things are working.
 ECHO_TO_TERMINAL = _env_bool("ECHO_TO_TERMINAL", False)
+
+# SEC-03: mask common secret patterns (API keys, tokens, private keys)
+# in every logged field before it's written to disk. Tool arguments and
+# model output previously went to JSONL logs unmodified -- if the agent
+# read a .env file or printed a token as part of its reasoning, that
+# secret landed in plaintext in the log file. Off switch exists for a
+# deep-dive debug session where you need the raw, unmasked text.
+MASK_SECRETS = _env_bool("MASK_SECRETS", True)

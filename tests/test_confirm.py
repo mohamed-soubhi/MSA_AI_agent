@@ -6,7 +6,7 @@ every denial path (no/other, no tty, EOF, KeyboardInterrupt, timeout,
 unexpected exception), and the untrusted-input sanitizer.
 """
 
-import signal
+import time
 
 import pytest
 
@@ -130,9 +130,15 @@ class TestConfirmAnswers:
 
 # --------------------------------------------------------------------------
 # confirm() — timeout handling
+#
+# ROB-01: timeout is enforced via a background daemon thread + queue.get(
+# timeout=...), not signal.alarm() -- the old approach raised ValueError
+# ("signal only works in main thread") whenever confirm() was called
+# from a worker thread, which shared._run_tool_with_timeout does for
+# every tool call. The new mechanism works from any calling thread and
+# needs no POSIX-only signal, so there's no skipif guard here anymore.
 # --------------------------------------------------------------------------
 
-@pytest.mark.skipif(not hasattr(signal, "SIGALRM"), reason="SIGALRM is POSIX-only")
 class TestConfirmTimeout:
     @pytest.mark.tid("CONFIRM-014")
     def test_denies_on_timeout(self, tty, monkeypatch):
@@ -143,16 +149,39 @@ class TestConfirmTimeout:
         assert confirm("slow action", timeout_seconds=1) is False
 
     @pytest.mark.tid("CONFIRM-015")
-    def test_alarm_disarmed_after_call(self, tty, monkeypatch):
-        monkeypatch.setattr("builtins.input", lambda prompt: "y")
-        confirm("write file", timeout_seconds=5)
-        # A disarmed alarm reports 0 seconds remaining.
-        assert signal.alarm(0) == 0
+    def test_real_timeout_denies_when_input_never_returns_in_time(self, tty, monkeypatch):
+        # input() genuinely outlives the timeout window -- confirms the
+        # queue.get(timeout=...) wait itself, not just ConfirmTimeout
+        # being raised synchronously like CONFIRM-014 does.
+        def slow_input(prompt):
+            time.sleep(0.3)
+            return "y"
+
+        monkeypatch.setattr("builtins.input", slow_input)
+        assert confirm("slow action", timeout_seconds=0.05) is False
 
     @pytest.mark.tid("CONFIRM-016")
-    def test_none_timeout_disables_alarm(self, tty, monkeypatch):
+    def test_none_timeout_disables_timeout(self, tty, monkeypatch):
         monkeypatch.setattr("builtins.input", lambda prompt: "y")
         assert confirm("write file", timeout_seconds=None) is True
+
+    @pytest.mark.tid("CONFIRM-023")
+    def test_timeout_works_when_called_from_a_worker_thread(self, tty, monkeypatch):
+        # The exact ROB-01 scenario: confirm() invoked from a non-main
+        # thread. signal.alarm() would raise ValueError here; the
+        # thread+queue approach must not.
+        import threading
+
+        monkeypatch.setattr("builtins.input", lambda prompt: "y")
+        outcome = {}
+
+        def call_from_thread():
+            outcome["result"] = confirm("write file", timeout_seconds=5)
+
+        worker = threading.Thread(target=call_from_thread)
+        worker.start()
+        worker.join(timeout=5)
+        assert outcome.get("result") is True
 
 
 # --------------------------------------------------------------------------

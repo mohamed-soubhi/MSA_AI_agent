@@ -23,7 +23,7 @@ import agent_mode
 from confirm import confirm
 from fs_tools import BASE_DIR
 from shared import run_agent
-from agent_config import MAX_AUTO_TOOL_CALLS
+from agent_config import MAX_AUTO_TOOL_CALLS, SYSTEM_PROMPT
 
 # MAX_AUTO_TOOL_CALLS now lives in agent_config.py — see that file to
 # tune or override it via environment variable.
@@ -37,20 +37,32 @@ def _generate_plan(agent, user_request: str) -> str:
     doing it. If tools were available, "write a plan" could quietly
     turn into "start executing," defeating the whole point of asking
     for approval before anything runs.
+
+    UX-01: seeds the same SYSTEM_PROMPT the execution phase uses (see
+    09_full_agent.py), as a system message ahead of the planning
+    request. Without it, the planner had no idea about the project's
+    own constraints -- prefer non-interactive flags, avoid
+    run_command unless necessary, use recall_memory/remember_fact --
+    so a generated plan could casually propose an interactive command
+    or ignore memory tools entirely, then get approved by a human who
+    only skimmed the numbered steps.
     """
-    planning_messages = [{
-        "role": "user",
-        "content": (
-            f"Task: {user_request}\n\n"
-            "Write a clear, numbered, step-by-step plan for how you would "
-            "accomplish this task using the available tools (reading/writing "
-            "files, creating directories, running terminal commands, asking "
-            "for clarification). Do NOT perform any actions — this is a plan "
-            "only, to be reviewed by a human before anything runs. Be "
-            "concrete: name the actual files, commands, and directories "
-            "you'd use, not vague descriptions."
-        ),
-    }]
+    planning_messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": (
+                f"Task: {user_request}\n\n"
+                "Write a clear, numbered, step-by-step plan for how you would "
+                "accomplish this task using the available tools (reading/writing "
+                "files, creating directories, running terminal commands, asking "
+                "for clarification). Do NOT perform any actions — this is a plan "
+                "only, to be reviewed by a human before anything runs. Be "
+                "concrete: name the actual files, commands, and directories "
+                "you'd use, not vague descriptions."
+            ),
+        },
+    ]
     response = agent.chat(planning_messages, tools=None)
     return response.message.content or "(model returned an empty plan)"
 

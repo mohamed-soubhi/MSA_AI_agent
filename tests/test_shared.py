@@ -419,6 +419,52 @@ class TestRunAgent:
         result = run_agent(agent, [], tools=[echo], tool_map={"echo": echo}, verbose=False)
         assert "stuck" in result
 
+    @pytest.mark.tid("SHARED-050")
+    def test_stuck_loop_detection_catches_alternating_ab_pattern(self, monkeypatch):
+        # ROB-03: A,B,A,B,A,B never has any single call repeat back-to-back,
+        # so the period=1 check alone would miss it -- period=2 must catch it.
+        monkeypatch.setattr(shared, "MAX_REPEAT_CALLS", 3)
+
+        def echo(text):
+            return text
+
+        call_a = make_response(tool_calls=[{"name": "echo", "arguments": {"text": "a"}}])
+        call_b = make_response(tool_calls=[{"name": "echo", "arguments": {"text": "b"}}])
+        agent = FakeAgent([call_a, call_b, call_a, call_b, call_a, call_b])
+        result = run_agent(agent, [], tools=[echo], tool_map={"echo": echo}, verbose=False)
+        assert "stuck" in result
+
+    @pytest.mark.tid("SHARED-051")
+    def test_stuck_loop_detection_catches_alternating_abc_pattern(self, monkeypatch):
+        monkeypatch.setattr(shared, "MAX_REPEAT_CALLS", 3)
+
+        def echo(text):
+            return text
+
+        calls = [
+            make_response(tool_calls=[{"name": "echo", "arguments": {"text": t}}])
+            for t in ["a", "b", "c"] * 3
+        ]
+        agent = FakeAgent(calls)
+        result = run_agent(agent, [], tools=[echo], tool_map={"echo": echo}, verbose=False)
+        assert "stuck" in result
+
+    @pytest.mark.tid("SHARED-052")
+    def test_non_cyclic_varied_calls_do_not_trigger_stuck_loop(self, monkeypatch):
+        # Sanity check: distinct, non-repeating calls must never false-positive.
+        monkeypatch.setattr(shared, "MAX_REPEAT_CALLS", 3)
+
+        def echo(text):
+            return text
+
+        calls = [
+            make_response(tool_calls=[{"name": "echo", "arguments": {"text": str(i)}}])
+            for i in range(6)
+        ] + [make_response(content="done")]
+        agent = FakeAgent(calls)
+        result = run_agent(agent, [], tools=[echo], tool_map={"echo": echo}, verbose=False)
+        assert result == "done"
+
     @pytest.mark.tid("SHARED-034")
     def test_chat_failure_returns_stopped_message_not_raise(self):
         agent = FakeAgent([RuntimeError("network down")])

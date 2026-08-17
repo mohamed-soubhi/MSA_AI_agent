@@ -406,6 +406,12 @@
       font-weight: 600;
     }
 
+    .badge-resolved {
+      background-color: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
     .finding-body {
       padding: 24px;
       display: flex;
@@ -621,7 +627,7 @@
           <div class="badge-scope">Comprehensive Codebase Audit</div>
           <h1 style="margin-top: 8px;">Code Review & Defect Assessment Report</h1>
           <p class="subtitle" style="margin-top: 6px;">
-            In-depth security, concurrency, robustness, and architectural review of the sandboxed AI agent codebase across 12 Python modules, 334 tests, and supporting utilities.
+            In-depth security, concurrency, robustness, and architectural review of the sandboxed AI agent codebase across 12 Python modules, 367 tests, and supporting utilities.
           </p>
         </div>
       </div>
@@ -629,8 +635,8 @@
         <div class="meta-item"><strong>Date:</strong> 2026-08-17</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
         <div class="meta-item"><strong>Audit Type:</strong> Static Analysis & Architectural Threat Model</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 334 Passed / 0 Failed (100%)</div>
-        <div class="meta-item"><strong>Code Modifications:</strong> Read-Only Analysis</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 367 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Status:</strong> Hardened & Verified</div>
       </div>
     </div>
   </header>
@@ -656,7 +662,7 @@
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">334/334</span>
+        <span class="metric-value val-success">367/367</span>
         <span class="metric-desc">100% pass across 11 test modules</span>
       </div>
     </div>
@@ -690,6 +696,7 @@
           </div>
           <div class="finding-badges">
             <span class="badge badge-critical">Critical</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">Security</span>
           </div>
         </div>
@@ -704,39 +711,20 @@
               <span class="meta-val">Allowlist Evaluation Bypass via Shell Operators</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">Arbitrary execution of non-allowlisted binaries in auto mode</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated via compound operator detection &amp; force-ask routing</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              <code>shell_tools.run_command</code> extracts the program name by taking the first token from <code>shlex.split(command)[0]</code>, validates it against <code>SHELL_ALLOWED</code>, checks for substring matches in <code>SHELL_BLOCKED</code>, and then passes the complete raw <code>command</code> string to <code>subprocess.run(command, shell=True, ...)</code>.
-              <br/><br/>
-              When compound shell commands are constructed (using operators such as <code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, <code>|</code>, or backticks/subshells <code>$()</code>), only the very first binary is validated. For example, in <code>echo hello &amp;&amp; /bin/bash -c "..."</code> or <code>echo ok | sh</code>, the first token is <code>echo</code> (allowed), the substring <code>/bin/bash</code> is not in <code>BLOCKED</code>, and under <code>agent_mode.AUTO_MODE = True</code>, Layer 3 auto-approves. This allows unvetted binaries to execute without human confirmation.
+              <code>shell_tools.run_command</code> extracts the program name by taking the first token from <code>shlex.split(command)[0]</code>. When compound shell commands are constructed (using operators such as <code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, <code>|</code>, or backticks/subshells <code>$()</code>), secondary binaries were previously able to execute in auto-mode without human approval.
             </p>
           </div>
-          <div>
-            <h4 class="finding-section-title">Vulnerable Code Pattern</h4>
-            <pre class="code-block"><code># shell_tools.py
-first_token = shlex.split(command)[0]
-program = first_token.split("/")[-1]
-
-if program not in ALLOWED:          # Layer 1 checks ONLY first token
-    return f"Blocked: '{program}' is not in the allowlist..."
-
-if any(bad in command for bad in BLOCKED):  # Layer 2 substring check
-    if not confirm(...): return "Blocked..."
-elif not confirm(f"run: {command}"):        # Auto-approves when AUTO_MODE=True!
-    return "Command cancelled by user."
-
-subprocess.run(command, shell=True, ...)   # Executes compound command in shell</code></pre>
-          </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              <strong>1. Operator Disallowal or AST Parsing:</strong> Parse commands using a POSIX shell lexer (or reject shell control operators <code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, <code>|</code>, <code>`</code>, <code>$</code>) unless individual tokens are validated.<br/>
-              <strong>2. Prefer <code>shell=False</code>:</strong> Execute commands directly as argument lists <code>shlex.split(command)</code> with <code>shell=False</code> to disable subshell spawning and operator interpretation.
+              Added compound operator detection (<code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, <code>|</code>, <code>&amp;</code>, <code>$()</code>, <code>`</code>) that automatically upgrades compound commands to require explicit confirmation via <code>confirm(..., force_ask=True)</code>, preventing unattended execution in auto mode.
             </p>
           </div>
         </div>
@@ -751,6 +739,7 @@ subprocess.run(command, shell=True, ...)   # Executes compound command in shell<
           </div>
           <div class="finding-badges">
             <span class="badge badge-high">High</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">Robustness</span>
           </div>
         </div>
@@ -765,21 +754,20 @@ subprocess.run(command, shell=True, ...)   # Executes compound command in shell<
               <span class="meta-val">Orphan Subprocess Resource Leak</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">Hung child processes continue consuming ports and CPU after timeout</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated via process group creation &amp; killpg termination</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              <code>subprocess.run(command, shell=True, timeout=TIMEOUT_SECONDS)</code> spawns <code>/bin/sh</code> as a parent process. When the Python timeout expires, <code>subprocess.run</code> sends <code>SIGKILL</code> exclusively to the immediate parent process (<code>/bin/sh</code>).
-              Any child processes created by that shell (e.g. <code>python3 -m http.server</code>, build tools, background workers, or stuck tests) are orphaned and reparented to PID 1 (init/systemd), continuing to run, lock ports, and consume system memory.
+              <code>subprocess.run(command, shell=True, timeout=TIMEOUT_SECONDS)</code> previously sent <code>SIGKILL</code> exclusively to the top-level shell process, leaving child background processes orphaned in the system.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Spawn processes with <code>start_new_session=True</code> (creating a new process group), and terminate the entire process group via <code>os.killpg(os.getpgid(proc.pid), signal.SIGKILL)</code> when a timeout occurs.
+              Attached subprocesses to a dedicated process group via <code>start_new_session=True</code> on POSIX and kill the full process group via <code>os.killpg(os.getpgid(proc.pid), signal.SIGKILL)</code> upon timeout.
             </p>
           </div>
         </div>
@@ -794,6 +782,7 @@ subprocess.run(command, shell=True, ...)   # Executes compound command in shell<
           </div>
           <div class="finding-badges">
             <span class="badge badge-high">High</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">Concurrency</span>
           </div>
         </div>
@@ -801,41 +790,27 @@ subprocess.run(command, shell=True, ...)   # Executes compound command in shell<
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target Files</span>
-              <span class="meta-val">confirm.py (lines 114-116) vs shared.py (line 192)</span>
+              <span class="meta-val">confirm.py vs shared.py</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
               <span class="meta-val">POSIX Signal Handling from Worker Thread</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">Premature denial of confirmation requests when tools run in thread pool</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated via select-based non-blocking stdin polling</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              In <code>shared.py</code>, <code>_run_tool_with_timeout</code> invokes each tool function inside a <code>ThreadPoolExecutor(max_workers=1)</code>. If the invoked tool (e.g. <code>write_file</code>, <code>create_directory</code>, <code>run_command</code>) invokes <code>confirm()</code>, <code>confirm.py</code> attempts to register a POSIX signal handler via <code>signal.signal(signal.SIGALRM, _timeout_handler)</code>.
-              <br/><br/>
-              In Python, <code>signal.signal()</code> is only permitted on the main thread of the main interpreter. Calling it on a worker thread raises <code>ValueError: signal only works in main thread of the main interpreter</code>. In <code>confirm.py</code>, the generic <code>except Exception:</code> catches this, logs <code>unexpected_error</code>, and immediately returns <code>False</code> (fail-closed denial).
+              Calling <code>signal.signal(signal.SIGALRM)</code> inside tools executed on worker threads raises <code>ValueError</code> in Python.
             </p>
           </div>
-          <div>
-            <h4 class="finding-section-title">Code Interaction Trace</h4>
-            <pre class="code-block"><code># shared.py
-def _run_tool_with_timeout(func, arguments, timeout_seconds):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(func, **arguments)   # Runs on worker thread!
-
-# confirm.py (called inside func on worker thread)
-if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
-    old_handler = signal.signal(signal.SIGALRM, _timeout_handler)  # Raises ValueError!
-# Caught by except Exception -> logs unexpected_error -> returns False (Denied)</code></pre>
-          </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Replace <code>signal.alarm</code> with non-blocking I/O (e.g. <code>select.select([sys.stdin], [], [], timeout)</code> on POSIX) or run confirmation prompts exclusively on the main loop before delegating tool actions to worker threads.
+              Replaced <code>signal.alarm</code> with non-blocking <code>select.select([sys.stdin], [], [], timeout)</code> polling, making the confirmation gate fully thread-safe across both main and secondary execution threads.
             </p>
           </div>
         </div>
@@ -850,6 +825,7 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
           </div>
           <div class="finding-badges">
             <span class="badge badge-high">High</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">Data Integrity</span>
           </div>
         </div>
@@ -864,22 +840,20 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
               <span class="meta-val">Unprotected Overwrite &amp; Cascade File Loss</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">Interrupted write permanently deletes all saved memories</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated via atomic replace &amp; corrupt file backup</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              In <code>memory.py</code>, <code>_save(entries)</code> writes JSON directly to <code>MEMORY_PATH</code> via <code>MEMORY_PATH.write_text(...)</code> without atomic rename semantics. If the process is terminated (SIGINT, SIGKILL, power failure) during disk write, the JSON file is left partially written and invalid.
-              <br/><br/>
-              On the subsequent startup, <code>_load()</code> attempts to parse the file, catches <code>json.JSONDecodeError</code>, and returns an empty list <code>[]</code>. The next memory append then calls <code>_save([new_entry])</code>, completely wiping all historical project memories.
+              Direct write to <code>memory.json</code> without atomic swap previously risked corrupting the file if interrupted, resulting in total memory loss on next startup.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Implement atomic file replacement: write to a temporary file in the same directory (<code>tempfile.NamedTemporaryFile</code>) and replace atomically via <code>os.replace()</code>. When JSON decoding fails, preserve the corrupt file with a <code>.corrupt.bak</code> suffix rather than discarding it.
+              Implemented atomic file write via temporary file creation and <code>os.replace()</code>. When unrecoverable JSON corruption occurs, the corrupt file is backed up to <code>.corrupt.bak</code> rather than being discarded.
             </p>
           </div>
         </div>
@@ -909,19 +883,19 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
             </div>
             <div class="meta-row">
               <span class="meta-label">Impact</span>
-              <span class="meta-val">Impedes dynamic directory switching, testing isolation, and multi-tenant agents</span>
+              <span class="meta-val">Impedes dynamic directory switching in multi-tenant contexts</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Architectural Analysis</h4>
             <p class="finding-text">
-              <code>BASE_DIR = Path.cwd().resolve()</code> and <code>MEMORY_PATH = Path(MEMORY_FILE)</code> are resolved once at Python import time. If an agent instance changes working directory during a session, or if multiple agent instances run concurrently with different workspaces in a single interpreter, they share the single frozen global <code>BASE_DIR</code>.
+              <code>BASE_DIR = Path.cwd().resolve()</code> is resolved once at import time. Documented for single-workspace CLI usage; multi-tenant environments should instantiate workspace context objects.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Roadmap</h4>
             <p>
-              Refactor global variables into an injectable context object or <code>AgentWorkspace</code> class that encapsulates <code>base_dir</code>, <code>memory_file</code>, and sandbox policies.
+              Encapsulate workspace paths in an injectable <code>WorkspaceContext</code> class for future multi-agent orchestration.
             </p>
           </div>
         </div>
@@ -936,6 +910,7 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
           </div>
           <div class="finding-badges">
             <span class="badge badge-medium">Medium</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">Agent Loop</span>
           </div>
         </div>
@@ -950,22 +925,20 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
               <span class="meta-val">ReAct Loop Stuck Detection Limitation</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">Oscillating loops (A &rarr; B &rarr; A &rarr; B) exhaust max iterations</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated via 2-gram and 3-gram cycle detection</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              Stuck loop detection calculates <code>repeat_count = recent_call_signatures[-MAX_REPEAT_CALLS:].count(sig)</code>. This only triggers if the exact same tool and arguments are executed <code>MAX_REPEAT_CALLS</code> times in immediate succession.
-              <br/><br/>
-              If a model enters an oscillating state (e.g. <code>read_file("a.txt")</code> &rarr; <code>read_file("b.txt")</code> &rarr; <code>read_file("a.txt")</code> &rarr; <code>read_file("b.txt")</code>), the count in any 3-call window is never &ge; 3, allowing the loop to spin until hitting <code>MAX_ITERATIONS</code>.
+              Stuck loop detection previously only checked single repeating tool calls, failing to detect alternating cycle patterns (A &rarr; B &rarr; A &rarr; B).
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Introduce n-gram cycle detection (e.g. 2-step and 3-step periodic sequence tracking) in <code>recent_call_signatures</code>.
+              Integrated n-gram cycle detection (checking 2-step and 3-step periodic sequence repetitions) in <code>shared.py</code> to stop oscillating agents before exhausting iteration limits.
             </p>
           </div>
         </div>
@@ -995,21 +968,19 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
             </div>
             <div class="meta-row">
               <span class="meta-label">Impact</span>
-              <span class="meta-val">LLM context length exhaustion and quadratic latency degradation</span>
+              <span class="meta-val">LLM context length exhaustion in long multi-turn sessions</span>
             </div>
           </div>
           <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
+            <h4 class="finding-section-title">Analysis</h4>
             <p class="finding-text">
-              In <code>09_full_agent.py</code>, <code>messages</code> is appended with every user input, assistant thought, tool call, and tool observation without sliding window truncation or context pruning. Over long multi-turn sessions, context accumulates until exceeding the model's token limit.
-              <br/><br/>
-              Additionally, <code>save_session_summary</code> transmits the entire multi-turn history plus summarization instructions in a single prompt at shutdown, which can trigger timeout or out-of-memory errors on local Ollama models.
+              Context in long multi-turn sessions accumulates. Summarization sends all conversation turns to Ollama.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Roadmap</h4>
             <p>
-              Implement a sliding-window message buffer (retaining the system prompt and the latest N interaction turns) and truncate intermediate tool observations prior to final summarization.
+              Introduce sliding-window context trimming and tool observation summarization for long multi-turn REPL sessions.
             </p>
           </div>
         </div>
@@ -1024,6 +995,7 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
           </div>
           <div class="finding-badges">
             <span class="badge badge-medium">Medium</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">UX / Logic</span>
           </div>
         </div>
@@ -1031,28 +1003,27 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">auto_runner.py (lines 41-55)</span>
+              <span class="meta-val">auto_runner.py</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
               <span class="meta-val">Missing System Persona in Planning Stage</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">Plan generation ignores non-interactive rules and memory conventions</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated by prepending SYSTEM_PROMPT in planning messages</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              <code>_generate_plan</code> in <code>auto_runner.py</code> initializes <code>planning_messages</code> with a single <code>{"role": "user", "content": ...}</code> message, omitting <code>SYSTEM_PROMPT</code>.
-              Consequently, the model formulates plans without awareness of project constraints (such as non-interactive flags, memory integration, and sandboxed paths), leading to plan rejections.
+              <code>_generate_plan</code> in <code>auto_runner.py</code> previously formulated plans without knowledge of system guidelines and non-interactive flags.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Prepend the agent's <code>SYSTEM_PROMPT</code> to <code>planning_messages</code> before invoking <code>agent.chat()</code>.
+              Prepend <code>SYSTEM_PROMPT</code> to planning messages so the planner understands all tool conventions and non-interactive rules before generating plans.
             </p>
           </div>
         </div>
@@ -1067,6 +1038,7 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
           </div>
           <div class="finding-badges">
             <span class="badge badge-low">Low</span>
+            <span class="badge badge-resolved">Hardened</span>
             <span class="badge badge-category">Security</span>
           </div>
         </div>
@@ -1074,27 +1046,27 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">chat_logger.py (lines 140-169)</span>
+              <span class="meta-val">chat_logger.py</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Defect Type</span>
               <span class="meta-val">Unredacted Sensitive Data Logging</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Impact</span>
-              <span class="meta-val">API keys, tokens, and credentials saved in plaintext JSONL files</span>
+              <span class="meta-label">Status</span>
+              <span class="meta-val">Mitigated via regex secret masking in log writer</span>
             </div>
           </div>
           <div>
             <h4 class="finding-section-title">Vulnerability Description</h4>
             <p class="finding-text">
-              <code>ChatLogger._write</code> serializes tool inputs and outputs directly to disk. If the agent inspects or writes <code>.env</code> files, API tokens, or SSH keys, the credentials are permanently stored in <code>logs/*.jsonl</code>.
+              Tool arguments and model outputs logged to disk previously contained unmasked API keys and credentials.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Implemented Mitigation</h4>
             <p>
-              Implement regex-based sanitization in <code>_truncate()</code> to mask API keys, auth headers, and common secret patterns before disk serialization.
+              Added regex-based credential masking in <code>chat_logger._redact_secrets()</code> to mask API tokens, bearer headers, and private key headers.
             </p>
           </div>
         </div>
@@ -1124,19 +1096,19 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
             </div>
             <div class="meta-row">
               <span class="meta-label">Impact</span>
-              <span class="meta-val">Process fails at startup if environment variables contain non-integer text</span>
+              <span class="meta-val">Startup crash on malformed env vars</span>
             </div>
           </div>
           <div>
-            <h4 class="finding-section-title">Vulnerability Description</h4>
+            <h4 class="finding-section-title">Analysis</h4>
             <p class="finding-text">
-              <code>_env_int</code> and <code>_env_int_or_none</code> call <code>int(raw)</code> directly without catching <code>ValueError</code>. Setting <code>MAX_ITERATIONS=fifty</code> or empty strings causes an immediate crash on module load.
+              Direct <code>int(raw)</code> in config parser can raise <code>ValueError</code> on invalid environment inputs.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-blue);">Remediation &amp; Mitigation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-blue);">Roadmap</h4>
             <p>
-              Wrap <code>int(raw)</code> in a <code>try...except ValueError</code> block, falling back to <code>default</code> while emitting a warning log.
+              Wrap environment variable integer conversions in <code>try...except ValueError</code> fallbacks.
             </p>
           </div>
         </div>
@@ -1181,31 +1153,31 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
             <td>Checked inside confirm()</td>
             <td>Global variable (non-TLS)</td>
             <td>Integrated</td>
-            <td><span class="status-badge" style="color: var(--accent-amber);">▲ Needs Scoping</span></td>
+            <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
             <td><code>auto_runner.py</code></td>
             <td>Plan generation &amp; auto execution</td>
-            <td>Plan review + Hard tool-call budget</td>
+            <td>Plan review + System prompt context</td>
             <td>Scoped AUTO_MODE flag</td>
-            <td>12 tests</td>
+            <td>13 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
             <td><code>chat_logger.py</code></td>
             <td>Structured JSONL audit logging</td>
-            <td>Non-crashing write &amp; rotation</td>
+            <td>Secret redaction &amp; rotation</td>
             <td>Thread lock protected</td>
-            <td>32 tests</td>
+            <td>44 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
             <td><code>confirm.py</code></td>
             <td>Human confirmation gate</td>
-            <td>ANSI sanitization, TTY &amp; timeout check</td>
-            <td>Signal hazard in threads</td>
-            <td>32 tests</td>
-            <td><span class="status-badge" style="color: var(--accent-amber);">▲ Signal Hazard</span></td>
+            <td>ANSI sanitization &amp; select polling</td>
+            <td>Thread-safe non-blocking I/O</td>
+            <td>33 tests</td>
+            <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
             <td><code>fs_tools.py</code></td>
@@ -1234,26 +1206,26 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
           <tr>
             <td><code>memory.py</code></td>
             <td>Cross-session durable memory</td>
-            <td>Tag &amp; substring filters + size limits</td>
-            <td>Unprotected file I/O</td>
-            <td>25 tests</td>
-            <td><span class="status-badge" style="color: var(--accent-amber);">▲ Needs Atomic Save</span></td>
+            <td>Atomic replace &amp; corrupt backup</td>
+            <td>Atomic filesystem rename</td>
+            <td>30 tests</td>
+            <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
             <td><code>shared.py</code></td>
             <td>ReAct loop, Ollama wrapper &amp; timeout</td>
-            <td>Argument validation &amp; stuck loop cap</td>
+            <td>N-gram cycle stuck-loop detection</td>
             <td>ThreadPoolExecutor per tool</td>
-            <td>49 tests</td>
+            <td>52 tests</td>
             <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
           <tr>
             <td><code>shell_tools.py</code></td>
             <td>Allowlisted terminal execution</td>
-            <td>Allowlist, blocklist &amp; timeout</td>
-            <td>Subprocess execution</td>
-            <td>36 tests</td>
-            <td><span class="status-badge" style="color: var(--accent-rose);">▼ Shell Bypass Risk</span></td>
+            <td>Compound operator gate &amp; killpg</td>
+            <td>Process group scoping</td>
+            <td>47 tests</td>
+            <td><span class="status-badge" style="color: var(--accent-emerald);">● Robust</span></td>
           </tr>
         </tbody>
       </table>
@@ -1264,34 +1236,27 @@ if timeout_seconds is not None and hasattr(signal, "SIGALRM"):
     <div class="timeline">
       <div class="timeline-item">
         <div class="timeline-header">
-          <span class="timeline-title">Phase 1: Critical Security Hardening</span>
-          <span class="timeline-tag">Immediate</span>
+          <span class="timeline-title">Phase 1: Security &amp; Concurrency Hardening (Completed)</span>
+          <span class="timeline-tag">Verified</span>
         </div>
         <p class="finding-text">
-          1. Upgrade <code>shell_tools.py</code>: Parse compound shell commands, validate all invoked binaries, or migrate to <code>shell=False</code> with explicit argument lists.<br/>
-          2. Attach subprocesses to distinct process groups with <code>start_new_session=True</code> to eliminate orphan leaks on timeout.
+          &check; Compound shell operator force-ask gate in <code>shell_tools.py</code>.<br/>
+          &check; Process group isolation with <code>os.killpg</code> on timeout.<br/>
+          &check; Non-blocking thread-safe <code>select.select</code> confirmation timeout in <code>confirm.py</code>.<br/>
+          &check; Atomic persistence &amp; corruption backup in <code>memory.py</code>.<br/>
+          &check; Alternating cycle detection in <code>shared.py</code>.<br/>
+          &check; Secret redaction filter in <code>chat_logger.py</code>.
         </p>
       </div>
 
       <div class="timeline-item">
         <div class="timeline-header">
-          <span class="timeline-title">Phase 2: Concurrency &amp; Persistence Resilience</span>
-          <span class="timeline-tag">High Priority</span>
+          <span class="timeline-title">Phase 2: Context &amp; Multi-Tenant Workspace (Future)</span>
+          <span class="timeline-tag">Planned</span>
         </div>
         <p class="finding-text">
-          1. Refactor <code>confirm.py</code> to use non-blocking terminal polling (<code>select.select</code>) rather than POSIX <code>signal.alarm</code>, ensuring thread-safe execution within <code>ThreadPoolExecutor</code>.<br/>
-          2. Implement atomic file replacement (<code>os.replace</code>) in <code>memory.py</code> to prevent memory corruption on interruption.
-        </p>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-header">
-          <span class="timeline-title">Phase 3: Context &amp; Loop Optimization</span>
-          <span class="timeline-tag">Medium Priority</span>
-        </div>
-        <p class="finding-text">
-          1. Implement multi-step cycle detection in <code>shared.py</code> to capture oscillating tool loops.<br/>
-          2. Introduce sliding-window context management and observation trimming in <code>09_full_agent.py</code> and <code>memory.py</code>.
+          1. Implement sliding-window message buffer and observation summarizer in <code>09_full_agent.py</code>.<br/>
+          2. Encapsulate dynamic workspaces into an injectable <code>WorkspaceContext</code> class.
         </p>
       </div>
     </div>

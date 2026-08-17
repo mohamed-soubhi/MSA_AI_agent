@@ -29,7 +29,9 @@ text before it runs is the real backstop here, not the lists.
 """
 
 import logging
+import os
 import shlex
+import signal
 import subprocess
 
 from confirm import confirm
@@ -46,6 +48,26 @@ logger = logging.getLogger("agent.shell_tools")
 # ALLOWED, BLOCKED, TIMEOUT_SECONDS, and MAX_OUTPUT_LINES now live in
 # agent_config.py — see that file to tune or override any of them via
 # environment variable (SHELL_ALLOWED, SHELL_BLOCKED are comma-separated).
+
+# SEC-01 hardening: `first_token = shlex.split(command)[0]` (layer 1)
+# only ever inspected the FIRST program in a command string. A chained
+# command like "echo hi && /bin/bash -c '...'" passes layer 1 (echo is
+# allowlisted) and, if no BLOCKED substring appears either, used to
+# reach the plain confirm() at layer 3 -- which auto-approves in auto
+# mode. These operators are how a command stops being "one program with
+# arguments" and starts being "more than one thing to run", so ANY of
+# them forces a real human confirm(force_ask=True), same as a BLOCKED
+# pattern -- auto mode can never silently approve a compound command,
+# regardless of what's hidden after the operator. This can false-positive
+# on an allowlisted program's own arguments (e.g. python3 -c "1 & 2") --
+# an accepted tradeoff, since the failure mode is one extra prompt, not
+# a silent bypass.
+_COMPOUND_OPERATORS = ("&&", "||", ";", "|", "&", "$(", "`")
+
+
+def _is_compound(command: str) -> bool:
+    """True if `command` contains shell chaining or substitution syntax."""
+    return any(op in command for op in _COMPOUND_OPERATORS)
 
 
 def run_command(command: str) -> str:
@@ -91,29 +113,46 @@ def run_command(command: str) -> str:
         logger.warning("shell_dangerous_pattern_detected command=%r", command)
         if not confirm(f"DANGEROUS pattern detected, approve anyway?\nrun: {command}", force_ask=True):
             return "Blocked: command contains a forbidden pattern and was not approved."
+    elif _is_compound(command):
+        # SEC-01: chaining/substitution can hide an unallowlisted program
+        # from layer 1's first-token check -- never let auto mode
+        # silently approve one of these, force a real human look.
+        logger.warning("shell_compound_command_detected command=%r", command)
+        if not confirm(f"Compound/chained command detected, approve anyway?\nrun: {command}", force_ask=True):
+            return "Blocked: compound/chained command was not approved."
     elif not confirm(f"run: {command}"):  # Layer 3 — human sees the exact text
         return "Command cancelled by user."
 
     logger.info("shell_running command=%r cwd=%s", command, BASE_DIR)
+    # SEC-02: start_new_session=True puts the shell in its own process
+    # group, so on timeout we can kill the WHOLE group (the shell plus
+    # anything it spawned), not just the immediate /bin/sh. Without
+    # this, a timed-out "npm run dev" or similar leaves its child
+    # process running in the background, orphaned, after Python moves on.
     try:
-        result = subprocess.run(
-            command, shell=True, cwd=BASE_DIR,  # cwd sandbox: runs inside the workspace
-            capture_output=True, text=True, timeout=TIMEOUT_SECONDS,
+        proc = subprocess.Popen(
+            command, shell=True, cwd=BASE_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            start_new_session=True,
         )
-        logger.info("shell_finished command=%r exit_code=%s", command, result.returncode)
-        return _format_result(result.returncode, result.stdout, result.stderr)
+        try:
+            stdout, stderr = proc.communicate(timeout=TIMEOUT_SECONDS)
+            logger.info("shell_finished command=%r exit_code=%s", command, proc.returncode)
+            return _format_result(proc.returncode, stdout, stderr)
 
-    except subprocess.TimeoutExpired as exc:
-        logger.warning("shell_timeout command=%r timeout=%ss", command, TIMEOUT_SECONDS)
-        # A killed process has no real exit code -- report what's known
-        # (partial output, if any was captured before the kill) plus a
-        # clear reason, rather than a bare "timed out" with no context.
-        partial_stdout = (exc.stdout or "") if isinstance(exc.stdout, str) else ""
-        partial_stderr = (exc.stderr or "") if isinstance(exc.stderr, str) else ""
-        return _format_result(
-            None, partial_stdout, partial_stderr,
-            note=f"Timed out after {TIMEOUT_SECONDS}s and was killed.",
-        )
+        except subprocess.TimeoutExpired:
+            logger.warning("shell_timeout command=%r timeout=%ss", command, TIMEOUT_SECONDS)
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError, OSError) as kill_exc:
+                logger.warning("shell_killpg_failed command=%r error=%s", command, kill_exc)
+            # Drain whatever was captured before the kill, rather than
+            # blocking again on an already-doomed process.
+            partial_stdout, partial_stderr = proc.communicate()
+            return _format_result(
+                None, partial_stdout or "", partial_stderr or "",
+                note=f"Timed out after {TIMEOUT_SECONDS}s and was killed.",
+            )
 
     except Exception as error:
         logger.error("shell_error command=%r error=%s", command, error)
