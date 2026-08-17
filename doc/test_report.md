@@ -1,15 +1,15 @@
 # Test Report
 
-Generated: 2026-08-17 03:36:32
+Generated: 2026-08-17 03:47:49
 
-**Total:** 370 &nbsp;|&nbsp; **Passed:** 370 &nbsp;|&nbsp; **Failed:** 0 &nbsp;|&nbsp; **Skipped:** 0 &nbsp;|&nbsp; **Errors:** 0 &nbsp;|&nbsp; **Duration:** 7.89s
+**Total:** 392 &nbsp;|&nbsp; **Passed:** 392 &nbsp;|&nbsp; **Failed:** 0 &nbsp;|&nbsp; **Skipped:** 0 &nbsp;|&nbsp; **Errors:** 0 &nbsp;|&nbsp; **Duration:** 9.07s
 
 | ID | Test | Outcome | Duration (s) |
 |---|---|---|---|
 | AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[  true  ]` | ✅ passed | 0.000 |
-| AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[1]` | ✅ passed | 0.001 |
+| AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[1]` | ✅ passed | 0.000 |
 | AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[TRUE]` | ✅ passed | 0.000 |
-| AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[YES]` | ✅ passed | 0.000 |
+| AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[YES]` | ✅ passed | 0.001 |
 | AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[on]` | ✅ passed | 0.000 |
 | AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[true]` | ✅ passed | 0.000 |
 | AGENTCFG-001 | `tests/test_agent_config.py::TestEnvBool::test_truthy_values[yes]` | ✅ passed | 0.000 |
@@ -20,7 +20,7 @@ Generated: 2026-08-17 03:36:32
 | AGENTCFG-002 | `tests/test_agent_config.py::TestEnvBool::test_falsy_or_unrecognized_values[no]` | ✅ passed | 0.000 |
 | AGENTCFG-002 | `tests/test_agent_config.py::TestEnvBool::test_falsy_or_unrecognized_values[off]` | ✅ passed | 0.000 |
 | AGENTCFG-003 | `tests/test_agent_config.py::TestEnvBool::test_missing_env_var_uses_default` | ✅ passed | 0.000 |
-| AGENTCFG-004 | `tests/test_agent_config.py::TestEnvInt::test_missing_env_var_uses_default` | ✅ passed | 0.000 |
+| AGENTCFG-004 | `tests/test_agent_config.py::TestEnvInt::test_missing_env_var_uses_default` | ✅ passed | 0.001 |
 | AGENTCFG-005 | `tests/test_agent_config.py::TestEnvInt::test_numeric_string_parsed` | ✅ passed | 0.000 |
 | AGENTCFG-006 | `tests/test_agent_config.py::TestEnvInt::test_non_numeric_string_falls_back_to_default` | ✅ passed | 0.001 |
 | AGENTCFG-007 | `tests/test_agent_config.py::TestEnvIntOrNone::test_missing_env_var_uses_default` | ✅ passed | 0.000 |
@@ -33,7 +33,7 @@ Generated: 2026-08-17 03:36:32
 | AGENTCFG-011 | `tests/test_agent_config.py::TestEnvSet::test_missing_env_var_uses_default` | ✅ passed | 0.000 |
 | AGENTCFG-012 | `tests/test_agent_config.py::TestEnvSet::test_comma_separated_parsed_into_set` | ✅ passed | 0.000 |
 | AGENTCFG-013 | `tests/test_agent_config.py::TestEnvSet::test_whitespace_trimmed_and_empty_items_dropped` | ✅ passed | 0.000 |
-| AGENTCFG-014 | `tests/test_agent_config.py::TestEnvSet::test_returns_a_set_type` | ✅ passed | 0.000 |
+| AGENTCFG-014 | `tests/test_agent_config.py::TestEnvSet::test_returns_a_set_type` | ✅ passed | 0.001 |
 | AGENTCFG-015 | `tests/test_agent_config.py::TestEnvList::test_missing_env_var_uses_default` | ✅ passed | 0.000 |
 | AGENTCFG-016 | `tests/test_agent_config.py::TestEnvList::test_order_is_preserved` | ✅ passed | 0.000 |
 | AGENTCFG-017 | `tests/test_agent_config.py::TestEnvList::test_whitespace_trimmed_and_empty_items_dropped` | ✅ passed | 0.000 |
@@ -45,60 +45,60 @@ Generated: 2026-08-17 03:36:32
 | AGENTCFG-023 | `tests/test_agent_config.py::TestDefaultConstants::test_auto_mode_default` | ✅ passed | 0.000 |
 | AGENTCFG-024 | `tests/test_agent_config.py::TestDefaultConstants::test_memory_defaults` | ✅ passed | 0.000 |
 | AGENTCFG-025 | `tests/test_agent_config.py::TestDefaultConstants::test_system_prompt_default_mentions_core_tools` | ✅ passed | 0.000 |
-| AGENTCFG-026 | `tests/test_agent_config.py::TestSystemPromptOverride::test_env_var_overrides_default_prompt` | ✅ passed | 0.036 |
+| AGENTCFG-026 | `tests/test_agent_config.py::TestSystemPromptOverride::test_env_var_overrides_default_prompt` | ✅ passed | 0.034 |
 | AGENTCFG-027 | `tests/test_agent_config.py::TestEnvInt::test_non_numeric_string_logs_a_warning` | ✅ passed | 0.001 |
-| AUTORUN-001 | `tests/test_auto_runner.py::TestGeneratePlan::test_passes_tools_none_during_planning` | ✅ passed | 0.000 |
+| AUTORUN-001 | `tests/test_auto_runner.py::TestGeneratePlan::test_passes_tools_none_during_planning` | ✅ passed | 0.001 |
 | AUTORUN-002 | `tests/test_auto_runner.py::TestGeneratePlan::test_returns_model_plan_text` | ✅ passed | 0.000 |
 | AUTORUN-003 | `tests/test_auto_runner.py::TestGeneratePlan::test_empty_plan_falls_back_to_placeholder` | ✅ passed | 0.000 |
 | AUTORUN-004 | `tests/test_auto_runner.py::TestGeneratePlan::test_includes_user_request_in_planning_prompt` | ✅ passed | 0.000 |
-| AUTORUN-005 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_writes_plan_to_sandboxed_path` | ✅ passed | 0.001 |
+| AUTORUN-005 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_writes_plan_to_sandboxed_path` | ✅ passed | 0.000 |
 | AUTORUN-006 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_plan_write_failure_does_not_block_review` | ✅ passed | 0.001 |
 | AUTORUN-007 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_rejected_plan_returns_message_and_leaves_step_mode` | ✅ passed | 0.001 |
-| AUTORUN-008 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_approval_prompt_uses_force_ask` | ✅ passed | 0.001 |
-| AUTORUN-009 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_approved_plan_sets_auto_mode_and_calls_run_agent` | ✅ passed | 0.001 |
-| AUTORUN-010 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_auto_mode_reset_to_false_after_successful_run` | ✅ passed | 0.000 |
+| AUTORUN-008 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_approval_prompt_uses_force_ask` | ✅ passed | 0.000 |
+| AUTORUN-009 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_approved_plan_sets_auto_mode_and_calls_run_agent` | ✅ passed | 0.000 |
+| AUTORUN-010 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_auto_mode_reset_to_false_after_successful_run` | ✅ passed | 0.001 |
 | AUTORUN-011 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_auto_mode_reset_to_false_even_if_run_agent_raises` | ✅ passed | 0.001 |
-| AUTORUN-012 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_plan_text_included_in_execution_messages` | ✅ passed | 0.000 |
+| AUTORUN-012 | `tests/test_auto_runner.py::TestRunWithAutoMode::test_plan_text_included_in_execution_messages` | ✅ passed | 0.001 |
 | AUTORUN-018 | `tests/test_auto_runner.py::TestGeneratePlan::test_seeds_system_prompt_ahead_of_planning_request` | ✅ passed | 0.000 |
 | CHATLOG-001 | `tests/test_chat_logger.py::TestTruncate::test_short_string_untouched` | ✅ passed | 0.000 |
-| CHATLOG-002 | `tests/test_chat_logger.py::TestTruncate::test_long_string_truncated_with_marker` | ✅ passed | 0.001 |
+| CHATLOG-002 | `tests/test_chat_logger.py::TestTruncate::test_long_string_truncated_with_marker` | ✅ passed | 0.000 |
 | CHATLOG-003 | `tests/test_chat_logger.py::TestTruncate::test_none_limit_disables_truncation` | ✅ passed | 0.000 |
 | CHATLOG-004 | `tests/test_chat_logger.py::TestTruncate::test_non_string_values_untouched` | ✅ passed | 0.000 |
 | CHATLOG-005 | `tests/test_chat_logger.py::TestTruncate::test_recurses_into_dict_values` | ✅ passed | 0.000 |
-| CHATLOG-006 | `tests/test_chat_logger.py::TestTruncate::test_recurses_into_list_items` | ✅ passed | 0.000 |
-| CHATLOG-007 | `tests/test_chat_logger.py::TestExtractModelTiming::test_pulls_present_fields` | ✅ passed | 0.000 |
+| CHATLOG-006 | `tests/test_chat_logger.py::TestTruncate::test_recurses_into_list_items` | ✅ passed | 0.001 |
+| CHATLOG-007 | `tests/test_chat_logger.py::TestExtractModelTiming::test_pulls_present_fields` | ✅ passed | 0.001 |
 | CHATLOG-008 | `tests/test_chat_logger.py::TestExtractModelTiming::test_missing_fields_omitted_not_null` | ✅ passed | 0.000 |
 | CHATLOG-009 | `tests/test_chat_logger.py::TestExtractModelTiming::test_disabled_returns_empty_dict` | ✅ passed | 0.000 |
-| CHATLOG-010 | `tests/test_chat_logger.py::TestChatLoggerInit::test_creates_log_dir_and_writes_session_start` | ✅ passed | 0.002 |
+| CHATLOG-010 | `tests/test_chat_logger.py::TestChatLoggerInit::test_creates_log_dir_and_writes_session_start` | ✅ passed | 0.003 |
 | CHATLOG-011 | `tests/test_chat_logger.py::TestChatLoggerInit::test_per_run_mode_uses_timestamped_filename` | ✅ passed | 0.001 |
 | CHATLOG-012 | `tests/test_chat_logger.py::TestChatLoggerInit::test_single_mode_reuses_same_file_across_instances` | ✅ passed | 0.002 |
-| CHATLOG-013 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_user_message_increments_turn` | ✅ passed | 0.000 |
-| CHATLOG-014 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_model_call_start_logs_tool_names` | ✅ passed | 0.001 |
-| CHATLOG-015 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_model_response_computes_elapsed_ms` | ✅ passed | 0.001 |
+| CHATLOG-013 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_user_message_increments_turn` | ✅ passed | 0.001 |
+| CHATLOG-014 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_model_call_start_logs_tool_names` | ✅ passed | 0.000 |
+| CHATLOG-015 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_model_response_computes_elapsed_ms` | ✅ passed | 0.002 |
 | CHATLOG-016 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_model_response_without_prior_start_has_no_elapsed` | ✅ passed | 0.001 |
-| CHATLOG-017 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_model_response_includes_timing_from_response_object` | ✅ passed | 0.000 |
-| CHATLOG-018 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_tool_call_returns_start_time_token` | ✅ passed | 0.001 |
-| CHATLOG-019 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_tool_result_logs_elapsed_and_error_flag` | ✅ passed | 0.001 |
-| CHATLOG-020 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_loop_limit_hit_logs_max_iterations` | ✅ passed | 0.001 |
-| CHATLOG-021 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_error_logs_message_and_context` | ✅ passed | 0.000 |
+| CHATLOG-017 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_model_response_includes_timing_from_response_object` | ✅ passed | 0.001 |
+| CHATLOG-018 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_tool_call_returns_start_time_token` | ✅ passed | 0.000 |
+| CHATLOG-019 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_tool_result_logs_elapsed_and_error_flag` | ✅ passed | 0.000 |
+| CHATLOG-020 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_loop_limit_hit_logs_max_iterations` | ✅ passed | 0.000 |
+| CHATLOG-021 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_error_logs_message_and_context` | ✅ passed | 0.001 |
 | CHATLOG-022 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_session_end_default_reason` | ✅ passed | 0.000 |
 | CHATLOG-023 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_session_end_custom_reason` | ✅ passed | 0.001 |
-| CHATLOG-024 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_unserializable_field_logs_stub_not_crash` | ✅ passed | 0.000 |
+| CHATLOG-024 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_unserializable_field_logs_stub_not_crash` | ✅ passed | 0.001 |
 | CHATLOG-025 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_write_failure_does_not_raise` | ✅ passed | 0.000 |
 | CHATLOG-026 | `tests/test_chat_logger.py::TestChatLoggerEvents::test_echo_to_terminal_prints` | ✅ passed | 0.000 |
 | CHATLOG-027 | `tests/test_chat_logger.py::TestChatLoggerRotation::test_rotates_when_exceeding_max_bytes` | ✅ passed | 0.002 |
-| CHATLOG-028 | `tests/test_chat_logger.py::TestChatLoggerRotation::test_rotation_disabled_when_limit_is_none` | ✅ passed | 0.003 |
+| CHATLOG-028 | `tests/test_chat_logger.py::TestChatLoggerRotation::test_rotation_disabled_when_limit_is_none` | ✅ passed | 0.012 |
 | CHATLOG-029 | `tests/test_chat_logger.py::TestNullChatLogger::test_all_methods_are_no_ops_and_never_raise` | ✅ passed | 0.000 |
 | CHATLOG-030 | `tests/test_chat_logger.py::TestGetLogger::test_returns_null_logger_when_disabled` | ✅ passed | 0.000 |
 | CHATLOG-031 | `tests/test_chat_logger.py::TestGetLogger::test_returns_real_logger_when_enabled` | ✅ passed | 0.001 |
-| CHATLOG-032 | `tests/test_chat_logger.py::TestGetLogger::test_falls_back_to_null_logger_on_init_failure` | ✅ passed | 0.001 |
+| CHATLOG-032 | `tests/test_chat_logger.py::TestGetLogger::test_falls_back_to_null_logger_on_init_failure` | ✅ passed | 0.000 |
 | CHATLOG-033 | `tests/test_chat_logger.py::TestMaskSecrets::test_openai_style_key_redacted` | ✅ passed | 0.000 |
 | CHATLOG-034 | `tests/test_chat_logger.py::TestMaskSecrets::test_aws_access_key_redacted` | ✅ passed | 0.000 |
 | CHATLOG-035 | `tests/test_chat_logger.py::TestMaskSecrets::test_github_token_redacted` | ✅ passed | 0.000 |
 | CHATLOG-036 | `tests/test_chat_logger.py::TestMaskSecrets::test_jwt_redacted` | ✅ passed | 0.000 |
 | CHATLOG-037 | `tests/test_chat_logger.py::TestMaskSecrets::test_bearer_token_redacted` | ✅ passed | 0.000 |
-| CHATLOG-038 | `tests/test_chat_logger.py::TestMaskSecrets::test_private_key_block_redacted` | ✅ passed | 0.000 |
-| CHATLOG-039 | `tests/test_chat_logger.py::TestMaskSecrets::test_env_style_key_value_redacted` | ✅ passed | 0.000 |
+| CHATLOG-038 | `tests/test_chat_logger.py::TestMaskSecrets::test_private_key_block_redacted` | ✅ passed | 0.001 |
+| CHATLOG-039 | `tests/test_chat_logger.py::TestMaskSecrets::test_env_style_key_value_redacted` | ✅ passed | 0.001 |
 | CHATLOG-040 | `tests/test_chat_logger.py::TestMaskSecrets::test_plain_text_left_untouched` | ✅ passed | 0.000 |
 | CHATLOG-041 | `tests/test_chat_logger.py::TestMaskSecrets::test_recurses_into_dict_and_list` | ✅ passed | 0.000 |
 | CHATLOG-042 | `tests/test_chat_logger.py::TestMaskSecrets::test_non_string_values_untouched` | ✅ passed | 0.000 |
@@ -112,7 +112,7 @@ Generated: 2026-08-17 03:36:32
 | CONFIRM-006 | `tests/test_confirm.py::TestSanitize::test_empty_string` | ✅ passed | 0.000 |
 | CONFIRM-007 | `tests/test_confirm.py::TestConfirmNoTty::test_denies_when_stdin_is_not_a_tty` | ✅ passed | 0.001 |
 | CONFIRM-008 | `tests/test_confirm.py::TestConfirmAnswers::test_approves_on_yes_variants_and_bare_enter[  yes  ]` | ✅ passed | 0.001 |
-| CONFIRM-008 | `tests/test_confirm.py::TestConfirmAnswers::test_approves_on_yes_variants_and_bare_enter[YES]` | ✅ passed | 0.002 |
+| CONFIRM-008 | `tests/test_confirm.py::TestConfirmAnswers::test_approves_on_yes_variants_and_bare_enter[YES]` | ✅ passed | 0.001 |
 | CONFIRM-008 | `tests/test_confirm.py::TestConfirmAnswers::test_approves_on_yes_variants_and_bare_enter[Y]` | ✅ passed | 0.001 |
 | CONFIRM-008 | `tests/test_confirm.py::TestConfirmAnswers::test_approves_on_yes_variants_and_bare_enter[]` | ✅ passed | 0.001 |
 | CONFIRM-008 | `tests/test_confirm.py::TestConfirmAnswers::test_approves_on_yes_variants_and_bare_enter[y]` | ✅ passed | 0.001 |
@@ -124,61 +124,61 @@ Generated: 2026-08-17 03:36:32
 | CONFIRM-009 | `tests/test_confirm.py::TestConfirmAnswers::test_denies_on_anything_else[no]` | ✅ passed | 0.001 |
 | CONFIRM-009 | `tests/test_confirm.py::TestConfirmAnswers::test_denies_on_anything_else[nope]` | ✅ passed | 0.001 |
 | CONFIRM-010 | `tests/test_confirm.py::TestConfirmAnswers::test_denies_on_eof` | ✅ passed | 0.001 |
-| CONFIRM-011 | `tests/test_confirm.py::TestConfirmAnswers::test_denies_on_keyboard_interrupt` | ✅ passed | 0.001 |
-| CONFIRM-012 | `tests/test_confirm.py::TestConfirmAnswers::test_denies_on_unexpected_exception` | ✅ passed | 0.030 |
+| CONFIRM-011 | `tests/test_confirm.py::TestConfirmAnswers::test_denies_on_keyboard_interrupt` | ✅ passed | 0.002 |
+| CONFIRM-012 | `tests/test_confirm.py::TestConfirmAnswers::test_denies_on_unexpected_exception` | ✅ passed | 0.019 |
 | CONFIRM-013 | `tests/test_confirm.py::TestConfirmAnswers::test_action_string_is_sanitized_before_use` | ✅ passed | 0.001 |
-| CONFIRM-014 | `tests/test_confirm.py::TestConfirmTimeout::test_denies_on_timeout` | ✅ passed | 0.001 |
+| CONFIRM-014 | `tests/test_confirm.py::TestConfirmTimeout::test_denies_on_timeout` | ✅ passed | 0.002 |
 | CONFIRM-015 | `tests/test_confirm.py::TestConfirmTimeout::test_real_timeout_denies_when_input_never_returns_in_time` | ✅ passed | 0.052 |
 | CONFIRM-016 | `tests/test_confirm.py::TestConfirmTimeout::test_none_timeout_disables_timeout` | ✅ passed | 0.001 |
 | CONFIRM-017 | `tests/test_confirm.py::TestAutoMode::test_auto_mode_approves_without_prompting` | ✅ passed | 0.000 |
 | CONFIRM-018 | `tests/test_confirm.py::TestAutoMode::test_auto_mode_skips_tty_check_too` | ✅ passed | 0.000 |
 | CONFIRM-019 | `tests/test_confirm.py::TestAutoMode::test_force_ask_still_prompts_in_auto_mode` | ✅ passed | 0.001 |
-| CONFIRM-020 | `tests/test_confirm.py::TestAutoMode::test_force_ask_in_auto_mode_can_still_be_denied` | ✅ passed | 0.002 |
+| CONFIRM-020 | `tests/test_confirm.py::TestAutoMode::test_force_ask_in_auto_mode_can_still_be_denied` | ✅ passed | 0.001 |
 | CONFIRM-021 | `tests/test_confirm.py::TestAutoMode::test_step_mode_prompts_regardless_of_force_ask` | ✅ passed | 0.001 |
 | CONFIRM-022 | `tests/test_confirm.py::TestAutoMode::test_default_force_ask_is_false` | ✅ passed | 0.000 |
 | CONFIRM-023 | `tests/test_confirm.py::TestConfirmTimeout::test_timeout_works_when_called_from_a_worker_thread` | ✅ passed | 0.002 |
 | FSTOOLS-001 | `tests/test_fs_tools.py::TestResolvePath::test_simple_relative_path_resolves_inside_base_dir` | ✅ passed | 0.001 |
 | FSTOOLS-002 | `tests/test_fs_tools.py::TestResolvePath::test_nested_relative_path` | ✅ passed | 0.001 |
-| FSTOOLS-003 | `tests/test_fs_tools.py::TestResolvePath::test_dot_path_resolves_to_base_dir` | ✅ passed | 0.000 |
-| FSTOOLS-004 | `tests/test_fs_tools.py::TestResolvePath::test_non_string_path_raises[123]` | ✅ passed | 0.001 |
+| FSTOOLS-003 | `tests/test_fs_tools.py::TestResolvePath::test_dot_path_resolves_to_base_dir` | ✅ passed | 0.001 |
+| FSTOOLS-004 | `tests/test_fs_tools.py::TestResolvePath::test_non_string_path_raises[123]` | ✅ passed | 0.000 |
 | FSTOOLS-004 | `tests/test_fs_tools.py::TestResolvePath::test_non_string_path_raises[None]` | ✅ passed | 0.000 |
 | FSTOOLS-004 | `tests/test_fs_tools.py::TestResolvePath::test_non_string_path_raises[bad2]` | ✅ passed | 0.000 |
 | FSTOOLS-004 | `tests/test_fs_tools.py::TestResolvePath::test_non_string_path_raises[bad3]` | ✅ passed | 0.000 |
 | FSTOOLS-005 | `tests/test_fs_tools.py::TestResolvePath::test_empty_string_raises` | ✅ passed | 0.000 |
-| FSTOOLS-006 | `tests/test_fs_tools.py::TestResolvePath::test_control_characters_rejected[a\x00b.txt]` | ✅ passed | 0.001 |
-| FSTOOLS-006 | `tests/test_fs_tools.py::TestResolvePath::test_control_characters_rejected[a\x1fb]` | ✅ passed | 0.000 |
-| FSTOOLS-006 | `tests/test_fs_tools.py::TestResolvePath::test_control_characters_rejected[a\x7fb]` | ✅ passed | 0.000 |
+| FSTOOLS-006 | `tests/test_fs_tools.py::TestResolvePath::test_control_characters_rejected[a\x00b.txt]` | ✅ passed | 0.000 |
+| FSTOOLS-006 | `tests/test_fs_tools.py::TestResolvePath::test_control_characters_rejected[a\x1fb]` | ✅ passed | 0.001 |
+| FSTOOLS-006 | `tests/test_fs_tools.py::TestResolvePath::test_control_characters_rejected[a\x7fb]` | ✅ passed | 0.001 |
 | FSTOOLS-007 | `tests/test_fs_tools.py::TestResolvePath::test_parent_traversal_rejected` | ✅ passed | 0.001 |
 | FSTOOLS-008 | `tests/test_fs_tools.py::TestResolvePath::test_deep_parent_traversal_rejected` | ✅ passed | 0.001 |
 | FSTOOLS-009 | `tests/test_fs_tools.py::TestResolvePath::test_absolute_path_rejected` | ✅ passed | 0.001 |
-| FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[AUX]` | ✅ passed | 0.001 |
-| FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[COM1]` | ✅ passed | 0.000 |
+| FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[AUX]` | ✅ passed | 0.000 |
+| FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[COM1]` | ✅ passed | 0.001 |
 | FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[CON]` | ✅ passed | 0.001 |
 | FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[LPT1]` | ✅ passed | 0.001 |
 | FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[NUL]` | ✅ passed | 0.001 |
 | FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[PRN]` | ✅ passed | 0.001 |
 | FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[com9.log]` | ✅ passed | 0.000 |
-| FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[con.txt]` | ✅ passed | 0.000 |
+| FSTOOLS-010 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_names_rejected[con.txt]` | ✅ passed | 0.001 |
 | FSTOOLS-011 | `tests/test_fs_tools.py::TestResolvePath::test_windows_reserved_name_in_nested_segment_rejected` | ✅ passed | 0.000 |
-| FSTOOLS-012 | `tests/test_fs_tools.py::TestResolvePath::test_non_reserved_name_that_shares_a_prefix_is_allowed` | ✅ passed | 0.000 |
+| FSTOOLS-012 | `tests/test_fs_tools.py::TestResolvePath::test_non_reserved_name_that_shares_a_prefix_is_allowed` | ✅ passed | 0.001 |
 | FSTOOLS-013 | `tests/test_fs_tools.py::TestResolvePath::test_fullwidth_unicode_traversal_normalized_and_rejected` | ✅ passed | 0.001 |
 | FSTOOLS-014 | `tests/test_fs_tools.py::TestResolvePath::test_symlink_target_rejected_even_if_inside_base_dir` | ✅ passed | 0.002 |
 | FSTOOLS-015 | `tests/test_fs_tools.py::TestResolvePath::test_base_dir_prefix_lookalike_directory_is_not_a_bypass` | ✅ passed | 0.001 |
 | FSTOOLS-016 | `tests/test_fs_tools.py::TestCreateDirectory::test_creates_directory_when_confirmed` | ✅ passed | 0.001 |
-| FSTOOLS-017 | `tests/test_fs_tools.py::TestCreateDirectory::test_creates_nested_parents` | ✅ passed | 0.001 |
-| FSTOOLS-018 | `tests/test_fs_tools.py::TestCreateDirectory::test_idempotent_on_existing_directory` | ✅ passed | 0.001 |
+| FSTOOLS-017 | `tests/test_fs_tools.py::TestCreateDirectory::test_creates_nested_parents` | ✅ passed | 0.002 |
+| FSTOOLS-018 | `tests/test_fs_tools.py::TestCreateDirectory::test_idempotent_on_existing_directory` | ✅ passed | 0.002 |
 | FSTOOLS-019 | `tests/test_fs_tools.py::TestCreateDirectory::test_cancelled_when_confirmation_denied` | ✅ passed | 0.001 |
 | FSTOOLS-020 | `tests/test_fs_tools.py::TestCreateDirectory::test_traversal_path_raises_before_confirmation` | ✅ passed | 0.001 |
 | FSTOOLS-021 | `tests/test_fs_tools.py::TestWriteFile::test_writes_content_when_confirmed` | ✅ passed | 0.001 |
 | FSTOOLS-022 | `tests/test_fs_tools.py::TestWriteFile::test_overwrites_existing_file` | ✅ passed | 0.001 |
 | FSTOOLS-023 | `tests/test_fs_tools.py::TestWriteFile::test_creates_missing_parent_directories` | ✅ passed | 0.001 |
-| FSTOOLS-024 | `tests/test_fs_tools.py::TestWriteFile::test_cancelled_when_confirmation_denied` | ✅ passed | 0.000 |
-| FSTOOLS-025 | `tests/test_fs_tools.py::TestWriteFile::test_oversized_content_refused_without_confirmation` | ✅ passed | 0.000 |
-| FSTOOLS-026 | `tests/test_fs_tools.py::TestWriteFile::test_empty_content_is_allowed` | ✅ passed | 0.000 |
+| FSTOOLS-024 | `tests/test_fs_tools.py::TestWriteFile::test_cancelled_when_confirmation_denied` | ✅ passed | 0.001 |
+| FSTOOLS-025 | `tests/test_fs_tools.py::TestWriteFile::test_oversized_content_refused_without_confirmation` | ✅ passed | 0.001 |
+| FSTOOLS-026 | `tests/test_fs_tools.py::TestWriteFile::test_empty_content_is_allowed` | ✅ passed | 0.001 |
 | FSTOOLS-027 | `tests/test_fs_tools.py::TestReadFile::test_reads_existing_file` | ✅ passed | 0.001 |
 | FSTOOLS-028 | `tests/test_fs_tools.py::TestReadFile::test_missing_file_returns_message_not_raise` | ✅ passed | 0.001 |
 | FSTOOLS-029 | `tests/test_fs_tools.py::TestReadFile::test_directory_path_returns_message_not_raise` | ✅ passed | 0.001 |
-| FSTOOLS-030 | `tests/test_fs_tools.py::TestReadFile::test_no_confirmation_required` | ✅ passed | 0.001 |
+| FSTOOLS-030 | `tests/test_fs_tools.py::TestReadFile::test_no_confirmation_required` | ✅ passed | 0.000 |
 | FSTOOLS-031 | `tests/test_fs_tools.py::TestListDirectory::test_lists_files_and_dirs_with_kind_prefix` | ✅ passed | 0.001 |
 | FSTOOLS-032 | `tests/test_fs_tools.py::TestListDirectory::test_dirs_sorted_before_files` | ✅ passed | 0.001 |
 | FSTOOLS-033 | `tests/test_fs_tools.py::TestListDirectory::test_empty_directory_message` | ✅ passed | 0.001 |
@@ -186,31 +186,37 @@ Generated: 2026-08-17 03:36:32
 | FSTOOLS-035 | `tests/test_fs_tools.py::TestListDirectory::test_missing_directory_returns_message_not_raise` | ✅ passed | 0.000 |
 | FSTOOLS-036 | `tests/test_fs_tools.py::TestListDirectory::test_file_path_returns_message_not_raise` | ✅ passed | 0.001 |
 | FSTOOLS-037 | `tests/test_fs_tools.py::TestListDirectory::test_only_one_level_deep` | ✅ passed | 0.001 |
-| FULLAGENT-001 | `tests/test_full_agent_main.py::TestMain::test_exit_command_ends_session_cleanly` | ✅ passed | 0.001 |
-| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[EXIT]` | ✅ passed | 0.002 |
-| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[Quit]` | ✅ passed | 0.001 |
-| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[exit]` | ✅ passed | 0.001 |
-| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[q]` | ✅ passed | 0.001 |
-| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[quit]` | ✅ passed | 0.001 |
-| FULLAGENT-003 | `tests/test_full_agent_main.py::TestMain::test_user_message_is_logged_and_agent_is_run` | ✅ passed | 0.001 |
-| FULLAGENT-004 | `tests/test_full_agent_main.py::TestMain::test_system_prompt_seeded_as_first_message` | ✅ passed | 0.001 |
-| FULLAGENT-005 | `tests/test_full_agent_main.py::TestMain::test_keyboard_interrupt_during_input_ends_session` | ✅ passed | 0.001 |
+| FULLAGENT-001 | `tests/test_full_agent_main.py::TestMain::test_exit_command_ends_session_cleanly` | ✅ passed | 0.003 |
+| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[EXIT]` | ✅ passed | 0.003 |
+| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[Quit]` | ✅ passed | 0.003 |
+| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[exit]` | ✅ passed | 0.004 |
+| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[q]` | ✅ passed | 0.007 |
+| FULLAGENT-002 | `tests/test_full_agent_main.py::TestMain::test_exit_synonyms_case_insensitive[quit]` | ✅ passed | 0.003 |
+| FULLAGENT-003 | `tests/test_full_agent_main.py::TestMain::test_user_message_is_logged_and_agent_is_run` | ✅ passed | 0.003 |
+| FULLAGENT-004 | `tests/test_full_agent_main.py::TestMain::test_system_prompt_seeded_as_first_message` | ✅ passed | 0.009 |
+| FULLAGENT-005 | `tests/test_full_agent_main.py::TestMain::test_keyboard_interrupt_during_input_ends_session` | ✅ passed | 0.003 |
 | FULLAGENT-006 | `tests/test_full_agent_main.py::TestMain::test_unexpected_exception_is_logged_and_reraised` | ✅ passed | 0.003 |
 | FULLAGENT-007 | `tests/test_full_agent_main.py::TestMain::test_tool_map_wires_all_nine_real_functions` | ✅ passed | 0.000 |
-| FULLAGENT-008 | `tests/test_full_agent_main.py::TestMain::test_run_agent_is_offered_exactly_nine_tools` | ✅ passed | 0.001 |
-| FULLAGENT-009 | `tests/test_full_agent_main.py::TestMain::test_step_mode_default_calls_run_agent_not_auto` | ✅ passed | 0.001 |
-| FULLAGENT-010 | `tests/test_full_agent_main.py::TestMain::test_auto_mode_true_calls_run_with_auto_mode_not_run_agent` | ✅ passed | 0.006 |
-| FULLAGENT-011 | `tests/test_full_agent_main.py::TestMain::test_auto_mode_answer_is_printed` | ✅ passed | 0.001 |
-| FULLAGENT-012 | `tests/test_full_agent_main.py::TestSaveSessionSummaryWiring::test_exit_command_calls_save_session_summary` | ✅ passed | 0.001 |
-| FULLAGENT-013 | `tests/test_full_agent_main.py::TestSaveSessionSummaryWiring::test_keyboard_interrupt_calls_save_session_summary` | ✅ passed | 0.003 |
-| FULLAGENT-014 | `tests/test_full_agent_main.py::TestSaveSessionSummaryWiring::test_crash_path_does_not_call_save_session_summary` | ✅ passed | 0.002 |
+| FULLAGENT-008 | `tests/test_full_agent_main.py::TestMain::test_run_agent_is_offered_exactly_nine_tools` | ✅ passed | 0.004 |
+| FULLAGENT-009 | `tests/test_full_agent_main.py::TestMain::test_step_mode_default_calls_run_agent_not_auto` | ✅ passed | 0.004 |
+| FULLAGENT-010 | `tests/test_full_agent_main.py::TestMain::test_auto_mode_true_calls_run_with_auto_mode_not_run_agent` | ✅ passed | 0.005 |
+| FULLAGENT-011 | `tests/test_full_agent_main.py::TestMain::test_auto_mode_answer_is_printed` | ✅ passed | 0.004 |
+| FULLAGENT-012 | `tests/test_full_agent_main.py::TestSaveSessionSummaryWiring::test_exit_command_calls_save_session_summary` | ✅ passed | 0.003 |
+| FULLAGENT-013 | `tests/test_full_agent_main.py::TestSaveSessionSummaryWiring::test_keyboard_interrupt_calls_save_session_summary` | ✅ passed | 0.004 |
+| FULLAGENT-014 | `tests/test_full_agent_main.py::TestSaveSessionSummaryWiring::test_crash_path_does_not_call_save_session_summary` | ✅ passed | 0.008 |
+| FULLAGENT-015 | `tests/test_full_agent_main.py::TestTokenUsageWiring::test_startup_prints_loaded_token_total` | ✅ passed | 0.001 |
+| FULLAGENT-016 | `tests/test_full_agent_main.py::TestTokenUsageWiring::test_exit_command_calls_save_token_usage_with_session_total` | ✅ passed | 0.002 |
+| FULLAGENT-017 | `tests/test_full_agent_main.py::TestTokenUsageWiring::test_exit_command_prints_session_and_alltime_totals` | ✅ passed | 0.002 |
+| FULLAGENT-018 | `tests/test_full_agent_main.py::TestTokenUsageWiring::test_keyboard_interrupt_calls_save_token_usage` | ✅ passed | 0.002 |
+| FULLAGENT-019 | `tests/test_full_agent_main.py::TestTokenUsageWiring::test_crash_path_still_calls_save_token_usage` | ✅ passed | 0.004 |
+| FULLAGENT-020 | `tests/test_full_agent_main.py::TestTokenUsageWiring::test_non_int_total_tokens_coerced_to_zero` | ✅ passed | 0.003 |
 | HUMAN-001 | `tests/test_human_tools.py::TestAskHuman::test_returns_stripped_response` | ✅ passed | 0.001 |
 | HUMAN-002 | `tests/test_human_tools.py::TestAskHuman::test_empty_response_returns_ask_again_message` | ✅ passed | 0.000 |
 | HUMAN-003 | `tests/test_human_tools.py::TestAskHuman::test_whitespace_only_response_treated_as_empty` | ✅ passed | 0.000 |
 | HUMAN-004 | `tests/test_human_tools.py::TestAskHuman::test_prints_the_question` | ✅ passed | 0.000 |
 | HUMAN-005 | `tests/test_human_tools.py::TestAskHumanChoice::test_returns_selected_option_on_valid_choice` | ✅ passed | 0.000 |
 | HUMAN-006 | `tests/test_human_tools.py::TestAskHumanChoice::test_reprompts_on_non_numeric_input` | ✅ passed | 0.000 |
-| HUMAN-007 | `tests/test_human_tools.py::TestAskHumanChoice::test_reprompts_on_out_of_range_choice` | ✅ passed | 0.000 |
+| HUMAN-007 | `tests/test_human_tools.py::TestAskHumanChoice::test_reprompts_on_out_of_range_choice` | ✅ passed | 0.001 |
 | HUMAN-008 | `tests/test_human_tools.py::TestAskHumanChoice::test_first_option_selectable` | ✅ passed | 0.000 |
 | HUMAN-009 | `tests/test_human_tools.py::TestAskHumanChoice::test_last_option_selectable` | ✅ passed | 0.000 |
 | HUMAN-010 | `tests/test_human_tools.py::TestAskHumanChoice::test_fewer_than_two_options_returns_error_without_prompting` | ✅ passed | 0.000 |
@@ -220,7 +226,7 @@ Generated: 2026-08-17 03:36:32
 | HUMAN-014 | `tests/test_human_tools.py::TestApproveAction::test_rejected_when_confirm_returns_false` | ✅ passed | 0.000 |
 | HUMAN-015 | `tests/test_human_tools.py::TestApproveAction::test_passes_action_text_through_to_confirm` | ✅ passed | 0.000 |
 | HUMAN-016 | `tests/test_human_tools.py::TestApproveAction::test_delegates_to_real_confirm_gate_not_a_reimplementation` | ✅ passed | 0.000 |
-| LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[1]` | ✅ passed | 0.001 |
+| LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[1]` | ✅ passed | 0.000 |
 | LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[On]` | ✅ passed | 0.000 |
 | LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[TRUE]` | ✅ passed | 0.000 |
 | LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[True]` | ✅ passed | 0.000 |
@@ -228,7 +234,7 @@ Generated: 2026-08-17 03:36:32
 | LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[on]` | ✅ passed | 0.000 |
 | LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[true]` | ✅ passed | 0.000 |
 | LOGCFG-001 | `tests/test_log_config.py::TestEnvBool::test_truthy_values[yes]` | ✅ passed | 0.000 |
-| LOGCFG-002 | `tests/test_log_config.py::TestEnvBool::test_falsy_or_unrecognized_values[0]` | ✅ passed | 0.001 |
+| LOGCFG-002 | `tests/test_log_config.py::TestEnvBool::test_falsy_or_unrecognized_values[0]` | ✅ passed | 0.000 |
 | LOGCFG-002 | `tests/test_log_config.py::TestEnvBool::test_falsy_or_unrecognized_values[]` | ✅ passed | 0.000 |
 | LOGCFG-002 | `tests/test_log_config.py::TestEnvBool::test_falsy_or_unrecognized_values[banana]` | ✅ passed | 0.000 |
 | LOGCFG-002 | `tests/test_log_config.py::TestEnvBool::test_falsy_or_unrecognized_values[false]` | ✅ passed | 0.000 |
@@ -236,8 +242,8 @@ Generated: 2026-08-17 03:36:32
 | LOGCFG-002 | `tests/test_log_config.py::TestEnvBool::test_falsy_or_unrecognized_values[off]` | ✅ passed | 0.000 |
 | LOGCFG-003 | `tests/test_log_config.py::TestEnvBool::test_missing_env_var_uses_default_true` | ✅ passed | 0.000 |
 | LOGCFG-004 | `tests/test_log_config.py::TestEnvBool::test_missing_env_var_uses_default_false` | ✅ passed | 0.000 |
-| LOGCFG-005 | `tests/test_log_config.py::TestEnvBool::test_whitespace_is_trimmed` | ✅ passed | 0.000 |
-| LOGCFG-006 | `tests/test_log_config.py::TestEnvIntOrNone::test_missing_env_var_uses_default` | ✅ passed | 0.001 |
+| LOGCFG-005 | `tests/test_log_config.py::TestEnvBool::test_whitespace_is_trimmed` | ✅ passed | 0.001 |
+| LOGCFG-006 | `tests/test_log_config.py::TestEnvIntOrNone::test_missing_env_var_uses_default` | ✅ passed | 0.000 |
 | LOGCFG-007 | `tests/test_log_config.py::TestEnvIntOrNone::test_missing_env_var_default_none` | ✅ passed | 0.000 |
 | LOGCFG-008 | `tests/test_log_config.py::TestEnvIntOrNone::test_literal_none_string_returns_none[  none  ]` | ✅ passed | 0.000 |
 | LOGCFG-008 | `tests/test_log_config.py::TestEnvIntOrNone::test_literal_none_string_returns_none[NONE]` | ✅ passed | 0.000 |
@@ -252,67 +258,78 @@ Generated: 2026-08-17 03:36:32
 | MEMORY-005 | `tests/test_memory.py::TestRememberFact::test_tags_are_lowercased_and_deduped` | ✅ passed | 0.001 |
 | MEMORY-006 | `tests/test_memory.py::TestRememberFact::test_text_truncated_to_max_chars` | ✅ passed | 0.001 |
 | MEMORY-007 | `tests/test_memory.py::TestRememberFact::test_disabled_memory_does_not_write` | ✅ passed | 0.000 |
-| MEMORY-008 | `tests/test_memory.py::TestRememberFact::test_second_call_appends_not_overwrites` | ✅ passed | 0.001 |
+| MEMORY-008 | `tests/test_memory.py::TestRememberFact::test_second_call_appends_not_overwrites` | ✅ passed | 0.002 |
 | MEMORY-009 | `tests/test_memory.py::TestRememberFact::test_entries_trimmed_to_max_entries` | ✅ passed | 0.004 |
 | MEMORY-010 | `tests/test_memory.py::TestRecallMemory::test_no_memories_saved_yet` | ✅ passed | 0.000 |
-| MEMORY-011 | `tests/test_memory.py::TestRecallMemory::test_empty_query_returns_all_recent_entries` | ✅ passed | 0.002 |
-| MEMORY-012 | `tests/test_memory.py::TestRecallMemory::test_substring_query_filters_matches` | ✅ passed | 0.002 |
+| MEMORY-011 | `tests/test_memory.py::TestRecallMemory::test_empty_query_returns_all_recent_entries` | ✅ passed | 0.001 |
+| MEMORY-012 | `tests/test_memory.py::TestRecallMemory::test_substring_query_filters_matches` | ✅ passed | 0.001 |
 | MEMORY-013 | `tests/test_memory.py::TestRecallMemory::test_query_is_case_insensitive` | ✅ passed | 0.001 |
 | MEMORY-014 | `tests/test_memory.py::TestRecallMemory::test_no_match_returns_explicit_message` | ✅ passed | 0.001 |
 | MEMORY-015 | `tests/test_memory.py::TestRecallMemory::test_tag_filter_matches_any_tag` | ✅ passed | 0.002 |
-| MEMORY-016 | `tests/test_memory.py::TestRecallMemory::test_query_and_tag_filter_combine_with_and` | ✅ passed | 0.001 |
+| MEMORY-016 | `tests/test_memory.py::TestRecallMemory::test_query_and_tag_filter_combine_with_and` | ✅ passed | 0.003 |
 | MEMORY-017 | `tests/test_memory.py::TestRecallMemory::test_results_capped_at_max_recall_results` | ✅ passed | 0.004 |
 | MEMORY-018 | `tests/test_memory.py::TestRecallMemory::test_disabled_memory_returns_disabled_message` | ✅ passed | 0.000 |
 | MEMORY-019 | `tests/test_memory.py::TestRecallMemory::test_corrupt_memory_file_treated_as_empty` | ✅ passed | 0.001 |
 | MEMORY-020 | `tests/test_memory.py::TestSaveSessionSummary::test_saves_summary_entry_when_enough_turns` | ✅ passed | 0.001 |
 | MEMORY-021 | `tests/test_memory.py::TestSaveSessionSummary::test_skips_when_fewer_than_two_real_turns` | ✅ passed | 0.000 |
-| MEMORY-022 | `tests/test_memory.py::TestSaveSessionSummary::test_summarizer_call_offers_no_tools` | ✅ passed | 0.001 |
-| MEMORY-023 | `tests/test_memory.py::TestSaveSessionSummary::test_chat_failure_is_swallowed_not_raised` | ✅ passed | 0.000 |
+| MEMORY-022 | `tests/test_memory.py::TestSaveSessionSummary::test_summarizer_call_offers_no_tools` | ✅ passed | 0.003 |
+| MEMORY-023 | `tests/test_memory.py::TestSaveSessionSummary::test_chat_failure_is_swallowed_not_raised` | ✅ passed | 0.001 |
 | MEMORY-024 | `tests/test_memory.py::TestSaveSessionSummary::test_empty_summary_content_writes_nothing` | ✅ passed | 0.001 |
 | MEMORY-025 | `tests/test_memory.py::TestSaveSessionSummary::test_disabled_memory_skips_entirely` | ✅ passed | 0.000 |
 | MEMORY-026 | `tests/test_memory.py::TestRecallMemory::test_corrupt_memory_file_backed_up_before_wipe` | ✅ passed | 0.001 |
 | MEMORY-027 | `tests/test_memory.py::TestRecallMemory::test_missing_file_produces_no_backup` | ✅ passed | 0.000 |
 | MEMORY-028 | `tests/test_memory.py::TestAtomicWrite::test_save_uses_os_replace_not_direct_write` | ✅ passed | 0.001 |
 | MEMORY-029 | `tests/test_memory.py::TestAtomicWrite::test_no_leftover_temp_file_after_save` | ✅ passed | 0.001 |
-| MEMORY-030 | `tests/test_memory.py::TestAtomicWrite::test_final_file_is_valid_json_after_multiple_saves` | ✅ passed | 0.003 |
+| MEMORY-030 | `tests/test_memory.py::TestAtomicWrite::test_final_file_is_valid_json_after_multiple_saves` | ✅ passed | 0.004 |
 | MEMORY-031 | `tests/test_memory.py::TestSaveSessionSummary::test_summarizer_call_windowed_to_recent_messages` | ✅ passed | 0.001 |
-| MEMORY-032 | `tests/test_memory.py::TestSaveSessionSummary::test_short_conversation_under_window_sent_in_full` | ✅ passed | 0.005 |
-| SHARED-001 | `tests/test_shared.py::TestSection::test_underlines_title_with_equals_matching_length` | ✅ passed | 0.001 |
+| MEMORY-032 | `tests/test_memory.py::TestSaveSessionSummary::test_short_conversation_under_window_sent_in_full` | ✅ passed | 0.001 |
+| MEMORY-033 | `tests/test_memory.py::TestTokenUsage::test_load_returns_zero_when_never_saved` | ✅ passed | 0.000 |
+| MEMORY-034 | `tests/test_memory.py::TestTokenUsage::test_save_returns_new_total` | ✅ passed | 0.001 |
+| MEMORY-035 | `tests/test_memory.py::TestTokenUsage::test_save_persists_to_disk` | ✅ passed | 0.001 |
+| MEMORY-036 | `tests/test_memory.py::TestTokenUsage::test_load_reflects_saved_value` | ✅ passed | 0.001 |
+| MEMORY-037 | `tests/test_memory.py::TestTokenUsage::test_second_save_adds_to_running_total` | ✅ passed | 0.007 |
+| MEMORY-038 | `tests/test_memory.py::TestTokenUsage::test_zero_session_tokens_is_a_noop` | ✅ passed | 0.001 |
+| MEMORY-039 | `tests/test_memory.py::TestTokenUsage::test_negative_session_tokens_is_a_noop` | ✅ passed | 0.001 |
+| MEMORY-040 | `tests/test_memory.py::TestTokenUsage::test_disabled_memory_load_returns_zero` | ✅ passed | 0.001 |
+| MEMORY-041 | `tests/test_memory.py::TestTokenUsage::test_disabled_memory_save_does_not_persist` | ✅ passed | 0.001 |
+| MEMORY-042 | `tests/test_memory.py::TestTokenUsage::test_token_usage_coexists_with_entries` | ✅ passed | 0.002 |
+| MEMORY-043 | `tests/test_memory.py::TestTokenUsage::test_corrupt_file_treated_as_zero_usage` | ✅ passed | 0.001 |
+| SHARED-001 | `tests/test_shared.py::TestSection::test_underlines_title_with_equals_matching_length` | ✅ passed | 0.000 |
 | SHARED-002 | `tests/test_shared.py::TestSection::test_empty_title` | ✅ passed | 0.000 |
 | SHARED-003 | `tests/test_shared.py::TestCallSignature::test_same_name_and_args_produce_same_signature` | ✅ passed | 0.000 |
-| SHARED-004 | `tests/test_shared.py::TestCallSignature::test_key_order_does_not_affect_signature` | ✅ passed | 0.000 |
+| SHARED-004 | `tests/test_shared.py::TestCallSignature::test_key_order_does_not_affect_signature` | ✅ passed | 0.001 |
 | SHARED-005 | `tests/test_shared.py::TestCallSignature::test_different_args_produce_different_signature` | ✅ passed | 0.000 |
-| SHARED-006 | `tests/test_shared.py::TestCallSignature::test_different_tool_name_produces_different_signature` | ✅ passed | 0.001 |
+| SHARED-006 | `tests/test_shared.py::TestCallSignature::test_different_tool_name_produces_different_signature` | ✅ passed | 0.000 |
 | SHARED-007 | `tests/test_shared.py::TestCallSignature::test_unserializable_arguments_fall_back_to_str` | ✅ passed | 0.000 |
 | SHARED-008 | `tests/test_shared.py::TestParseArguments::test_dict_passes_through` | ✅ passed | 0.000 |
 | SHARED-009 | `tests/test_shared.py::TestParseArguments::test_valid_json_string_parsed` | ✅ passed | 0.000 |
-| SHARED-010 | `tests/test_shared.py::TestParseArguments::test_malformed_json_raises_value_error` | ✅ passed | 0.000 |
+| SHARED-010 | `tests/test_shared.py::TestParseArguments::test_malformed_json_raises_value_error` | ✅ passed | 0.001 |
 | SHARED-011 | `tests/test_shared.py::TestParseArguments::test_json_array_string_raises_value_error` | ✅ passed | 0.001 |
 | SHARED-012 | `tests/test_shared.py::TestParseArguments::test_unsupported_type_raises_value_error` | ✅ passed | 0.000 |
 | SHARED-013 | `tests/test_shared.py::TestParseArguments::test_empty_dict_is_valid` | ✅ passed | 0.000 |
 | SHARED-014 | `tests/test_shared.py::TestSanitizeForModel::test_short_text_untouched` | ✅ passed | 0.000 |
 | SHARED-015 | `tests/test_shared.py::TestSanitizeForModel::test_long_text_truncated_with_marker` | ✅ passed | 0.000 |
 | SHARED-016 | `tests/test_shared.py::TestSanitizeForModel::test_boundary_length_untouched` | ✅ passed | 0.000 |
-| SHARED-017 | `tests/test_shared.py::TestRunToolWithTimeout::test_returns_function_result` | ✅ passed | 0.004 |
-| SHARED-018 | `tests/test_shared.py::TestRunToolWithTimeout::test_raises_timeout_error_when_function_hangs` | ✅ passed | 1.001 |
+| SHARED-017 | `tests/test_shared.py::TestRunToolWithTimeout::test_returns_function_result` | ✅ passed | 0.002 |
+| SHARED-018 | `tests/test_shared.py::TestRunToolWithTimeout::test_raises_timeout_error_when_function_hangs` | ✅ passed | 1.002 |
 | SHARED-019 | `tests/test_shared.py::TestRunToolWithTimeout::test_propagates_function_exceptions` | ✅ passed | 0.001 |
-| SHARED-020 | `tests/test_shared.py::TestOllamaAgentChat::test_returns_response_on_first_success` | ✅ passed | 0.022 |
-| SHARED-021 | `tests/test_shared.py::TestOllamaAgentChat::test_retries_transient_failure_then_succeeds` | ✅ passed | 0.023 |
-| SHARED-022 | `tests/test_shared.py::TestOllamaAgentChat::test_raises_friendly_runtime_error_after_all_retries_fail` | ✅ passed | 0.022 |
-| SHARED-023 | `tests/test_shared.py::TestOllamaAgentChat::test_default_model_used_when_none_specified` | ✅ passed | 0.022 |
-| SHARED-024 | `tests/test_shared.py::TestOllamaAgentChatStream::test_yields_chunks` | ✅ passed | 0.017 |
-| SHARED-025 | `tests/test_shared.py::TestOllamaAgentChatStream::test_raises_friendly_runtime_error_on_failure` | ✅ passed | 0.023 |
+| SHARED-020 | `tests/test_shared.py::TestOllamaAgentChat::test_returns_response_on_first_success` | ✅ passed | 0.029 |
+| SHARED-021 | `tests/test_shared.py::TestOllamaAgentChat::test_retries_transient_failure_then_succeeds` | ✅ passed | 0.027 |
+| SHARED-022 | `tests/test_shared.py::TestOllamaAgentChat::test_raises_friendly_runtime_error_after_all_retries_fail` | ✅ passed | 0.036 |
+| SHARED-023 | `tests/test_shared.py::TestOllamaAgentChat::test_default_model_used_when_none_specified` | ✅ passed | 0.031 |
+| SHARED-024 | `tests/test_shared.py::TestOllamaAgentChatStream::test_yields_chunks` | ✅ passed | 0.028 |
+| SHARED-025 | `tests/test_shared.py::TestOllamaAgentChatStream::test_raises_friendly_runtime_error_on_failure` | ✅ passed | 0.031 |
 | SHARED-026 | `tests/test_shared.py::TestRunAgent::test_returns_final_answer_when_no_tool_calls` | ✅ passed | 0.000 |
 | SHARED-027 | `tests/test_shared.py::TestRunAgent::test_final_answer_none_content_returns_empty_string` | ✅ passed | 0.000 |
-| SHARED-028 | `tests/test_shared.py::TestRunAgent::test_executes_tool_and_returns_final_answer_next_round` | ✅ passed | 0.004 |
-| SHARED-029 | `tests/test_shared.py::TestRunAgent::test_unknown_tool_reported_as_error_observation` | ✅ passed | 0.001 |
-| SHARED-030 | `tests/test_shared.py::TestRunAgent::test_tool_exception_reported_not_raised` | ✅ passed | 0.025 |
+| SHARED-028 | `tests/test_shared.py::TestRunAgent::test_executes_tool_and_returns_final_answer_next_round` | ✅ passed | 0.002 |
+| SHARED-029 | `tests/test_shared.py::TestRunAgent::test_unknown_tool_reported_as_error_observation` | ✅ passed | 0.000 |
+| SHARED-030 | `tests/test_shared.py::TestRunAgent::test_tool_exception_reported_not_raised` | ✅ passed | 0.031 |
 | SHARED-031 | `tests/test_shared.py::TestRunAgent::test_tool_timeout_via_patched_constant` | ✅ passed | 1.002 |
 | SHARED-032 | `tests/test_shared.py::TestRunAgent::test_malformed_arguments_reported_as_error` | ✅ passed | 0.000 |
 | SHARED-033 | `tests/test_shared.py::TestRunAgent::test_stuck_loop_detection_stops_after_repeated_identical_calls` | ✅ passed | 0.002 |
-| SHARED-034 | `tests/test_shared.py::TestRunAgent::test_chat_failure_returns_stopped_message_not_raise` | ✅ passed | 0.005 |
+| SHARED-034 | `tests/test_shared.py::TestRunAgent::test_chat_failure_returns_stopped_message_not_raise` | ✅ passed | 0.013 |
 | SHARED-035 | `tests/test_shared.py::TestRunAgent::test_max_iterations_reached_returns_stopped_message_when_no_final_answer` | ✅ passed | 0.000 |
-| SHARED-036 | `tests/test_shared.py::TestRunAgent::test_max_iterations_reached_when_always_calling_tools` | ✅ passed | 0.005 |
+| SHARED-036 | `tests/test_shared.py::TestRunAgent::test_max_iterations_reached_when_always_calling_tools` | ✅ passed | 0.003 |
 | SHARED-037 | `tests/test_shared.py::TestRunAgent::test_wall_timeout_stops_run` | ✅ passed | 0.000 |
 | SHARED-038 | `tests/test_shared.py::TestRunAgent::test_defaults_to_null_chat_logger_when_none_passed` | ✅ passed | 0.000 |
 | SHARED-039 | `tests/test_shared.py::TestRunAgent::test_uses_provided_chat_logger` | ✅ passed | 0.000 |
@@ -326,28 +343,33 @@ Generated: 2026-08-17 03:36:32
 | SHARED-047 | `tests/test_shared.py::TestValidateArguments::test_error_message_lists_expected_and_given_params` | ✅ passed | 0.000 |
 | SHARED-048 | `tests/test_shared.py::TestValidateArguments::test_no_argument_function_accepts_empty_dict` | ✅ passed | 0.000 |
 | SHARED-049 | `tests/test_shared.py::TestRunAgent::test_mismatched_arguments_reported_without_calling_the_tool` | ✅ passed | 0.000 |
-| SHARED-050 | `tests/test_shared.py::TestRunAgent::test_stuck_loop_detection_catches_alternating_ab_pattern` | ✅ passed | 0.003 |
-| SHARED-051 | `tests/test_shared.py::TestRunAgent::test_stuck_loop_detection_catches_alternating_abc_pattern` | ✅ passed | 0.005 |
-| SHARED-052 | `tests/test_shared.py::TestRunAgent::test_non_cyclic_varied_calls_do_not_trigger_stuck_loop` | ✅ passed | 0.007 |
+| SHARED-050 | `tests/test_shared.py::TestRunAgent::test_stuck_loop_detection_catches_alternating_ab_pattern` | ✅ passed | 0.005 |
+| SHARED-051 | `tests/test_shared.py::TestRunAgent::test_stuck_loop_detection_catches_alternating_abc_pattern` | ✅ passed | 0.007 |
+| SHARED-052 | `tests/test_shared.py::TestRunAgent::test_non_cyclic_varied_calls_do_not_trigger_stuck_loop` | ✅ passed | 0.005 |
+| SHARED-053 | `tests/test_shared.py::TestOllamaAgentChat::test_total_tokens_starts_at_zero` | ✅ passed | 0.032 |
+| SHARED-054 | `tests/test_shared.py::TestOllamaAgentChat::test_total_tokens_accumulates_prompt_and_eval_counts` | ✅ passed | 0.031 |
+| SHARED-055 | `tests/test_shared.py::TestOllamaAgentChat::test_total_tokens_accumulates_across_multiple_calls` | ✅ passed | 0.034 |
+| SHARED-056 | `tests/test_shared.py::TestOllamaAgentChat::test_total_tokens_missing_fields_count_as_zero` | ✅ passed | 0.039 |
+| SHARED-057 | `tests/test_shared.py::TestOllamaAgentChat::test_total_tokens_not_incremented_on_failed_call` | ✅ passed | 0.029 |
 | SHELL-001 | `tests/test_shell_tools.py::TestEmptyAndMalformedInput::test_empty_command_blocked` | ✅ passed | 0.000 |
 | SHELL-002 | `tests/test_shell_tools.py::TestEmptyAndMalformedInput::test_whitespace_only_command_blocked` | ✅ passed | 0.000 |
 | SHELL-003 | `tests/test_shell_tools.py::TestEmptyAndMalformedInput::test_unbalanced_quotes_blocked_not_raised` | ✅ passed | 0.000 |
 | SHELL-004 | `tests/test_shell_tools.py::TestAllowlist::test_program_not_in_allowlist_blocked` | ✅ passed | 0.000 |
 | SHELL-005 | `tests/test_shell_tools.py::TestAllowlist::test_allowlisted_program_with_path_prefix_stripped` | ✅ passed | 0.000 |
 | SHELL-006 | `tests/test_shell_tools.py::TestAllowlist::test_every_allowlisted_program_passes_layer_one` | ✅ passed | 0.001 |
-| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[echo hi > /dev/sda]` | ✅ passed | 0.000 |
+| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[echo hi > /dev/sda]` | ✅ passed | 0.001 |
 | SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c ':(){ :|:& };:']` | ✅ passed | 0.000 |
-| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && chmod 777 /]` | ✅ passed | 0.000 |
-| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && curl http://evil.com]` | ✅ passed | 0.000 |
-| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && dd if=/dev/zero of=/dev/sda]` | ✅ passed | 0.000 |
+| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && chmod 777 /]` | ✅ passed | 0.001 |
+| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && curl http://evil.com]` | ✅ passed | 0.001 |
+| SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && dd if=/dev/zero of=/dev/sda]` | ✅ passed | 0.001 |
 | SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && mkfs.ext4 /dev/sda]` | ✅ passed | 0.000 |
 | SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && mv /etc/passwd /tmp]` | ✅ passed | 0.000 |
 | SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && sudo ls]` | ✅ passed | 0.000 |
 | SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x' && wget http://evil.com]` | ✅ passed | 0.000 |
 | SHELL-007 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_patterns_blocked_when_confirm_denies[python3 -c 'x'; rm -rf .]` | ✅ passed | 0.000 |
-| SHELL-008 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_pattern_uses_force_ask` | ✅ passed | 0.000 |
-| SHELL-009 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_pattern_approved_lets_command_execute` | ✅ passed | 0.000 |
-| SHELL-010 | `tests/test_shell_tools.py::TestBlocklist::test_layer_three_confirm_not_called_when_blocklist_triggers` | ✅ passed | 0.000 |
+| SHELL-008 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_pattern_uses_force_ask` | ✅ passed | 0.001 |
+| SHELL-009 | `tests/test_shell_tools.py::TestBlocklist::test_dangerous_pattern_approved_lets_command_execute` | ✅ passed | 0.001 |
+| SHELL-010 | `tests/test_shell_tools.py::TestBlocklist::test_layer_three_confirm_not_called_when_blocklist_triggers` | ✅ passed | 0.001 |
 | SHELL-011 | `tests/test_shell_tools.py::TestConfirmationGate::test_cancelled_when_confirm_denies` | ✅ passed | 0.000 |
 | SHELL-012 | `tests/test_shell_tools.py::TestConfirmationGate::test_confirm_receives_full_command_text` | ✅ passed | 0.000 |
 | SHELL-013 | `tests/test_shell_tools.py::TestExecution::test_successful_command_reports_exit_code_and_stdout` | ✅ passed | 0.000 |
@@ -358,7 +380,7 @@ Generated: 2026-08-17 03:36:32
 | SHELL-018 | `tests/test_shell_tools.py::TestExecution::test_timeout_reports_none_exit_code_and_note` | ✅ passed | 0.001 |
 | SHELL-019 | `tests/test_shell_tools.py::TestExecution::test_timeout_preserves_partial_output` | ✅ passed | 0.000 |
 | SHELL-020 | `tests/test_shell_tools.py::TestExecution::test_unexpected_exception_returns_note_not_raise` | ✅ passed | 0.000 |
-| SHELL-021 | `tests/test_shell_tools.py::TestFormatResult::test_reports_numeric_exit_code_literally` | ✅ passed | 0.000 |
+| SHELL-021 | `tests/test_shell_tools.py::TestFormatResult::test_reports_numeric_exit_code_literally` | ✅ passed | 0.001 |
 | SHELL-022 | `tests/test_shell_tools.py::TestFormatResult::test_none_exit_code_renders_process_killed` | ✅ passed | 0.000 |
 | SHELL-023 | `tests/test_shell_tools.py::TestFormatResult::test_note_omitted_when_not_provided` | ✅ passed | 0.000 |
 | SHELL-024 | `tests/test_shell_tools.py::TestFormatResult::test_note_included_when_provided` | ✅ passed | 0.000 |
@@ -369,9 +391,9 @@ Generated: 2026-08-17 03:36:32
 | SHELL-028 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_force_asks[echo `cat file`]` | ✅ passed | 0.000 |
 | SHELL-028 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_force_asks[echo hi & ls]` | ✅ passed | 0.001 |
 | SHELL-028 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_force_asks[echo hi && ls]` | ✅ passed | 0.000 |
-| SHELL-028 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_force_asks[echo hi | cat]` | ✅ passed | 0.000 |
+| SHELL-028 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_force_asks[echo hi | cat]` | ✅ passed | 0.001 |
 | SHELL-028 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_force_asks[echo hi || ls]` | ✅ passed | 0.000 |
-| SHELL-029 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_approved_lets_command_execute` | ✅ passed | 0.001 |
+| SHELL-029 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_compound_command_approved_lets_command_execute` | ✅ passed | 0.000 |
 | SHELL-030 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_simple_command_does_not_force_ask` | ✅ passed | 0.000 |
 | SHELL-031 | `tests/test_shell_tools.py::TestCompoundOperatorForceAsk::test_is_compound_detects_each_operator` | ✅ passed | 0.000 |
 | SHELL-032 | `tests/test_shell_tools.py::TestExecution::test_timeout_kills_the_whole_process_group` | ✅ passed | 0.000 |

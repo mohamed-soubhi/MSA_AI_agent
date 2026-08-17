@@ -17,6 +17,16 @@ path serves both:
   unfinished conversation. Runs one extra `agent.chat()` call with
   `tools=None` so the summarizer itself can't call `write_file` /
   `run_command`, then saves the result as a `"summary"` entry.
+- `load_token_usage()` / `save_token_usage(session_tokens)` —
+  **host-invoked only**, also from `09_full_agent.py`. Track a running
+  cumulative token count (`OllamaAgent.total_tokens` — prompt +
+  completion tokens, summed across every `chat()` call made through one
+  agent instance) across every session ever run. `load_token_usage()`
+  is printed once at startup ("tokens used all-time so far");
+  `save_token_usage()` adds the session's count to the saved total and
+  is called once, in a `finally` block, on **every** exit path —
+  including a crash, since unlike `save_session_summary` it makes no
+  model call and so carries no extra-failure risk.
 
 ## Storage
 
@@ -41,13 +51,19 @@ One JSON file, `MEMORY_FILE` in `agent_config.py` (default
       "tags": [],
       "timestamp": "2026-08-17T11:05:00"
     }
-  ]
+  ],
+  "token_usage_total": 48213
 }
 ```
 
 `type` is either `"fact"` (from `remember_fact`) or `"summary"` (from
 `save_session_summary`) — `recall_memory` returns both, since a past
 summary is often exactly what answers "what did we do last time?".
+`token_usage_total` is a sibling top-level integer, not an entry —
+`_load()`/`_save()` (entries-only) and `load_token_usage()`/
+`save_token_usage()` (the integer) share the file through
+`_load_data()`/`_save_data()` (full JSON object), so writing one never
+clobbers the other regardless of write order.
 
 Memory is **deliberately not** routed through `fs_tools.resolve_path()`
 / `BASE_DIR`: it persists across different sandboxes on purpose, so the
@@ -106,7 +122,7 @@ losing a summary must never crash the shutdown path in
 
 ## Test coverage (`tests/test_memory.py`)
 
-32 tests (`MEMORY-001` .. `MEMORY-032`), covering:
+43 tests (`MEMORY-001` .. `MEMORY-043`), covering:
 - `remember_fact`: writes, appends (not overwrites), tag
   normalization, text truncation, entry-count trimming, empty/whitespace
   input rejected, disabled-memory no-op.
@@ -122,11 +138,21 @@ losing a summary must never crash the shutdown path in
   `chat()` failure without raising, skips on empty model output,
   disabled-memory no-op, windows to `MEMORY_SUMMARY_MAX_MESSAGES` on a
   long conversation, sends a short conversation in full.
+- `load_token_usage`/`save_token_usage`: zero when never saved, save
+  returns and persists the new total, second save adds to the running
+  total (not overwrites), zero/negative `session_tokens` is a no-op,
+  disabled-memory no-op on both load and save, coexists with `entries`
+  writes without clobbering either, corrupt file treated as zero.
 
 `tests/test_full_agent_main.py` additionally covers the wiring: both
-tools present in `tool_map` (`FULLAGENT-007`/`008`, now nine tools), and
-`save_session_summary` called on the exit and `KeyboardInterrupt` paths
-but **not** the crash path (`FULLAGENT-012`–`014`).
+memory tools present in `tool_map` (`FULLAGENT-007`/`008`, now nine
+tools), `save_session_summary` called on the exit and `KeyboardInterrupt`
+paths but **not** the crash path (`FULLAGENT-012`–`014`), and
+`load_token_usage`/`save_token_usage` — startup print, session total
+passed to `save_token_usage`, called on **all three** exit paths
+including the crash path, and a non-int `total_tokens` (e.g. an
+unconfigured test double) coerced to `0` rather than crashing
+(`FULLAGENT-015`–`020`).
 
 ## Architectural & Persistence Notes
 

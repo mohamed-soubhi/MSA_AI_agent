@@ -11,7 +11,7 @@ import json
 import pytest
 
 import memory as mem_mod
-from memory import recall_memory, remember_fact, save_session_summary
+from memory import load_token_usage, recall_memory, remember_fact, save_session_summary, save_token_usage
 
 
 @pytest.fixture(autouse=True)
@@ -333,3 +333,76 @@ class TestSaveSessionSummary:
         ]
         save_session_summary(agent, messages)
         assert agent.chat_calls == []
+
+
+# --------------------------------------------------------------------------
+# load_token_usage / save_token_usage
+# --------------------------------------------------------------------------
+
+class TestTokenUsage:
+    @pytest.mark.tid("MEMORY-033")
+    def test_load_returns_zero_when_never_saved(self):
+        assert load_token_usage() == 0
+
+    @pytest.mark.tid("MEMORY-034")
+    def test_save_returns_new_total(self):
+        assert save_token_usage(150) == 150
+
+    @pytest.mark.tid("MEMORY-035")
+    def test_save_persists_to_disk(self):
+        save_token_usage(150)
+        data = json.loads(mem_mod.MEMORY_PATH.read_text(encoding="utf-8"))
+        assert data["token_usage_total"] == 150
+
+    @pytest.mark.tid("MEMORY-036")
+    def test_load_reflects_saved_value(self):
+        save_token_usage(150)
+        assert load_token_usage() == 150
+
+    @pytest.mark.tid("MEMORY-037")
+    def test_second_save_adds_to_running_total(self):
+        save_token_usage(150)
+        new_total = save_token_usage(75)
+        assert new_total == 225
+        assert load_token_usage() == 225
+
+    @pytest.mark.tid("MEMORY-038")
+    def test_zero_session_tokens_is_a_noop(self):
+        save_token_usage(150)
+        result = save_token_usage(0)
+        assert result == 150
+        assert load_token_usage() == 150
+
+    @pytest.mark.tid("MEMORY-039")
+    def test_negative_session_tokens_is_a_noop(self):
+        save_token_usage(150)
+        result = save_token_usage(-5)
+        assert result == 150
+
+    @pytest.mark.tid("MEMORY-040")
+    def test_disabled_memory_load_returns_zero(self, monkeypatch):
+        save_token_usage(150)
+        monkeypatch.setattr(mem_mod, "MEMORY_ENABLED", False)
+        assert load_token_usage() == 0
+
+    @pytest.mark.tid("MEMORY-041")
+    def test_disabled_memory_save_does_not_persist(self, monkeypatch):
+        monkeypatch.setattr(mem_mod, "MEMORY_ENABLED", False)
+        save_token_usage(150)
+        assert not mem_mod.MEMORY_PATH.exists()
+
+    @pytest.mark.tid("MEMORY-042")
+    def test_token_usage_coexists_with_entries(self):
+        # Token usage total and remembered facts share one file without
+        # clobbering each other, regardless of write order.
+        remember_fact("fact one")
+        save_token_usage(150)
+        remember_fact("fact two")
+        entries = _read_entries(mem_mod.MEMORY_PATH)
+        assert len(entries) == 2
+        assert load_token_usage() == 150
+
+    @pytest.mark.tid("MEMORY-043")
+    def test_corrupt_file_treated_as_zero_usage(self):
+        mem_mod.MEMORY_PATH.write_text("not valid json", encoding="utf-8")
+        assert load_token_usage() == 0

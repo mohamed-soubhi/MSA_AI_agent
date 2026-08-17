@@ -34,8 +34,10 @@ Small, hardened wrapper around `ollama.Client`.
 
 ### `__init__(self, model=DEFAULT_MODEL)`
 
-Binds one model to this instance and creates the underlying
-`ollama.Client()`.
+Binds one model to this instance, creates the underlying
+`ollama.Client()`, and initializes `self.total_tokens = 0` — a running
+count across every successful `chat()` call made through this instance
+(see `total_tokens` below).
 
 ### `chat(self, messages, tools=None)`
 
@@ -52,6 +54,28 @@ and returns one response.
   reach Ollama model '{model}' after N attempts: {last_error}"`) instead
   of a raw connection traceback, chained via `from last_error`.
 - Every attempt/failure is logged via `logging.getLogger("agent.core")`.
+- On success, adds `_extract_token_count(response)` to
+  `self.total_tokens` before returning — never incremented on a failed
+  attempt (only the final successful `future.result()` call counts).
+
+### `total_tokens` (instance attribute)
+
+Cumulative `prompt_eval_count + eval_count` across every successful
+`chat()` call made through this `OllamaAgent` instance. Since
+`09_full_agent.py` creates exactly one instance per run, this is
+effectively "tokens used this session" — read once by the host CLI at
+shutdown (see `09_full_agent.md` and `memory.md`'s
+`save_token_usage()`). Not reset between calls; not touched by
+`chat_stream()` (streaming responses aren't used by `09_full_agent.py`,
+and per-chunk token accounting would need different handling).
+
+### `_extract_token_count(response) -> int`
+
+Module-level helper: `getattr(response, "prompt_eval_count", 0) or 0`
+plus the same for `eval_count`. Same two fields
+`chat_logger._extract_model_timing()` already reads for logging.
+Missing/`None` on either → counted as `0`, not a crash — not every
+Ollama backend reports both.
 
 ### `chat_stream(self, messages)`
 
@@ -206,6 +230,11 @@ Ollama server needed.
   parameters, and what was actually given.
 - `OllamaAgent.chat`: first-try success, retry-then-succeed, all
   retries exhausted → friendly `RuntimeError`, default model resolution.
+- `OllamaAgent.total_tokens`: starts at `0`; accumulates
+  `prompt_eval_count + eval_count` on success; accumulates across
+  multiple `chat()` calls (not overwritten); missing fields count as
+  `0` rather than crashing; **not** incremented when a call ultimately
+  fails after retries.
 - `OllamaAgent.chat_stream`: chunk yielding, friendly `RuntimeError` on
   failure.
 - `run_agent`: final answer (with and without `None` content), a

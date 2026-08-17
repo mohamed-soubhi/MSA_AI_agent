@@ -47,6 +47,20 @@ def section(title):
     return f"\n{title}\n{line}"
 
 
+def _extract_token_count(response) -> int:
+    """Sum prompt + completion tokens off a chat response, 0 if absent.
+
+    Ollama exposes `prompt_eval_count` (input tokens) and `eval_count`
+    (output tokens) on the response when the backend reports them —
+    same fields chat_logger._extract_model_timing already reads for
+    logging. Missing/None on either -> counted as 0, not a crash;
+    not every backend exposes both.
+    """
+    prompt = getattr(response, "prompt_eval_count", 0) or 0
+    completion = getattr(response, "eval_count", 0) or 0
+    return prompt + completion
+
+
 class OllamaAgent:
     """A small, hardened wrapper around the Ollama client.
 
@@ -71,6 +85,11 @@ class OllamaAgent:
         """
         self.model = model
         self.client = Client()
+        # Running total across every successful chat() call made through
+        # this instance -- i.e. this whole session, since 09_full_agent.py
+        # creates exactly one OllamaAgent per run. Not reset between
+        # chat() calls; the host CLI reads it once at shutdown.
+        self.total_tokens = 0
 
     def chat(self, messages, tools=None):
         """Send the message history to the model and return one response.
@@ -93,7 +112,9 @@ class OllamaAgent:
                         messages=messages,
                         tools=tools,
                     )
-                    return future.result(timeout=CHAT_TIMEOUT_SECONDS)
+                    response = future.result(timeout=CHAT_TIMEOUT_SECONDS)
+                    self.total_tokens += _extract_token_count(response)
+                    return response
 
             except concurrent.futures.TimeoutError:
                 last_error = TimeoutError(

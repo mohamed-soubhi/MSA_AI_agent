@@ -23,7 +23,7 @@ was started from), and every session is logged to JSONL.
 | `agent_mode.py` | The single `AUTO_MODE` toggle `confirm()` reads | [agent_mode.md](agent_mode.md) |
 | `auto_runner.py` | Auto-mode orchestration: generate a plan, approve once, run to completion | [auto_runner.md](auto_runner.md) |
 | `human_tools.py` | Conversational human-in-the-loop tools: `ask_human`, `ask_human_choice`, `approve_action` (model-optional, not a security boundary) | [human_tools.md](human_tools.md) |
-| `memory.py` | Persistent JSON memory across sessions: `remember_fact`/`recall_memory` (model tools) + `save_session_summary` (host-called at session end) | [memory.md](memory.md) |
+| `memory.py` | Persistent JSON memory across sessions: `remember_fact`/`recall_memory` (model tools) + `save_session_summary`/`load_token_usage`/`save_token_usage` (host-called at session start/end) | [memory.md](memory.md) |
 | `chat_logger.py` | Structured JSONL session logging (`ChatLogger`, `NullChatLogger`, `get_logger`) | [chat_logger.md](chat_logger.md) |
 | `log_config.py` | Env-var-overridable logging configuration | [log_config.md](log_config.md) |
 | `09_full_agent.py` | The CLI entry point: files + terminal + human-in-the-loop + auto/step mode, all in one agent | [09_full_agent.md](09_full_agent.md) |
@@ -61,6 +61,10 @@ was started from), and every session is logged to JSONL.
  ├── memory.save_session_summary()  — called on exit/KeyboardInterrupt paths
  │       only (not on crash); one extra agent.chat() call, tools=None,
  │       condenses the session into a "summary" entry in memory.json
+ ├── memory.load_token_usage()      — printed once at startup (all-time total)
+ ├── memory.save_token_usage()      — called in a `finally` block on EVERY
+ │       exit path, including crash (no model call, no extra-failure risk);
+ │       adds agent.total_tokens to the running total in memory.json
  └── chat_logger.get_logger()     — JSONL audit log for the whole session
        └── log_config              — settings (env-var overridable)
 
@@ -99,7 +103,7 @@ python3 -m pytest tests/test_fs_tools.py -v
 python3 tests/generate_report.py
 ```
 
-- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 370 tests, 100% pass rate.
+- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 392 tests, 100% pass rate.
 - **Code Review & Defect Assessment Report (HTML)**: [`code_review_report.html`](code_review_report.html) — interactive audit dashboard.
 - **Code Review & Defect Assessment Report (Markdown)**: [`code_review_report.md`](code_review_report.md) — comprehensive static analysis and defect assessment.
 

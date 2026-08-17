@@ -58,6 +58,26 @@ cross-session context.
 
 Seeded as the first message in `messages` on every run.
 
+## `_report_token_usage(agent) -> None`
+
+Saves this session's token usage and prints both numbers. Called
+**exactly once**, from a `finally` block wrapped around the whole
+session in `main()`, so it always runs regardless of how the session
+ends — normal exit, `KeyboardInterrupt`, or an unhandled crash.
+
+Unlike `save_session_summary` (which makes an extra `agent.chat()` call
+and is deliberately skipped on the crash path — see
+[memory.md](memory.md#wiring-into-09_full_agentpy)), this makes **no**
+model call: it just reads `agent.total_tokens` and calls
+`memory.save_token_usage()`, so there's no extra-failure risk to avoid
+by skipping it anywhere.
+
+`agent.total_tokens` is coerced to a plain `int` defensively
+(`session_tokens = agent.total_tokens if isinstance(agent.total_tokens,
+int) else 0`) — a test double without that attribute set, or a
+non-numeric value, degrades to `0` rather than crashing the shutdown
+path over a display feature.
+
 ## `main() -> None`
 
 1. Creates an `OllamaAgent()` and offers **nine** tools: `list_directory`,
@@ -66,10 +86,14 @@ Seeded as the first message in `messages` on every run.
    (from `human_tools.py`), `remember_fact`, `recall_memory` (from
    `memory.py`).
 2. Opens one JSONL session log via `get_logger("full_agent", agent.model)`.
-3. `messages` starts pre-seeded with `SYSTEM_PROMPT`, which now also
+3. Prints the startup banner, including
+   `f"Tokens used all-time so far (loaded from memory): {load_token_usage()}"`
+   — the running total saved by every previous session (see
+   [memory.md](memory.md)).
+4. `messages` starts pre-seeded with `SYSTEM_PROMPT`, which now also
    tells the model to consider `recall_memory` at the start of a task
    and to call `remember_fact` for durable, cross-session facts.
-4. Loops reading `input("\nYou > ")`:
+5. Loops reading `input("\nYou > ")`:
    - `"exit"` / `"quit"` / `"q"` (case-insensitive) → calls
      `save_session_summary(agent, messages)`, then logs
      `session_end(reason="user_exit")` and breaks.
@@ -83,13 +107,16 @@ Seeded as the first message in `messages` on every run.
        `run_agent(agent, messages, tools, tool_map, chat_logger=chat_logger)`,
        same as before.
    - Either way, prints the returned answer.
-5. `KeyboardInterrupt` → prints `"\nInterrupted."`, calls
+6. `KeyboardInterrupt` → prints `"\nInterrupted."`, calls
    `save_session_summary(agent, messages)`, logs
    `session_end(reason="keyboard_interrupt")`, returns normally.
-6. Any other `Exception` → logs `error("main_loop_crashed",
+7. Any other `Exception` → logs `error("main_loop_crashed",
    detail=str(exc))`, then `session_end(reason="crashed")`, then
    **re-raises**. `save_session_summary` is deliberately **not** called
    here — see [memory.md](memory.md#wiring-into-09_full_agentpy).
+8. `finally`: calls `_report_token_usage(agent)` — **always**, on every
+   path above, including the crash path in step 7 (before the
+   re-raised exception actually propagates out of `main()`).
 
 ## Test coverage (`tests/test_full_agent_main.py`)
 
@@ -116,4 +143,11 @@ needed.
   instead, without extending `messages` with the raw user turn first.
 - `save_session_summary` wiring: called on the `"exit"` and
   `KeyboardInterrupt` paths, **not** called on the crash path (see
-  `FULLAGENT-012`–`014` in `tests/test_full_agent_main.py`).
+  `FULLAGENT-012`–`014`).
+- Token usage wiring (`FULLAGENT-015`–`020`): startup banner prints
+  `load_token_usage()`'s return value; `save_token_usage()` is called
+  with `agent.total_tokens` exactly once on **all three** exit paths
+  (exit, `KeyboardInterrupt`, **and** crash — unlike
+  `save_session_summary`); both the session total and the returned
+  all-time total are printed; a non-`int` `total_tokens` (e.g. an
+  unconfigured `MagicMock`) is coerced to `0` rather than crashing.

@@ -10,12 +10,20 @@ Two things live here, and they are populated differently:
     (09_full_agent.py) right before a session ends, so every
     conversation leaves behind a short summary even if the model never
     called remember_fact() during the run.
+  - load_token_usage() / save_token_usage() -- also NOT tools, also
+    host-CLI-only. Track a running cumulative token count (prompt +
+    completion tokens, from OllamaAgent.total_tokens) across every
+    session ever run, so the CLI can show "tokens used this session"
+    and "tokens used all-time" on every start and exit.
 
-Both write to one JSON file (MEMORY_FILE in agent_config.py), a flat
-list of {id, type, text, tags, timestamp} entries. Kept deliberately
-simple -- no embeddings, no vector search -- recall_memory() is a
-case-insensitive substring/tag filter, which is enough at the scale one
-person's agent memory reaches before it would need anything heavier.
+All of the above write to one JSON file (MEMORY_FILE in
+agent_config.py): a top-level object with an "entries" list (flat
+{id, type, text, tags, timestamp} records for remember_fact/
+recall_memory/save_session_summary) and a sibling "token_usage_total"
+integer. Kept deliberately simple -- no embeddings, no vector search --
+recall_memory() is a case-insensitive substring/tag filter, which is
+enough at the scale one person's agent memory reaches before it would
+need anything heavier.
 
 Memory persists across different BASE_DIR sandboxes on purpose (it is
 NOT resolved through fs_tools.resolve_path): the point is for the agent
@@ -40,17 +48,21 @@ logger = logging.getLogger("agent.memory")
 MEMORY_PATH = Path(MEMORY_FILE)
 
 
-def _load() -> list[dict]:
-    """Read all entries from disk. Missing/corrupt file -> empty list, never raises.
+def _load_data() -> dict:
+    """Read the full JSON object from disk. Missing/corrupt file -> {}, never raises.
+
+    The full object, not just "entries" -- so sibling top-level keys
+    (currently just "token_usage_total") round-trip through _save_data()
+    unmodified whenever _save() only touches "entries", and vice versa.
 
     ROB-02: a corrupt file (e.g. from an interrupted non-atomic write,
-    before this was fixed) is preserved as a `.corrupt.bak` alongside
-    it before we fall back to an empty list -- so a human can still
-    recover it by hand, instead of the next _save() silently
-    overwriting the only copy of whatever was salvageable.
+    before that was fixed) is preserved as a `.corrupt.bak` alongside
+    it before we fall back to {} -- so a human can still recover it by
+    hand, instead of the next save silently overwriting the only copy
+    of whatever was salvageable.
     """
     if not MEMORY_PATH.exists():
-        return []
+        return {}
     raw = ""
     try:
         raw = MEMORY_PATH.read_text(encoding="utf-8")
@@ -64,13 +76,12 @@ def _load() -> list[dict]:
                 logger.warning("memory_corrupt_backup_written path=%s", backup_path)
             except OSError:
                 pass  # backup is best-effort; losing it must not block the fallback
-        return []
-    entries = data.get("entries") if isinstance(data, dict) else None
-    return entries if isinstance(entries, list) else []
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
-def _save(entries: list[dict]) -> None:
-    """Write all entries back to disk. Never raises -- a full disk or
+def _save_data(data: dict) -> None:
+    """Write the full JSON object to disk. Never raises -- a full disk or
     permissions error degrades to a log warning, same as chat_logger.
 
     ROB-02: writes to a temporary file in the same directory, then
@@ -85,12 +96,26 @@ def _save(entries: list[dict]) -> None:
         MEMORY_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = MEMORY_PATH.with_suffix(MEMORY_PATH.suffix + f".tmp{os.getpid()}")
         tmp_path.write_text(
-            json.dumps({"entries": entries}, indent=2, ensure_ascii=False),
+            json.dumps(data, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
         os.replace(tmp_path, MEMORY_PATH)
     except OSError as exc:
         logger.warning("memory_save_failed path=%s error=%s", MEMORY_PATH, exc)
+
+
+def _load() -> list[dict]:
+    """Read just the entries list from disk. Missing/corrupt -> []."""
+    entries = _load_data().get("entries")
+    return entries if isinstance(entries, list) else []
+
+
+def _save(entries: list[dict]) -> None:
+    """Write the entries list back to disk, preserving any other
+    top-level keys already on file (e.g. token_usage_total)."""
+    data = _load_data()
+    data["entries"] = entries
+    _save_data(data)
 
 
 def _append(entry_type: str, text: str, tags: list[str] | None = None) -> dict:
@@ -228,3 +253,43 @@ def save_session_summary(agent, messages: list[dict]) -> None:
 
     if summary:
         _append("summary", summary)
+
+
+def load_token_usage() -> int:
+    """Return the cumulative token total saved across all previous
+    sessions, or 0 if none has ever been saved (or memory is disabled).
+
+    Called by the host CLI once at startup, so a new session can show
+    "here's how much you've used so far" before a single tool call runs.
+    """
+    if not MEMORY_ENABLED:
+        return 0
+    total = _load_data().get("token_usage_total")
+    return total if isinstance(total, int) else 0
+
+
+def save_token_usage(session_tokens: int) -> int:
+    """Add this session's token count to the running cumulative total,
+    persist it, and return the new grand total.
+
+    Called by the host CLI once per session, right before exit --
+    unlike save_session_summary(), this makes no model call, so it's
+    safe to call on every exit path including a crash (nothing extra
+    can fail here that isn't already covered by _save_data()'s own
+    fail-to-a-log-warning behavior). session_tokens <= 0 (nothing used,
+    or memory disabled) is a no-op that just returns the existing total.
+
+    Args:
+        session_tokens: OllamaAgent.total_tokens at the end of this run.
+    """
+    if not MEMORY_ENABLED or session_tokens <= 0:
+        return load_token_usage()
+
+    data = _load_data()
+    current_total = data.get("token_usage_total")
+    current_total = current_total if isinstance(current_total, int) else 0
+    new_total = current_total + session_tokens
+    data["token_usage_total"] = new_total
+    _save_data(data)
+    logger.info("token_usage_saved session_tokens=%s new_total=%s", session_tokens, new_total)
+    return new_total

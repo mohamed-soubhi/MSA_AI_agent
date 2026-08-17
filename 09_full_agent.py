@@ -13,7 +13,9 @@ from shared import OllamaAgent, run_agent, section
 from fs_tools import BASE_DIR, create_directory, list_directory, read_file, write_file
 from shell_tools import run_command
 from human_tools import ask_human, ask_human_choice
-from memory import recall_memory, remember_fact, save_session_summary
+from memory import (
+    load_token_usage, recall_memory, remember_fact, save_session_summary, save_token_usage,
+)
 from chat_logger import get_logger
 from auto_runner import run_with_auto_mode
 from agent_config import SYSTEM_PROMPT
@@ -30,6 +32,25 @@ auto_mode = False
 # layers in fs_tools.py and shell_tools.py are what GUARANTEE the
 # boundary) — see that file to tune it or override it wholesale via the
 # SYSTEM_PROMPT environment variable.
+
+
+def _report_token_usage(agent) -> None:
+    """Save this session's token count and print both numbers.
+
+    Called exactly once, in a `finally` block around the whole session,
+    so it always runs regardless of how the session ends (normal exit,
+    Ctrl-C, or an unhandled crash) -- unlike save_session_summary(),
+    this makes no extra model call, so there's no extra-failure risk to
+    avoid on the crash path.
+
+    agent.total_tokens is coerced to a plain int defensively (a test
+    double without that attribute, or a non-numeric value, degrades to
+    0 rather than crashing the shutdown path over a display feature).
+    """
+    session_tokens = agent.total_tokens if isinstance(agent.total_tokens, int) else 0
+    new_total = save_token_usage(session_tokens)
+    print(f"\nTokens used this session: {session_tokens}")
+    print(f"Tokens used all-time (saved to memory): {new_total}")
 
 
 def main() -> None:
@@ -62,6 +83,7 @@ def main() -> None:
     print("Writes, directory creation, and every command need your 'y' first")
     print("(hard gate, not skippable) — unless auto mode is on, in which case")
     print("you approve the whole plan once instead.")
+    print(f"Tokens used all-time so far (loaded from memory): {load_token_usage()}")
     print("Type 'exit' to quit.")
 
     # The system prompt shapes behavior on EVERY turn — seed it once, up front.
@@ -97,6 +119,9 @@ def main() -> None:
         chat_logger.error("main_loop_crashed", detail=str(exc))
         chat_logger.session_end(reason="crashed")
         raise
+
+    finally:
+        _report_token_usage(agent)
 
 
 if __name__ == "__main__":

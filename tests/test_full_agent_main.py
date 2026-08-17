@@ -13,6 +13,13 @@ real (user/assistant) turns -- true for every scenario below, since
 none of these tests get past one user message before exiting -- so it
 never needs mocking here to avoid a real agent.chat()/memory.json
 side effect. See test_memory.py for save_session_summary's own tests.
+
+load_token_usage()/save_token_usage() are also from memory.py:
+load_token_usage() is printed once at startup, and save_token_usage()
+is called exactly once in a `finally` block around the whole session --
+unlike save_session_summary, on ALL THREE exit paths including a crash,
+since it makes no model call and so carries no extra-failure risk. See
+test_memory.py for their own unit tests.
 """
 
 import importlib.util
@@ -272,3 +279,100 @@ class TestSaveSessionSummaryWiring:
             full_main.main()
 
         fake_save.assert_not_called()
+
+
+class TestTokenUsageWiring:
+    @pytest.mark.tid("FULLAGENT-015")
+    def test_startup_prints_loaded_token_total(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch, capsys
+    ):
+        monkeypatch.setattr("builtins.input", lambda prompt: "exit")
+        monkeypatch.setattr(full_main, "run_agent", MagicMock())
+        monkeypatch.setattr(full_main, "load_token_usage", lambda: 4242)
+        monkeypatch.setattr(full_main, "save_token_usage", lambda n: n)
+
+        full_main.main()
+
+        captured = capsys.readouterr()
+        assert "4242" in captured.out
+
+    @pytest.mark.tid("FULLAGENT-016")
+    def test_exit_command_calls_save_token_usage_with_session_total(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch
+    ):
+        monkeypatch.setattr("builtins.input", lambda prompt: "exit")
+        monkeypatch.setattr(full_main, "run_agent", MagicMock())
+        mocked_agent.total_tokens = 123
+        fake_save_tokens = MagicMock(return_value=999)
+        monkeypatch.setattr(full_main, "save_token_usage", fake_save_tokens)
+
+        full_main.main()
+
+        fake_save_tokens.assert_called_once_with(123)
+
+    @pytest.mark.tid("FULLAGENT-017")
+    def test_exit_command_prints_session_and_alltime_totals(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch, capsys
+    ):
+        monkeypatch.setattr("builtins.input", lambda prompt: "exit")
+        monkeypatch.setattr(full_main, "run_agent", MagicMock())
+        mocked_agent.total_tokens = 123
+        monkeypatch.setattr(full_main, "save_token_usage", lambda n: 999)
+
+        full_main.main()
+
+        captured = capsys.readouterr()
+        assert "123" in captured.out
+        assert "999" in captured.out
+
+    @pytest.mark.tid("FULLAGENT-018")
+    def test_keyboard_interrupt_calls_save_token_usage(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch
+    ):
+        def raise_kbi(prompt):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr("builtins.input", raise_kbi)
+        mocked_agent.total_tokens = 55
+        fake_save_tokens = MagicMock(return_value=55)
+        monkeypatch.setattr(full_main, "save_token_usage", fake_save_tokens)
+
+        full_main.main()
+
+        fake_save_tokens.assert_called_once_with(55)
+
+    @pytest.mark.tid("FULLAGENT-019")
+    def test_crash_path_still_calls_save_token_usage(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch
+    ):
+        # Unlike save_session_summary, token saving makes no model call,
+        # so it's safe (and desired) on the crash path too.
+        inputs = iter(["do something"])
+        monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+        monkeypatch.setattr(
+            full_main, "run_agent", MagicMock(side_effect=RuntimeError("model exploded"))
+        )
+        mocked_agent.total_tokens = 77
+        fake_save_tokens = MagicMock(return_value=77)
+        monkeypatch.setattr(full_main, "save_token_usage", fake_save_tokens)
+
+        with pytest.raises(RuntimeError):
+            full_main.main()
+
+        fake_save_tokens.assert_called_once_with(77)
+
+    @pytest.mark.tid("FULLAGENT-020")
+    def test_non_int_total_tokens_coerced_to_zero(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch
+    ):
+        # A test double (or odd backend) without a real int total_tokens
+        # must not crash the shutdown path.
+        monkeypatch.setattr("builtins.input", lambda prompt: "exit")
+        monkeypatch.setattr(full_main, "run_agent", MagicMock())
+        fake_save_tokens = MagicMock(return_value=0)
+        monkeypatch.setattr(full_main, "save_token_usage", fake_save_tokens)
+        # mocked_agent.total_tokens is itself a MagicMock by default (not an int).
+
+        full_main.main()
+
+        fake_save_tokens.assert_called_once_with(0)

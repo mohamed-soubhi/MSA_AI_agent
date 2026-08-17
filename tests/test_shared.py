@@ -274,6 +274,53 @@ class TestOllamaAgentChat:
         agent = OllamaAgent()
         assert agent.model == shared.DEFAULT_MODEL
 
+    @pytest.mark.tid("SHARED-053")
+    def test_total_tokens_starts_at_zero(self):
+        agent = OllamaAgent(model="test-model")
+        assert agent.total_tokens == 0
+
+    @pytest.mark.tid("SHARED-054")
+    def test_total_tokens_accumulates_prompt_and_eval_counts(self):
+        agent = OllamaAgent(model="test-model")
+        response = SimpleNamespace(
+            message=SimpleNamespace(content="hi", tool_calls=None),
+            prompt_eval_count=10, eval_count=5,
+        )
+        agent.client = FakeClient([response])
+        agent.chat([{"role": "user", "content": "hello"}])
+        assert agent.total_tokens == 15
+
+    @pytest.mark.tid("SHARED-055")
+    def test_total_tokens_accumulates_across_multiple_calls(self):
+        agent = OllamaAgent(model="test-model")
+        r1 = SimpleNamespace(message=SimpleNamespace(content="a", tool_calls=None),
+                              prompt_eval_count=10, eval_count=5)
+        r2 = SimpleNamespace(message=SimpleNamespace(content="b", tool_calls=None),
+                              prompt_eval_count=20, eval_count=8)
+        agent.client = FakeClient([r1, r2])
+        agent.chat([{"role": "user", "content": "one"}])
+        agent.chat([{"role": "user", "content": "two"}])
+        assert agent.total_tokens == 43
+
+    @pytest.mark.tid("SHARED-056")
+    def test_total_tokens_missing_fields_count_as_zero(self):
+        # A backend that doesn't report token counts must not crash.
+        agent = OllamaAgent(model="test-model")
+        response = SimpleNamespace(message=SimpleNamespace(content="hi", tool_calls=None))
+        agent.client = FakeClient([response])
+        agent.chat([{"role": "user", "content": "hello"}])
+        assert agent.total_tokens == 0
+
+    @pytest.mark.tid("SHARED-057")
+    def test_total_tokens_not_incremented_on_failed_call(self, monkeypatch):
+        monkeypatch.setattr(shared, "CHAT_RETRY_BACKOFF_SECONDS", 0)
+        monkeypatch.setattr(shared, "CHAT_MAX_RETRIES", 0)
+        agent = OllamaAgent(model="test-model")
+        agent.client = FakeClient([ConnectionError("down")])
+        with pytest.raises(RuntimeError):
+            agent.chat([{"role": "user", "content": "hi"}])
+        assert agent.total_tokens == 0
+
 
 class TestOllamaAgentChatStream:
     @pytest.mark.tid("SHARED-024")
