@@ -23,3 +23,6 @@ Thumbs.db
 
 # Run session logs (keep directory with .gitkeep)
 logs/*.jsonl
+
+# Persistent agent memory (local, per-user learned state)
+memory.json

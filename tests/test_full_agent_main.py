@@ -2,9 +2,17 @@
 
 Merges what were previously two separate entry points
 (07_filesystem_tools.py, 08_terminal_tools.py, both now removed) into
-one agent offering seven tools. Filename starts with a digit, so it's
+one agent offering nine tools (seven original + remember_fact +
+recall_memory from memory.py). Filename starts with a digit, so it's
 loaded via importlib. OllamaAgent, get_logger, run_agent, and input()
 are all mocked -- no live Ollama server needed.
+
+save_session_summary() (also from memory.py) is called at every exit
+path. It no-ops on its own whenever the conversation has fewer than two
+real (user/assistant) turns -- true for every scenario below, since
+none of these tests get past one user message before exiting -- so it
+never needs mocking here to avoid a real agent.chat()/memory.json
+side effect. See test_memory.py for save_session_summary's own tests.
 """
 
 import importlib.util
@@ -130,7 +138,7 @@ class TestMain:
         mocked_logger.session_end.assert_called_once_with(reason="crashed")
 
     @pytest.mark.tid("FULLAGENT-007")
-    def test_tool_map_wires_all_seven_real_functions(self, full_main):
+    def test_tool_map_wires_all_nine_real_functions(self, full_main):
         assert full_main.list_directory.__name__ == "list_directory"
         assert full_main.read_file.__name__ == "read_file"
         assert full_main.write_file.__name__ == "write_file"
@@ -138,9 +146,11 @@ class TestMain:
         assert full_main.run_command.__name__ == "run_command"
         assert full_main.ask_human.__name__ == "ask_human"
         assert full_main.ask_human_choice.__name__ == "ask_human_choice"
+        assert full_main.remember_fact.__name__ == "remember_fact"
+        assert full_main.recall_memory.__name__ == "recall_memory"
 
     @pytest.mark.tid("FULLAGENT-008")
-    def test_run_agent_is_offered_exactly_seven_tools(
+    def test_run_agent_is_offered_exactly_nine_tools(
         self, full_main, mocked_agent, mocked_logger, monkeypatch
     ):
         inputs = iter(["hello", "exit"])
@@ -155,6 +165,7 @@ class TestMain:
         assert tool_names == {
             "list_directory", "read_file", "write_file", "create_directory",
             "run_command", "ask_human", "ask_human_choice",
+            "remember_fact", "recall_memory",
         }
 
     @pytest.mark.tid("FULLAGENT-009")
@@ -211,3 +222,53 @@ class TestMain:
 
         captured = capsys.readouterr()
         assert "Plan not approved." in captured.out
+
+
+class TestSaveSessionSummaryWiring:
+    @pytest.mark.tid("FULLAGENT-012")
+    def test_exit_command_calls_save_session_summary(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch
+    ):
+        monkeypatch.setattr("builtins.input", lambda prompt: "exit")
+        monkeypatch.setattr(full_main, "run_agent", MagicMock())
+        fake_save = MagicMock()
+        monkeypatch.setattr(full_main, "save_session_summary", fake_save)
+
+        full_main.main()
+
+        fake_save.assert_called_once()
+        assert fake_save.call_args[0][0] is mocked_agent
+
+    @pytest.mark.tid("FULLAGENT-013")
+    def test_keyboard_interrupt_calls_save_session_summary(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch
+    ):
+        def raise_kbi(prompt):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr("builtins.input", raise_kbi)
+        fake_save = MagicMock()
+        monkeypatch.setattr(full_main, "save_session_summary", fake_save)
+
+        full_main.main()
+
+        fake_save.assert_called_once()
+
+    @pytest.mark.tid("FULLAGENT-014")
+    def test_crash_path_does_not_call_save_session_summary(
+        self, full_main, mocked_agent, mocked_logger, monkeypatch
+    ):
+        # Deliberate: don't risk a second failure (another agent.chat()
+        # call) while already unwinding from a crash.
+        inputs = iter(["do something"])
+        monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+        monkeypatch.setattr(
+            full_main, "run_agent", MagicMock(side_effect=RuntimeError("model exploded"))
+        )
+        fake_save = MagicMock()
+        monkeypatch.setattr(full_main, "save_session_summary", fake_save)
+
+        with pytest.raises(RuntimeError):
+            full_main.main()
+
+        fake_save.assert_not_called()

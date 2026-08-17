@@ -152,3 +152,16 @@ ever run.
   `TimeoutExpired` preserving partial output plus the timeout `note`,
   and a generic exception rendered through the same `_format_result()`
   path with `exit_code: (none — process killed)`.
+
+## Security Threat Model & Audit Notes
+
+From the [Code Review & Defect Assessment Report](code_review_report.md):
+
+1. **Compound Command / Shell Operator Chaining (SEC-01)**:
+   Because `shell_tools.py` executes commands with `shell=True` after parsing only `shlex.split(command)[0]`, compound commands using operators like `&&`, `||`, `;`, `|`, or backticks could execute non-allowlisted binaries if chained behind an allowed first token (e.g. `echo ok && /bin/bash -c ...`). In auto mode, Layer 3 auto-approves this.
+   *Mitigation Roadmap*: Parse compound shell statements or restrict to `shell=False` execution with explicit argument arrays.
+
+2. **Process Group Orphan Management on Timeout (SEC-02)**:
+   When `subprocess.run` times out, Python kills only `/bin/sh`. Background or detached child processes continue running in the background.
+   *Mitigation Roadmap*: Use `start_new_session=True` and `os.killpg` on timeout.
+

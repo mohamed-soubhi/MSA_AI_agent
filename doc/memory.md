@@ -1,0 +1,136 @@
+# memory.py
+
+Persistent, JSON-backed memory: what the agent learns survives past one
+session. Two different write paths feed the same file, and one read
+path serves both:
+
+- `remember_fact(text, tags=None)` — **model-invoked tool**, same
+  pattern as `human_tools.py`. The model decides something is worth
+  keeping (a user preference, a decision made, a fact about the
+  project) and calls this to save it.
+- `recall_memory(query="", tags=None)` — **model-invoked tool**. The
+  model calls this to search past facts/summaries, e.g. at the start of
+  a task or whenever something from an earlier session could help.
+- `save_session_summary(agent, messages)` — **host-invoked only**, from
+  `09_full_agent.py`, right before a session ends. Not offered to the
+  model as a tool: a mid-conversation call would summarize an
+  unfinished conversation. Runs one extra `agent.chat()` call with
+  `tools=None` so the summarizer itself can't call `write_file` /
+  `run_command`, then saves the result as a `"summary"` entry.
+
+## Storage
+
+One JSON file, `MEMORY_FILE` in `agent_config.py` (default
+`memory.json`, relative to the working directory — same convention as
+`LOG_DIR` in `log_config.py`). Format:
+
+```json
+{
+  "entries": [
+    {
+      "id": "a1b2c3d4",
+      "type": "fact",
+      "text": "User prefers pytest over unittest for this project.",
+      "tags": ["preferences", "testing"],
+      "timestamp": "2026-08-17T10:30:00"
+    },
+    {
+      "id": "e5f6a7b8",
+      "type": "summary",
+      "text": "Built a todo app; user asked for dark mode by default.",
+      "tags": [],
+      "timestamp": "2026-08-17T11:05:00"
+    }
+  ]
+}
+```
+
+`type` is either `"fact"` (from `remember_fact`) or `"summary"` (from
+`save_session_summary`) — `recall_memory` returns both, since a past
+summary is often exactly what answers "what did we do last time?".
+
+Memory is **deliberately not** routed through `fs_tools.resolve_path()`
+/ `BASE_DIR`: it persists across different sandboxes on purpose, so the
+agent can remember things about the user across different working
+directories, not just within one sandboxed project.
+
+## Config (`agent_config.py`)
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `MEMORY_ENABLED` | `True` | Master switch — `False` makes both tools no-ops and `save_session_summary` skip entirely, with zero file I/O. |
+| `MEMORY_FILE` | `"memory.json"` | Path to the JSON file, relative to the working directory. |
+| `MEMORY_MAX_ENTRIES` | `500` | Oldest entries are dropped once the file exceeds this many. |
+| `MEMORY_MAX_TEXT_CHARS` | `1000` | Per-entry text is truncated to this length before saving. |
+| `MEMORY_MAX_RECALL_RESULTS` | `10` | `recall_memory()` returns at most this many matches (most recent first). |
+
+All five follow the project-wide pattern: plain module constant,
+overridable by an environment variable of the same name.
+
+## Retrieval
+
+`recall_memory` is a plain, case-insensitive **substring match** on
+`text`, with an optional tag filter (`tags=[...]` matches an entry if
+it has **any** of the given tags). No embeddings, no vector search —
+this is intentionally the simplest thing that works at the scale one
+person's agent memory reaches; a query and a tag filter combine with
+AND (both must match if both are given).
+
+## Failure handling
+
+Every disk operation (`_load`, `_save`) degrades to a logged warning
+instead of raising — a missing/corrupt `memory.json` is treated as "no
+memories yet" on read, and a full disk or permissions error on write is
+swallowed the same way `chat_logger.py` swallows logging failures.
+`save_session_summary`'s `agent.chat()` call is wrapped the same way:
+losing a summary must never crash the shutdown path in
+`09_full_agent.py`.
+
+## Wiring into `09_full_agent.py`
+
+- `remember_fact` and `recall_memory` are added to the same `tools` /
+  `tool_map` lists as every other tool (nine total now).
+- `save_session_summary(agent, messages)` is called at the `"exit"` /
+  `"quit"` / `"q"` path and the `KeyboardInterrupt` path, right before
+  `chat_logger.session_end(...)`. It is **not** called on the crash
+  path (`session_end(reason="crashed")`) — deliberately, so a second
+  failure (another `agent.chat()` call) can't happen while already
+  unwinding from the first one.
+- In **auto mode**, `messages` (the list passed to `save_session_summary`)
+  is the step-mode message list only — `run_with_auto_mode()` manages
+  its own separate message list for the plan + execution turns (see
+  [auto_runner.md](auto_runner.md)), so a session spent entirely in
+  auto mode won't produce a summary from this call site. This is a
+  known, accepted gap rather than something `save_session_summary`
+  itself needs to handle.
+
+## Test coverage (`tests/test_memory.py`)
+
+25 tests (`MEMORY-001` .. `MEMORY-025`), covering:
+- `remember_fact`: writes, appends (not overwrites), tag
+  normalization, text truncation, entry-count trimming, empty/whitespace
+  input rejected, disabled-memory no-op.
+- `recall_memory`: empty-store message, substring match (case
+  insensitive), tag filter (any-of), query+tag AND combination, no-match
+  message, result cap, disabled-memory message, corrupt-file
+  resilience.
+- `save_session_summary`: writes a `"summary"` entry, skips under-two-turn
+  conversations, offers no tools to the summarizer call, swallows a
+  `chat()` failure without raising, skips on empty model output,
+  disabled-memory no-op.
+
+`tests/test_full_agent_main.py` additionally covers the wiring: both
+tools present in `tool_map` (`FULLAGENT-007`/`008`, now nine tools), and
+`save_session_summary` called on the exit and `KeyboardInterrupt` paths
+but **not** the crash path (`FULLAGENT-012`–`014`).
+
+## Architectural & Persistence Notes
+
+From the [Code Review & Defect Assessment Report](code_review_report.md):
+
+1. **Non-Atomic File Persistence (ROB-02)**:
+   `_save()` directly writes to `memory.json`. An unhandled interruption mid-write renders the JSON file unparseable, which triggers `_load()`'s fallback to `[]` and subsequent wipe of all memories.
+   *Mitigation Roadmap*: Write to temporary file with atomic `os.replace()`, and retain a `.corrupt.bak` backup.
+2. **Multi-Turn Context Sizing (ROB-04)**:
+   `save_session_summary` sends the entire session history to `agent.chat()`. For long multi-turn interactions, windowing should be applied before summarization.
+

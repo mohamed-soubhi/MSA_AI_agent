@@ -7,9 +7,11 @@ one sandbox, one `confirm()` gate, and one JSONL log.
 This **merges** the two earlier, now-removed entry points
 (`07_filesystem_tools.py` and `08_terminal_tools.py`) into one agent.
 Nothing is reimplemented twice: `write_file`, `run_command`,
-`ask_human`, and `ask_human_choice` are each imported from their one
-real implementation (`fs_tools.py`, `shell_tools.py`, `human_tools.py`)
-— this file only wires them together and owns the conversation loop.
+`ask_human`, `ask_human_choice`, `remember_fact`, and `recall_memory`
+are each imported from their one real implementation (`fs_tools.py`,
+`shell_tools.py`, `human_tools.py`, `memory.py`) — this file only wires
+them together and owns the conversation loop. See [memory.md](memory.md)
+for what `remember_fact`/`recall_memory`/`save_session_summary` do.
 
 Like its predecessors, the filename starts with a digit and must be
 loaded via `importlib.util` rather than a normal `import`.
@@ -52,14 +54,18 @@ Seeded as the first message in `messages` on every run.
 
 ## `main() -> None`
 
-1. Creates an `OllamaAgent()` and offers **seven** tools: `list_directory`,
+1. Creates an `OllamaAgent()` and offers **nine** tools: `list_directory`,
    `read_file`, `write_file`, `create_directory` (from `fs_tools.py`),
    `run_command` (from `shell_tools.py`), `ask_human`, `ask_human_choice`
-   (from `human_tools.py`).
+   (from `human_tools.py`), `remember_fact`, `recall_memory` (from
+   `memory.py`).
 2. Opens one JSONL session log via `get_logger("full_agent", agent.model)`.
-3. `messages` starts pre-seeded with `SYSTEM_PROMPT`.
+3. `messages` starts pre-seeded with `SYSTEM_PROMPT`, which now also
+   tells the model to consider `recall_memory` at the start of a task
+   and to call `remember_fact` for durable, cross-session facts.
 4. Loops reading `input("\nYou > ")`:
-   - `"exit"` / `"quit"` / `"q"` (case-insensitive) → logs
+   - `"exit"` / `"quit"` / `"q"` (case-insensitive) → calls
+     `save_session_summary(agent, messages)`, then logs
      `session_end(reason="user_exit")` and breaks.
    - Otherwise, logs the user message, then branches on `auto_mode`:
      - **`True`**: calls `run_with_auto_mode(agent, user_input, tools,
@@ -71,11 +77,13 @@ Seeded as the first message in `messages` on every run.
        `run_agent(agent, messages, tools, tool_map, chat_logger=chat_logger)`,
        same as before.
    - Either way, prints the returned answer.
-5. `KeyboardInterrupt` → prints `"\nInterrupted."`, logs
+5. `KeyboardInterrupt` → prints `"\nInterrupted."`, calls
+   `save_session_summary(agent, messages)`, logs
    `session_end(reason="keyboard_interrupt")`, returns normally.
 6. Any other `Exception` → logs `error("main_loop_crashed",
    detail=str(exc))`, then `session_end(reason="crashed")`, then
-   **re-raises**.
+   **re-raises**. `save_session_summary` is deliberately **not** called
+   here — see [memory.md](memory.md#wiring-into-09_full_agentpy).
 
 ## Test coverage (`tests/test_full_agent_main.py`)
 
@@ -93,10 +101,13 @@ needed.
 - `KeyboardInterrupt` during `input()` is caught, not propagated.
 - An unexpected exception from `run_agent` is logged, followed by
   `session_end(reason="crashed")`, then re-raised.
-- Tool wiring sanity check: all seven real functions are present, and
-  `run_agent` is offered exactly those seven tools (no more, no less —
+- Tool wiring sanity check: all nine real functions are present, and
+  `run_agent` is offered exactly those nine tools (no more, no less —
   confirms nothing from the retired 07/08 entry points is missing and
   nothing extra leaked in).
 - Mode dispatch: `auto_mode=False` (the default) calls `run_agent`, not
   `run_with_auto_mode`; `auto_mode=True` calls `run_with_auto_mode`
   instead, without extending `messages` with the raw user turn first.
+- `save_session_summary` wiring: called on the `"exit"` and
+  `KeyboardInterrupt` paths, **not** called on the crash path (see
+  `FULLAGENT-012`–`014` in `tests/test_full_agent_main.py`).

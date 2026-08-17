@@ -72,6 +72,12 @@ logic (see [agent_mode.md](agent_mode.md)).
 
 - SIGALRM is POSIX-only; on platforms without it (e.g. native Windows),
   the timeout is silently skipped and `input()` blocks indefinitely.
+- **Thread Safety & Signal Handlers (ROB-01)**: `signal.signal(signal.SIGALRM)`
+  is only supported on the interpreter's main thread. When tools run
+  in secondary threads (e.g. via `shared._run_tool_with_timeout`), calling
+  `signal.signal()` raises a `ValueError`, which `confirm()` catches to
+  safely deny the action (fail-closed).
+  *Roadmap*: Replace `signal.alarm` with non-blocking terminal I/O (`select.select`).
 - Every call site (`fs_tools.write_file`, `fs_tools.create_directory`,
   `shell_tools.run_command`, `human_tools.approve_action`,
   `auto_runner.run_with_auto_mode`) passes a fresh, specific action

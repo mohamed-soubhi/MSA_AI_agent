@@ -13,6 +13,7 @@ from shared import OllamaAgent, run_agent, section
 from fs_tools import BASE_DIR, create_directory, list_directory, read_file, write_file
 from shell_tools import run_command
 from human_tools import ask_human, ask_human_choice
+from memory import recall_memory, remember_fact, save_session_summary
 from chat_logger import get_logger
 from auto_runner import run_with_auto_mode
 
@@ -48,6 +49,11 @@ Rules:
 - Keep changes as small as possible.
 - Do not call run_command unless it is necessary.
 - Do not invent tool results.
+- At the start of a task, consider calling recall_memory to check for
+  relevant facts from past sessions.
+- Call remember_fact when you learn something durable worth keeping for
+  future sessions (a user preference, a decision made, a fact about the
+  project) -- not for throwaway details.
 """
 
 
@@ -57,6 +63,7 @@ def main() -> None:
     tools = [
         list_directory, read_file, write_file, create_directory,
         run_command, ask_human, ask_human_choice,
+        remember_fact, recall_memory,
     ]
     tool_map = {
         "list_directory": list_directory,
@@ -66,6 +73,8 @@ def main() -> None:
         "run_command": run_command,
         "ask_human": ask_human,
         "ask_human_choice": ask_human_choice,
+        "remember_fact": remember_fact,
+        "recall_memory": recall_memory,
     }
 
     chat_logger = get_logger("full_agent", agent.model)
@@ -86,6 +95,7 @@ def main() -> None:
         while True:
             user_input = input("\nYou > ").strip()
             if user_input.lower() in {"exit", "quit", "q"}:
+                save_session_summary(agent, messages)
                 chat_logger.session_end(reason="user_exit")
                 break
 
@@ -105,6 +115,7 @@ def main() -> None:
 
     except KeyboardInterrupt:
         print("\nInterrupted.")
+        save_session_summary(agent, messages)
         chat_logger.session_end(reason="keyboard_interrupt")
 
     except Exception as exc:

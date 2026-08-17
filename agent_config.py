@@ -103,3 +103,12 @@ CONFIRM_MAX_ACTION_LEN = _env_int("CONFIRM_MAX_ACTION_LEN", 400)
 # Auto mode (auto_runner.py)
 # --------------------------------------------------------------------------
 MAX_AUTO_TOOL_CALLS = _env_int("MAX_AUTO_TOOL_CALLS", 30)
+
+# --------------------------------------------------------------------------
+# Memory (memory.py)
+# --------------------------------------------------------------------------
+MEMORY_ENABLED = _env_bool("MEMORY_ENABLED", True)
+MEMORY_FILE = os.getenv("MEMORY_FILE", "memory.json")          # relative to cwd, like LOG_DIR
+MEMORY_MAX_ENTRIES = _env_int("MEMORY_MAX_ENTRIES", 500)        # oldest entries drop past this
+MEMORY_MAX_TEXT_CHARS = _env_int("MEMORY_MAX_TEXT_CHARS", 1000)  # per-entry text cap
+MEMORY_MAX_RECALL_RESULTS = _env_int("MEMORY_MAX_RECALL_RESULTS", 10)  # cap on recall_memory() output
