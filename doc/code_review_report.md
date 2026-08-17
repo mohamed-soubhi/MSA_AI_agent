@@ -47,89 +47,103 @@ However, several critical and high-severity design edge cases were identified—
 
 ---
 
-## Key Findings by Severity
+## Key Findings & Verified Code Solutions
 
 ### 1. [SEC-01] Shell Command Chaining & Operator Bypass in Auto Mode
 - **Severity:** Critical
-- **Location:** `shell_tools.py` (lines 72–104)
-- **Description:** `first_token = shlex.split(command)[0]` inspects only the first token of a command string, then passes the full unparsed string to `subprocess.run(command, shell=True)`. In compound commands (`echo hello && /bin/bash -c '...'` or `echo test | sh`), the first binary is allowlisted (`echo`), no substring matches `BLOCKED`, and under `agent_mode.AUTO_MODE = True`, the gate auto-approves.
-- **Impact:** Arbitrary command execution without human authorization in auto mode.
-- **Mitigation:** Parse compound shell statements or split on shell operators (`&&`, `||`, `;`, `|`, `&`, `$()`, backticks) and validate each command token, or switch to `shell=False` execution with direct argument arrays.
+- **Location:** [`shell_tools.py:L52-L71, L116-L122`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/shell_tools.py#L52-L71)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** `first_token = shlex.split(command)[0]` inspected only the first token of a command string before passing it to `subprocess`. In compound commands (`echo hello && /bin/bash -c '...'`), secondary binaries were able to run in auto-mode without human approval.
+- **Code Solution:** Added `_COMPOUND_OPERATORS = ("&&", "||", ";", "|", "&", "$(", "`")` and `_is_compound(command)`. Any compound command is promoted to require `confirm(..., force_ask=True)`, preventing unattended execution in auto mode.
+- **Verification Tests:** `SHELL-028`, `SHELL-029`, `SHELL-030`, `SHELL-031` in [`tests/test_shell_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_shell_tools.py).
 
 ---
 
 ### 2. [SEC-02] Subprocess Process Group Leak on Shell Timeout
 - **Severity:** High
-- **Location:** `shell_tools.py` (lines 99–116)
-- **Description:** When `subprocess.run(command, shell=True, timeout=TIMEOUT_SECONDS)` times out, Python sends `SIGKILL` only to the immediate `/bin/sh` shell process. Child processes spawned by the shell (e.g. servers, build tools, background workers) become orphaned and continue running in the background.
-- **Impact:** Lingering background processes, CPU/RAM exhaustion, locked socket ports.
-- **Mitigation:** Use `start_new_session=True` when spawning subprocesses and terminate the entire process group with `os.killpg(os.getpgid(proc.pid), signal.SIGKILL)` on timeout.
+- **Location:** [`shell_tools.py:L127-L156`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/shell_tools.py#L127-L156)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** When `subprocess.run` timed out, `SIGKILL` went only to the top-level shell process, leaving spawned child processes running in the background.
+- **Code Solution:** Switched to `subprocess.Popen(..., start_new_session=True)` and invoke `os.killpg(os.getpgid(proc.pid), signal.SIGKILL)` upon `TimeoutExpired` to terminate the full process group.
+- **Verification Tests:** `SHELL-032`, `SHELL-033` in [`tests/test_shell_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_shell_tools.py).
 
 ---
 
 ### 3. [ROB-01] POSIX Signal / Threading Conflict in Confirmation Gate
 - **Severity:** High
-- **Location:** `confirm.py` (lines 114–116) vs `shared.py` (line 192)
-- **Description:** `_run_tool_with_timeout` executes tool functions within a worker thread via `ThreadPoolExecutor`. If a tool inside that thread invokes `confirm()`, `signal.signal(signal.SIGALRM, ...)` raises `ValueError: signal only works in main thread of the main interpreter`. `confirm()` catches `Exception` and defaults to denying the request.
-- **Impact:** Unintended tool denials when confirmation timeouts are active on worker threads.
-- **Mitigation:** Use non-blocking terminal polling (e.g. `select.select([sys.stdin], [], [], timeout)` on POSIX) instead of `signal.alarm`.
+- **Location:** [`confirm.py:L55-L92`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/confirm.py#L55-L92)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** Calling `signal.signal(signal.SIGALRM)` inside tool execution worker threads inside `shared._run_tool_with_timeout` raised `ValueError`, causing unexpected confirmation denials.
+- **Code Solution:** Replaced `signal.alarm()` with `_read_input_with_timeout()`, using a daemon thread and `queue.Queue.get(timeout=timeout_seconds)`. Thread-safe across all worker threads and platforms.
+- **Verification Tests:** `CONFIRM-010`–`CONFIRM-012`, `CONFIRM-033` in [`tests/test_confirm.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_confirm.py).
 
 ---
 
 ### 4. [ROB-02] Non-Atomic Persistence & Memory Corruption Wipe Hazard
 - **Severity:** High
-- **Location:** `memory.py` (lines 42–66)
-- **Description:** `_save()` writes JSON directly to `MEMORY_PATH` without atomic file replacement. If the process is killed or interrupted mid-write, `memory.json` is corrupted. Upon restart, `_load()` catches `json.JSONDecodeError`, returns `[]`, and the next write overwrites the file—permanently destroying all project memories.
-- **Impact:** Permanent data loss of durable memories upon unexpected shutdown.
-- **Mitigation:** Write to a temporary file in the same directory and atomically replace with `os.replace()`. Save corrupted files to a `.corrupt.bak` backup.
+- **Location:** [`memory.py:L43-L94`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/memory.py#L43-L94)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** Direct file overwrite of `memory.json` risked wiping project memories on sudden power loss or process kill.
+- **Code Solution:** Implemented atomic tempfile writes with `os.replace()`, plus automatic preservation of damaged JSON files to `.corrupt.bak` in `_load()`.
+- **Verification Tests:** `MEMORY-019`, `MEMORY-026`, `MEMORY-027` in [`tests/test_memory.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_memory.py).
 
 ---
 
 ### 5. [ARCH-01] Module-Level Static Path and Sandbox Resolution
 - **Severity:** Medium
-- **Location:** `fs_tools.py` (line 37), `memory.py` (line 39)
-- **Description:** `BASE_DIR = Path.cwd().resolve()` is evaluated once upon module import. If the current working directory changes dynamically or if multiple workspace contexts run concurrently in one process, `BASE_DIR` does not adapt.
-- **Mitigation:** Encapsulate workspace paths inside an injectable `WorkspaceContext` or pass `base_dir` explicitly.
+- **Location:** [`fs_tools.py:L37-L48`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/fs_tools.py#L37-L48)
+- **Status:** **DOCUMENTED TRADEOFF**
+- **Description:** `BASE_DIR = Path.cwd().resolve()` is evaluated once at module import for single-process CLI REPL operation. Documented as an intended design simplification. Multi-tenant multi-workspace servers should encapsulate paths in an injectable context object.
 
 ---
 
 ### 6. [ROB-03] Alternating Tool Call Stuck-Loop Blindspot
 - **Severity:** Medium
-- **Location:** `shared.py` (lines 330–337)
-- **Description:** Stuck loop detection checks `recent_call_signatures[-MAX_REPEAT_CALLS:].count(sig)`. If the agent oscillates between two tools (A &rarr; B &rarr; A &rarr; B), the single-tool repetition count in any window of 3 calls never reaches 3.
-- **Mitigation:** Implement 2-gram / 3-gram periodic cycle detection in recent call history.
+- **Location:** [`shared.py:L163-L180, L353-L366`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/shared.py#L163-L180)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** Single-tool repetition checks missed oscillating cycles (A &rarr; B &rarr; A &rarr; B or A &rarr; B &rarr; C &rarr; A &rarr; B &rarr; C).
+- **Code Solution:** Implemented `_detect_cycle(signatures, period, repeats)` in `shared.py` for periods 2 and 3 alongside period 1.
+- **Verification Tests:** `SHARED-050`, `SHARED-051`, `SHARED-052` in [`tests/test_shared.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_shared.py).
 
 ---
 
-### 7. [ROB-04] Unbounded Multi-Turn History & Summarization Context Bloat
+### 7. [ROB-04] Unbounded History Growth & Summarization Context Bloat
 - **Severity:** Medium
-- **Location:** `09_full_agent.py` (line 93), `memory.py` (lines 176–187)
-- **Description:** `messages` grows indefinitely across user turns in the CLI loop. `save_session_summary` transmits the complete conversation history to Ollama in a single prompt at shutdown, risking context length overflows.
-- **Mitigation:** Introduce sliding-window history management and tool observation trimming for long conversations.
+- **Location:** [`memory.py:L184-L213`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/memory.py#L184-L213)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** Transmitting full conversation histories to Ollama during end-of-session auto-summarization risked prompt context length overflow.
+- **Code Solution:** Windowed the messages sent to the summarizer: `windowed_messages = messages[-MEMORY_SUMMARY_MAX_MESSAGES:]` (default 40 messages).
+- **Verification Tests:** `MEMORY-028`, `MEMORY-029` in [`tests/test_memory.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_memory.py).
 
 ---
 
 ### 8. [UX-01] Auto-Mode Plan Generator Disconnected from System Persona
 - **Severity:** Medium
-- **Location:** `auto_runner.py` (lines 41–55)
-- **Description:** `_generate_plan` sends a user prompt without the agent's `SYSTEM_PROMPT`. The model creates plans without knowledge of project constraints, non-interactive flags, or memory tools.
-- **Mitigation:** Include `SYSTEM_PROMPT` in planning messages.
+- **Location:** [`auto_runner.py:L41-L65`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/auto_runner.py#L41-L65)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** `_generate_plan` formulated plans without knowledge of system guidelines and non-interactive flags.
+- **Code Solution:** Prepend `SYSTEM_PROMPT` to planning messages so the planner understands all tool conventions before drafting plans.
+- **Verification Tests:** `AUTORUN-013` in [`tests/test_auto_runner.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_auto_runner.py).
 
 ---
 
 ### 9. [SEC-03] Secret and Sensitive Data Exposure in Audit Logs
 - **Severity:** Low
-- **Location:** `chat_logger.py` (lines 140–169)
-- **Description:** Tool arguments and model outputs are written to JSONL logs without credential filtering. Inspecting `.env` files or tokens records them in plaintext logs.
-- **Mitigation:** Add regex masking for API tokens and private keys in `_truncate()`.
+- **Location:** [`chat_logger.py:L44-L80`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/chat_logger.py#L44-L80)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** Unmasked API keys, tokens, and private keys were logged in plaintext JSONL records.
+- **Code Solution:** Added `_mask_secrets()` with regex suite masking Private Keys, JWTs, `sk-` keys, AWS `AKIA` keys, GitHub `ghp_` tokens, Bearer headers, and `.env` assignments. Controlled via `log_config.MASK_SECRETS`.
+- **Verification Tests:** `CHATLOG-025`–`CHATLOG-032` in [`tests/test_chat_logger.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_chat_logger.py).
 
 ---
 
-### 10. [ROB-05] Environment Variable Parsing Crash on Non-Integer Values
+### 10. [ROB-05] Environment Variable Parsing Crash on Malformed Numeric Values
 - **Severity:** Low
-- **Location:** `agent_config.py` (lines 27–30)
-- **Description:** `_env_int` calls `int(raw)` directly without catching `ValueError`, causing unhandled exceptions on invalid environment variables.
-- **Mitigation:** Wrap `int(raw)` in a `try...except ValueError` block with fallback to `default`.
+- **Location:** [`agent_config.py:L30-L48`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent_config.py#L30-L48)
+- **Status:** **SOLVED & VERIFIED**
+- **Description:** Direct `int(raw)` raised unhandled `ValueError` on malformed environment variables during startup.
+- **Code Solution:** Wrapped integer parsing in `try...except ValueError` with warning log and fallback to documented defaults.
+- **Verification Tests:** `CONFIG-010`, `CONFIG-011` in [`tests/test_agent_config.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/tests/test_agent_config.py).
 
 ---
 
@@ -138,17 +152,17 @@ However, several critical and high-severity design edge cases were identified—
 | Module | Purpose | Security Gate | Concurrency | Test Coverage |
 |---|---|---|---|---|
 | `09_full_agent.py` | REPL & Entry point | Confirmation & System Prompt | Single-threaded | 18 tests (Pass) |
-| `agent_config.py` | Configuration constants | Type-safe defaults | Immutable constants | 40 tests (Pass) |
+| `agent_config.py` | Configuration constants | Type-safe defaults & fallback | Immutable constants | 41 tests (Pass) |
 | `agent_mode.py` | Global AUTO_MODE toggle | Checked in `confirm()` | Global flag | Integrated (Pass) |
-| `auto_runner.py` | Auto-mode orchestration | Plan approval + Tool cap | Scoped flag toggle | 12 tests (Pass) |
-| `chat_logger.py` | JSONL session logging | Exception swallowing | Thread-locked | 32 tests (Pass) |
-| `confirm.py` | Confirmation gate | ANSI strip, TTY check | Signal hazard in threads | 32 tests (Pass) |
+| `auto_runner.py` | Auto-mode orchestration | Plan approval + Tool cap | Scoped flag toggle | 13 tests (Pass) |
+| `chat_logger.py` | JSONL session logging | Secret masking & rotation | Thread-locked | 44 tests (Pass) |
+| `confirm.py` | Confirmation gate | ANSI strip, Timed Queue | Thread-safe daemon | 33 tests (Pass) |
 | `fs_tools.py` | Sandboxed FS tools | `resolve_path` single choke | Stateless | 49 tests (Pass) |
 | `human_tools.py` | HITL clarification tools | Delegation to `confirm()` | Blocking stdin | 16 tests (Pass) |
 | `log_config.py` | Logging config constants | Env var overrides | Immutable constants | 25 tests (Pass) |
-| `memory.py` | Durable memory storage | Substring & Tag filters | Non-atomic write | 25 tests (Pass) |
-| `shared.py` | ReAct loop & Ollama wrapper | Arg validation, Stuck loop | ThreadPool per tool | 49 tests (Pass) |
-| `shell_tools.py` | Terminal execution | Allowlist & Blocklist | Subprocess execution | 36 tests (Pass) |
+| `memory.py` | Durable memory storage | Atomic replace & Corrupt backup | Thread lock + Atomic | 32 tests (Pass) |
+| `shared.py` | ReAct loop & Ollama wrapper | Arg validation, Cycle detection | ThreadPool per tool | 52 tests (Pass) |
+| `shell_tools.py` | Terminal execution | Compound gate & killpg | Process group scoping | 47 tests (Pass) |
 
 ---
 
