@@ -154,3 +154,30 @@ class TestDefaultConstants:
     @pytest.mark.tid("AGENTCFG-023")
     def test_auto_mode_default(self):
         assert cfg.MAX_AUTO_TOOL_CALLS == 30
+
+    @pytest.mark.tid("AGENTCFG-024")
+    def test_memory_defaults(self):
+        assert cfg.MEMORY_ENABLED is True
+        assert cfg.MEMORY_FILE == "memory.json"
+        assert cfg.MEMORY_MAX_ENTRIES == 500
+        assert cfg.MEMORY_MAX_TEXT_CHARS == 1000
+        assert cfg.MEMORY_MAX_RECALL_RESULTS == 10
+
+    @pytest.mark.tid("AGENTCFG-025")
+    def test_system_prompt_default_mentions_core_tools(self):
+        assert "ask_human" in cfg.SYSTEM_PROMPT
+        assert "recall_memory" in cfg.SYSTEM_PROMPT
+        assert "remember_fact" in cfg.SYSTEM_PROMPT
+
+
+class TestSystemPromptOverride:
+    @pytest.mark.tid("AGENTCFG-026")
+    def test_env_var_overrides_default_prompt(self, monkeypatch):
+        monkeypatch.setenv("SYSTEM_PROMPT", "You are a custom assistant.")
+        import importlib
+        reloaded = importlib.reload(cfg)
+        try:
+            assert reloaded.SYSTEM_PROMPT == "You are a custom assistant."
+        finally:
+            monkeypatch.delenv("SYSTEM_PROMPT", raising=False)
+            importlib.reload(cfg)

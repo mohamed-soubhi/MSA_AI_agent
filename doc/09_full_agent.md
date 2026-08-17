@@ -36,6 +36,11 @@ of one plan's execution. The startup banner prints the current mode via
 
 ## `SYSTEM_PROMPT`
 
+**Lives in `agent_config.py` now**, not here — imported as
+`from agent_config import SYSTEM_PROMPT`. See
+[agent_config.md](agent_config.md#system-prompt-09_full_agentpy) for
+the full text and its `SYSTEM_PROMPT` env-var override.
+
 Prompt-level guidance — **quality, not safety** (a pattern the model is
 asked to follow, not a guarantee). The sandbox/allowlist/blocklist/
 confirm/timeout layers in `fs_tools.py` and `shell_tools.py` are what
@@ -48,7 +53,8 @@ it just hangs until `shell_tools.TIMEOUT_SECONDS` kills it. Suggesting
 `--yes`/`--force` flags is only safe *because* the human still approves
 every command's exact text before it runs. The prompt also tells the
 model to prefer `ask_human`/`ask_human_choice` over guessing when a
-request is ambiguous.
+request is ambiguous, and to use `recall_memory`/`remember_fact` for
+cross-session context.
 
 Seeded as the first message in `messages` on every run.
 

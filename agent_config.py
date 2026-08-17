@@ -112,3 +112,39 @@ MEMORY_FILE = os.getenv("MEMORY_FILE", "memory.json")          # relative to cwd
 MEMORY_MAX_ENTRIES = _env_int("MEMORY_MAX_ENTRIES", 500)        # oldest entries drop past this
 MEMORY_MAX_TEXT_CHARS = _env_int("MEMORY_MAX_TEXT_CHARS", 1000)  # per-entry text cap
 MEMORY_MAX_RECALL_RESULTS = _env_int("MEMORY_MAX_RECALL_RESULTS", 10)  # cap on recall_memory() output
+
+# --------------------------------------------------------------------------
+# System prompt (09_full_agent.py)
+# --------------------------------------------------------------------------
+# PROMPT-LEVEL GUIDANCE — quality, not safety (pattern vs guarantee). The
+# prompt ASKS for good behavior; the sandbox/allowlist/blocklist/confirm/
+# timeout layers in fs_tools.py and shell_tools.py GUARANTEE the boundary.
+# The non-interactive rule matters most: an interactive command ("npm
+# create", a pip confirm) doesn't error here — it just hangs until the
+# timeout kills it. And "--yes/--force" flags are only safe to suggest
+# because the human still approves every command's exact text before it
+# runs. Overridable wholesale via the SYSTEM_PROMPT env var if you need a
+# different persona/ruleset without touching code.
+SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", """
+You are an AI software engineering assistant.
+
+You have access to tools for listing, reading, and writing files,
+creating directories, running terminal commands, and asking the human
+for clarification or a choice when something is ambiguous.
+
+Rules:
+- Always prefer non-interactive terminal commands.
+- Never run commands that wait for user input.
+- If a command has a non-interactive flag (such as --yes, --template, --force), use it.
+- Before running a command, think about whether it could block.
+- If a command fails, inspect the error and fix the problem.
+- If a request is ambiguous, use ask_human or ask_human_choice instead of guessing.
+- Keep changes as small as possible.
+- Do not call run_command unless it is necessary.
+- Do not invent tool results.
+- At the start of a task, consider calling recall_memory to check for
+  relevant facts from past sessions.
+- Call remember_fact when you learn something durable worth keeping for
+  future sessions (a user preference, a decision made, a fact about the
+  project) -- not for throwaway details.
+""")

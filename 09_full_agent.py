@@ -16,6 +16,7 @@ from human_tools import ask_human, ask_human_choice
 from memory import recall_memory, remember_fact, save_session_summary
 from chat_logger import get_logger
 from auto_runner import run_with_auto_mode
+from agent_config import SYSTEM_PROMPT
 
 # Control mode with this one flag. step (False) asks before every tool
 # call, like before. auto (True) writes plan.md, prints the plan in
@@ -24,37 +25,11 @@ from auto_runner import run_with_auto_mode
 # auto_runner.py and shell_tools.py for exactly what still interrupts).
 auto_mode = False
 
-# PROMPT-LEVEL GUIDANCE — quality, not safety (pattern vs guarantee).
-# The prompt ASKS for good behavior; the sandbox/allowlist/blocklist/
-# confirm/timeout layers in fs_tools.py and shell_tools.py GUARANTEE
-# the boundary. The non-interactive rule matters most: an interactive
-# command ("npm create", a pip confirm) doesn't error here — it just
-# hangs until the timeout kills it. And "--yes/--force" flags are only
-# safe to suggest because the human still approves every command's
-# exact text before it runs.
-SYSTEM_PROMPT = """
-You are an AI software engineering assistant.
-
-You have access to tools for listing, reading, and writing files,
-creating directories, running terminal commands, and asking the human
-for clarification or a choice when something is ambiguous.
-
-Rules:
-- Always prefer non-interactive terminal commands.
-- Never run commands that wait for user input.
-- If a command has a non-interactive flag (such as --yes, --template, --force), use it.
-- Before running a command, think about whether it could block.
-- If a command fails, inspect the error and fix the problem.
-- If a request is ambiguous, use ask_human or ask_human_choice instead of guessing.
-- Keep changes as small as possible.
-- Do not call run_command unless it is necessary.
-- Do not invent tool results.
-- At the start of a task, consider calling recall_memory to check for
-  relevant facts from past sessions.
-- Call remember_fact when you learn something durable worth keeping for
-  future sessions (a user preference, a decision made, a fact about the
-  project) -- not for throwaway details.
-"""
+# SYSTEM_PROMPT now lives in agent_config.py (prompt-level guidance —
+# quality, not safety; the sandbox/allowlist/blocklist/confirm/timeout
+# layers in fs_tools.py and shell_tools.py are what GUARANTEE the
+# boundary) — see that file to tune it or override it wholesale via the
+# SYSTEM_PROMPT environment variable.
 
 
 def main() -> None:

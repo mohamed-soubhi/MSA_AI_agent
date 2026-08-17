@@ -79,6 +79,33 @@ existed.
 |---|---|---|
 | `MAX_AUTO_TOOL_CALLS` | `MAX_AUTO_TOOL_CALLS` | `30` |
 
+### Memory (`memory.py`)
+
+| Constant | Env var | Default |
+|---|---|---|
+| `MEMORY_ENABLED` | `MEMORY_ENABLED` | `True` |
+| `MEMORY_FILE` | `MEMORY_FILE` | `"memory.json"` |
+| `MEMORY_MAX_ENTRIES` | `MEMORY_MAX_ENTRIES` | `500` |
+| `MEMORY_MAX_TEXT_CHARS` | `MEMORY_MAX_TEXT_CHARS` | `1000` |
+| `MEMORY_MAX_RECALL_RESULTS` | `MEMORY_MAX_RECALL_RESULTS` | `10` |
+
+See [memory.md](memory.md) for what each setting controls.
+
+### System prompt (`09_full_agent.py`)
+
+| Constant | Env var | Default |
+|---|---|---|
+| `SYSTEM_PROMPT` | `SYSTEM_PROMPT` | multi-line prompt text (see below) |
+
+Unlike every other setting above, this one holds free-form text, not a
+number/bool/list. `09_full_agent.py` no longer defines its own
+`SYSTEM_PROMPT` — it imports this constant and seeds it as the first
+message in `messages` on every run, unchanged from before. Set the
+`SYSTEM_PROMPT` env var to replace the whole prompt (a different
+persona or ruleset) without touching code; there's no partial-override
+mechanism — it's all-or-nothing, same as `SHELL_ALLOWED`/`SHELL_BLOCKED`
+replacing their whole list rather than merging with the default.
+
 ## Test coverage (`tests/test_agent_config.py`)
 
 - Each `_env_*` helper: default value when the env var is unset, every
@@ -89,4 +116,9 @@ existed.
   variant.
 - Spot checks that the module-level constants resolve to their
   documented defaults when no env vars are set (confirms nothing
-  silently drifted from this doc).
+  silently drifted from this doc), including the `MEMORY_*` settings
+  and `SYSTEM_PROMPT`.
+- `SYSTEM_PROMPT` env var override: reloads the module with
+  `SYSTEM_PROMPT` set and confirms the constant reflects the override,
+  then reloads again after cleanup to restore the real default for
+  later tests in the same process.
