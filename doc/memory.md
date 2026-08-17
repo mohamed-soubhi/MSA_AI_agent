@@ -12,13 +12,13 @@ path serves both:
   model calls this to search past facts/summaries, e.g. at the start of
   a task or whenever something from an earlier session could help.
 - `save_session_summary(agent, messages)` — **host-invoked only**, from
-  `09_full_agent.py`, right before a session ends. Not offered to the
+  `CLI_agent.py`, right before a session ends. Not offered to the
   model as a tool: a mid-conversation call would summarize an
   unfinished conversation. Runs one extra `agent.chat()` call with
   `tools=None` so the summarizer itself can't call `write_file` /
   `run_command`, then saves the result as a `"summary"` entry.
 - `load_token_usage()` / `save_token_usage(session_tokens)` —
-  **host-invoked only**, also from `09_full_agent.py`. Track a running
+  **host-invoked only**, also from `CLI_agent.py`. Track a running
   cumulative token count (`OllamaAgent.total_tokens` — prompt +
   completion tokens, summed across every `chat()` call made through one
   agent instance) across every session ever run. `load_token_usage()`
@@ -100,9 +100,9 @@ memories yet" on read, and a full disk or permissions error on write is
 swallowed the same way `chat_logger.py` swallows logging failures.
 `save_session_summary`'s `agent.chat()` call is wrapped the same way:
 losing a summary must never crash the shutdown path in
-`09_full_agent.py`.
+`CLI_agent.py`.
 
-## Wiring into `09_full_agent.py`
+## Wiring into `CLI_agent.py`
 
 - `remember_fact` and `recall_memory` are added to the same `tools` /
   `tool_map` lists as every other tool (nine total now).
@@ -144,7 +144,7 @@ losing a summary must never crash the shutdown path in
   disabled-memory no-op on both load and save, coexists with `entries`
   writes without clobbering either, corrupt file treated as zero.
 
-`tests/test_full_agent_main.py` additionally covers the wiring: both
+`tests/test_CLI_agent_main.py` additionally covers the wiring: both
 memory tools present in `tool_map` (`FULLAGENT-007`/`008`, now nine
 tools), `save_session_summary` called on the exit and `KeyboardInterrupt`
 paths but **not** the crash path (`FULLAGENT-012`–`014`), and

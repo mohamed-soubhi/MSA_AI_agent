@@ -1,11 +1,14 @@
-"""Tests for 09_full_agent.py — the single CLI entry point.
+"""Tests for CLI_agent.py — the single CLI entry point.
 
 Merges what were previously two separate entry points
 (07_filesystem_tools.py, 08_terminal_tools.py, both now removed) into
 one agent offering nine tools (seven original + remember_fact +
-recall_memory from memory.py). Filename starts with a digit, so it's
-loaded via importlib. OllamaAgent, get_logger, run_agent, and input()
-are all mocked -- no live Ollama server needed.
+recall_memory from memory.py). Formerly 09_full_agent.py -- now that
+the digit prefix is gone, this loads via a normal `import CLI_agent`
+(reloaded fresh per test, for the same test-to-test isolation the old
+importlib.util.spec_from_file_location loader gave). OllamaAgent,
+get_logger, run_agent, and input() are all mocked -- no live Ollama
+server needed.
 
 save_session_summary() (also from memory.py) is called at every exit
 path. It no-ops on its own whenever the conversation has fewer than two
@@ -22,27 +25,18 @@ since it makes no model call and so carries no extra-failure risk. See
 test_memory.py for their own unit tests.
 """
 
-import importlib.util
-import os
-import sys
+import importlib
 from unittest.mock import MagicMock
 
 import pytest
 
-MODULE_PATH = os.path.join(os.path.dirname(__file__), "..", "09_full_agent.py")
-
-
-def load_module():
-    spec = importlib.util.spec_from_file_location("full_agent_main", MODULE_PATH)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["full_agent_main"] = module
-    spec.loader.exec_module(module)
-    return module
+import CLI_agent
 
 
 @pytest.fixture
 def full_main():
-    return load_module()
+    importlib.reload(CLI_agent)
+    return CLI_agent
 
 
 @pytest.fixture

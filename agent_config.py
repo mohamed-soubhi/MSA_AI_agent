@@ -137,7 +137,7 @@ MEMORY_MAX_RECALL_RESULTS = _env_int("MEMORY_MAX_RECALL_RESULTS", 10)  # cap on 
 MEMORY_SUMMARY_MAX_MESSAGES = _env_int("MEMORY_SUMMARY_MAX_MESSAGES", 40)
 
 # --------------------------------------------------------------------------
-# System prompt (09_full_agent.py)
+# System prompt (CLI_agent.py)
 # --------------------------------------------------------------------------
 # PROMPT-LEVEL GUIDANCE — quality, not safety (pattern vs guarantee). The
 # prompt ASKS for good behavior; the sandbox/allowlist/blocklist/confirm/

@@ -1,6 +1,6 @@
 # assignment2 — documentation index
 
-A sandboxed agent built on Ollama tool-calling. `09_full_agent.py` is
+A sandboxed agent built on Ollama tool-calling. `CLI_agent.py` is
 the single entry point — it merges what used to be two separate agents
 (filesystem-only, and a "vibe-coding" write+run agent) into one that
 can list/read/write/create files, run terminal commands, and ask the
@@ -26,16 +26,16 @@ was started from), and every session is logged to JSONL.
 | `memory.py` | Persistent JSON memory across sessions: `remember_fact`/`recall_memory` (model tools) + `save_session_summary`/`load_token_usage`/`save_token_usage` (host-called at session start/end) | [memory.md](memory.md) |
 | `chat_logger.py` | Structured JSONL session logging (`ChatLogger`, `NullChatLogger`, `get_logger`) | [chat_logger.md](chat_logger.md) |
 | `log_config.py` | Env-var-overridable logging configuration | [log_config.md](log_config.md) |
-| `09_full_agent.py` | The CLI entry point: files + terminal + human-in-the-loop + auto/step mode, all in one agent | [09_full_agent.md](09_full_agent.md) |
+| `CLI_agent.py` | The CLI entry point: files + terminal + human-in-the-loop + auto/step mode, all in one agent | [CLI_agent.md](CLI_agent.md) |
 
 > `07_filesystem_tools.py` and `08_terminal_tools.py` (and their docs)
-> have been retired — `09_full_agent.py` merges both into one agent
+> have been retired — `CLI_agent.py` merges both into one agent
 > that reuses their exact same tool implementations.
 
 ## Architecture (call graph)
 
 ```
-09_full_agent.py (main)
+CLI_agent.py (main)
  ├── shared.OllamaAgent           — talks to Ollama
  ├── auto_mode == False:
  │     shared.run_agent()         — the tool-calling loop (step mode)

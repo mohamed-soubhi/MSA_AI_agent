@@ -39,7 +39,7 @@ def _generate_plan(agent, user_request: str) -> str:
     for approval before anything runs.
 
     UX-01: seeds the same SYSTEM_PROMPT the execution phase uses (see
-    09_full_agent.py), as a system message ahead of the planning
+    CLI_agent.py), as a system message ahead of the planning
     request. Without it, the planner had no idea about the project's
     own constraints -- prefer non-interactive flags, avoid
     run_command unless necessary, use recall_memory/remember_fact --

@@ -2,7 +2,7 @@
 
 remember_fact/recall_memory are model-invoked tools (same shape as
 human_tools.py); save_session_summary() is host-invoked only, called
-by 09_full_agent.py at session end. Every test points memory.MEMORY_PATH
+by CLI_agent.py at session end. Every test points memory.MEMORY_PATH
 at an isolated tmp file so nothing touches the real memory.json.
 """
 

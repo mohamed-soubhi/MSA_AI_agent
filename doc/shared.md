@@ -62,11 +62,11 @@ and returns one response.
 
 Cumulative `prompt_eval_count + eval_count` across every successful
 `chat()` call made through this `OllamaAgent` instance. Since
-`09_full_agent.py` creates exactly one instance per run, this is
+`CLI_agent.py` creates exactly one instance per run, this is
 effectively "tokens used this session" — read once by the host CLI at
-shutdown (see `09_full_agent.md` and `memory.md`'s
+shutdown (see `CLI_agent.md` and `memory.md`'s
 `save_token_usage()`). Not reset between calls; not touched by
-`chat_stream()` (streaming responses aren't used by `09_full_agent.py`,
+`chat_stream()` (streaming responses aren't used by `CLI_agent.py`,
 and per-chunk token accounting would need different handling).
 
 ### `_extract_token_count(response) -> int`

@@ -1,4 +1,4 @@
-# 09_full_agent.py
+# CLI_agent.py
 
 The single CLI entry point: reads/writes/lists/creates files, runs
 terminal commands, and can ask the human for clarification — all inside
@@ -13,8 +13,14 @@ are each imported from their one real implementation (`fs_tools.py`,
 them together and owns the conversation loop. See [memory.md](memory.md)
 for what `remember_fact`/`recall_memory`/`save_session_summary` do.
 
-Like its predecessors, the filename starts with a digit and must be
-loaded via `importlib.util` rather than a normal `import`.
+Formerly `09_full_agent.py`. Its predecessors (the retired
+`07_filesystem_tools.py`/`08_terminal_tools.py`) needed digit-prefixed
+names for workshop lesson ordering, which meant loading via
+`importlib.util.spec_from_file_location` instead of a normal `import`
+(digit-prefixed names aren't valid Python identifiers). Renamed once
+this settled as the project's single, permanent entry point rather than
+one lesson in a numbered sequence — a normal `import CLI_agent` works
+everywhere now, including in `tests/test_CLI_agent_main.py`.
 
 ## `auto_mode: bool` (module-level, default `False`)
 
@@ -26,7 +32,7 @@ Controls which of two run paths `main()` takes each turn:
   anything outside the sandbox or a destructive shell command (see
   [auto_runner.md](auto_runner.md), [shell_tools.md](shell_tools.md)).
 
-This is a plain local variable in `09_full_agent.py`, **distinct from**
+This is a plain local variable in `CLI_agent.py`, **distinct from**
 `agent_mode.AUTO_MODE` (lowercase vs. uppercase, different module) —
 `auto_mode` here only decides which function `main()` calls each turn;
 `agent_mode.AUTO_MODE` is the flag `confirm()` actually reads, and is
@@ -38,7 +44,7 @@ of one plan's execution. The startup banner prints the current mode via
 
 **Lives in `agent_config.py` now**, not here — imported as
 `from agent_config import SYSTEM_PROMPT`. See
-[agent_config.md](agent_config.md#system-prompt-09_full_agentpy) for
+[agent_config.md](agent_config.md#system-prompt-cli_agentpy) for
 the full text and its `SYSTEM_PROMPT` env-var override.
 
 Prompt-level guidance — **quality, not safety** (a pattern the model is
@@ -67,7 +73,7 @@ ends — normal exit, `KeyboardInterrupt`, or an unhandled crash.
 
 Unlike `save_session_summary` (which makes an extra `agent.chat()` call
 and is deliberately skipped on the crash path — see
-[memory.md](memory.md#wiring-into-09_full_agentpy)), this makes **no**
+[memory.md](memory.md#wiring-into-cli_agentpy)), this makes **no**
 model call: it just reads `agent.total_tokens` and calls
 `memory.save_token_usage()`, so there's no extra-failure risk to avoid
 by skipping it anywhere.
@@ -113,16 +119,18 @@ path over a display feature.
 7. Any other `Exception` → logs `error("main_loop_crashed",
    detail=str(exc))`, then `session_end(reason="crashed")`, then
    **re-raises**. `save_session_summary` is deliberately **not** called
-   here — see [memory.md](memory.md#wiring-into-09_full_agentpy).
+   here — see [memory.md](memory.md#wiring-into-cli_agentpy).
 8. `finally`: calls `_report_token_usage(agent)` — **always**, on every
    path above, including the crash path in step 7 (before the
    re-raised exception actually propagates out of `main()`).
 
-## Test coverage (`tests/test_full_agent_main.py`)
+## Test coverage (`tests/test_CLI_agent_main.py`)
 
-Module loaded via `importlib.util.spec_from_file_location`
-(digit-prefixed filename). `OllamaAgent`, `get_logger`, `run_agent`,
-and `input()` are all mocked — no live Ollama server or real terminal
+Module loaded via a normal `import CLI_agent`, reloaded fresh with
+`importlib.reload()` per test (for the same test-to-test isolation the
+old digit-prefixed loader gave). `OllamaAgent`, `get_logger`,
+`run_agent`, and `input()` are all mocked — no live Ollama server or
+real terminal
 needed.
 
 - `"exit"` and all case-insensitive synonyms end the session cleanly

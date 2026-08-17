@@ -7,7 +7,7 @@ Two things live here, and they are populated differently:
     calls remember_fact(); later, in this or a future session, it calls
     recall_memory() to look it back up.
   - save_session_summary() -- NOT a tool. Called once by the host CLI
-    (09_full_agent.py) right before a session ends, so every
+    (CLI_agent.py) right before a session ends, so every
     conversation leaves behind a short summary even if the model never
     called remember_fact() during the run.
   - load_token_usage() / save_token_usage() -- also NOT tools, also

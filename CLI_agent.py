@@ -1,12 +1,20 @@
-"""The full agent: read/write/list/create files, run terminal commands,
-and ask the human for clarification — all inside one sandbox, one
-confirm() gate, and one JSONL log.
+"""CLI_agent.py — the single CLI entry point: read/write/list/create
+files, run terminal commands, and ask the human for clarification —
+all inside one sandbox, one confirm() gate, and one JSONL log.
 
-This merges the filesystem agent (07) and the terminal agent (08).
-Nothing is reimplemented twice: write_file, run_command, ask_human, and
-ask_human_choice are each imported from their one real implementation
-(fs_tools.py, shell_tools.py, human_tools.py) — this file only wires
-them together and owns the conversation loop.
+Formerly 09_full_agent.py: renamed once it settled as the project's
+single entry point, not one lesson in a numbered workshop sequence.
+The rename also means this file no longer needs the
+importlib.util.spec_from_file_location workaround its old digit-prefixed
+name required — a normal `import CLI_agent` now works everywhere,
+including in tests/test_CLI_agent_main.py.
+
+Merges what were originally two separate agents (a filesystem-only one,
+and a terminal "vibe-coding" one). Nothing is reimplemented twice:
+write_file, run_command, ask_human, and ask_human_choice are each
+imported from their one real implementation (fs_tools.py,
+shell_tools.py, human_tools.py) — this file only wires them together
+and owns the conversation loop.
 """
 
 from shared import OllamaAgent, run_agent, section

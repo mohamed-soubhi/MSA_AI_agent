@@ -1,6 +1,6 @@
 # Code Review & Architecture Audit Report
 
-**Target:** AI Agent Core System (`09_full_agent.py`, `shared.py`, `fs_tools.py`, `shell_tools.py`, `confirm.py`, `auto_runner.py`, `memory.py`, `chat_logger.py`, `agent_config.py`, `log_config.py`)  
+**Target:** AI Agent Core System (`CLI_agent.py`, `shared.py`, `fs_tools.py`, `shell_tools.py`, `confirm.py`, `auto_runner.py`, `memory.py`, `chat_logger.py`, `agent_config.py`, `log_config.py`)  
 **Date:** 2026-08-17  
 **Status:** Active Defects Remediated & Dropped from Backlog  
 **HTML Version:** [code_review_report.html](code_review_report.html)  
@@ -64,7 +64,7 @@ The following 9 issues have been remediated in code and dropped from the active 
 
 | Module | Primary Responsibility | Safety & Isolation Gate | Concurrency Safety | Test Count | Status |
 |---|---|---|---|---|---|
-| `09_full_agent.py` | Agent CLI orchestrator & REPL loop | Human confirmation / System prompt | Single-threaded loop | 24 tests | **Robust** |
+| `CLI_agent.py` | Agent CLI orchestrator & REPL loop | Human confirmation / System prompt | Single-threaded loop | 24 tests | **Robust** |
 | `agent_config.py` | Central configuration & env parsing | Type-safe defaults & error fallback | Immutable constants | 41 tests | **Robust** |
 | `agent_mode.py` | Single global AUTO_MODE switch | Checked inside confirm() | Global variable (non-TLS) | Integrated | **Robust** |
 | `auto_runner.py` | Plan generation & auto execution | Plan review + System prompt context | Scoped AUTO_MODE flag | 13 tests | **Robust** |

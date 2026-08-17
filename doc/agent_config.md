@@ -92,14 +92,14 @@ existed.
 
 See [memory.md](memory.md) for what each setting controls.
 
-### System prompt (`09_full_agent.py`)
+### System prompt (`CLI_agent.py`)
 
 | Constant | Env var | Default |
 |---|---|---|
 | `SYSTEM_PROMPT` | `SYSTEM_PROMPT` | multi-line prompt text (see below) |
 
 Unlike every other setting above, this one holds free-form text, not a
-number/bool/list. `09_full_agent.py` no longer defines its own
+number/bool/list. `CLI_agent.py` no longer defines its own
 `SYSTEM_PROMPT` — it imports this constant and seeds it as the first
 message in `messages` on every run, unchanged from before. Set the
 `SYSTEM_PROMPT` env var to replace the whole prompt (a different

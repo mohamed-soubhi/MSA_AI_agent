@@ -86,7 +86,7 @@ class OllamaAgent:
         self.model = model
         self.client = Client()
         # Running total across every successful chat() call made through
-        # this instance -- i.e. this whole session, since 09_full_agent.py
+        # this instance -- i.e. this whole session, since CLI_agent.py
         # creates exactly one OllamaAgent per run. Not reset between
         # chat() calls; the host CLI reads it once at shutdown.
         self.total_tokens = 0
