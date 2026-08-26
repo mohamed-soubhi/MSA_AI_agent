@@ -5,4 +5,8 @@
 set -e
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
+
+# See run_be.sh -- a venv built on one OS can't be reused on another.
+export UV_PROJECT_ENVIRONMENT="$ROOT_DIR/.venv-linux"
+
 uv run agent/CLI_agent.py

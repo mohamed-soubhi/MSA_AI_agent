@@ -6,6 +6,13 @@ REM directory -- cds to this script's own folder first.
 set "ROOT_DIR=%~dp0"
 if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
 cd /d "%ROOT_DIR%"
+
+REM A venv built on one OS can't be reused on another (WSL vs. Windows --
+REM different binaries, symlink layout). If this same repo path is also
+REM used from WSL (e.g. C:\... == /mnt/c/...), each OS needs its own
+REM venv directory so they never collide/corrupt each other.
+set UV_PROJECT_ENVIRONMENT=%ROOT_DIR%\.venv-windows
+
 if "%BE_HOST%"=="" set BE_HOST=127.0.0.1
 if "%BE_PORT%"=="" set BE_PORT=8000
 

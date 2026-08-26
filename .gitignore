@@ -8,8 +8,13 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Python virtual environments (BE/.venv, etc.)
+# Python virtual environments -- .venv-linux/.venv-windows are
+# per-OS (see run_be.sh/.bat: a venv built on one OS can't be reused
+# on the other when this repo path is shared, e.g. WSL's /mnt/c/...
+# and Windows' C:\... pointing at the same files).
 .venv/
+.venv-linux/
+.venv-windows/
 venv/
 
 # Node / JS

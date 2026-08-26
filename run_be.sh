@@ -7,6 +7,12 @@ set -e
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
+# A venv built on one OS can't be reused on another (WSL vs. Windows --
+# different binaries, symlink layout). If this same repo path is also
+# used from Windows (e.g. /mnt/c/... == C:\...), each OS needs its own
+# venv directory so they never collide/corrupt each other.
+export UV_PROJECT_ENVIRONMENT="$ROOT_DIR/.venv-linux"
+
 HOST="${BE_HOST:-127.0.0.1}"
 PORT="${BE_PORT:-8000}"
 
