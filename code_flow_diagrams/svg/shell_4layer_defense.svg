@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 780" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg7" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#451a03"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+    <marker id="ar7" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#f59e0b"/></marker>
+    <marker id="ar7-r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#ef4444"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 20px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .nt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; fill: #ffffff; }
+    .ns { font-family: system-ui, sans-serif; font-size: 11px; fill: #cbd5e1; }
+    .box { rx: 8; ry: 8; stroke-width: 1.5; }
+    .wy { stroke: #f59e0b; stroke-width: 2.5; fill: none; }
+    .wr { stroke: #ef4444; stroke-width: 2.5; fill: none; }
+  </style>
+
+  <rect width="1150" height="780" rx="16" fill="url(#bg7)" stroke="#b45309" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">SHELL TOOLS 4-LAYER DEFENSE GATE (shell_tools.run_command)</text>
+    <text class="st" x="0" y="44">Allowlist, Blocklist/Compound Detection, Human Confirmation &amp; Subprocess Group Isolation</text>
+  </g>
+
+  <!-- Input -->
+  <g transform="translate(380, 80)">
+    <rect class="box" width="380" height="50" fill="#78350f" stroke="#fbbf24"/>
+    <text class="nt" x="15" y="22">Command Input: run_command(command)</text>
+    <text class="ns" x="15" y="38">e.g. "python3 -m pytest tests/" or "rm -rf /"</text>
+  </g>
+
+  <!-- Layer 1 -->
+  <g transform="translate(380, 160)">
+    <rect class="box" width="380" height="70" fill="#1e293b" stroke="#f59e0b"/>
+    <text class="nt" x="15" y="22">Layer 1: Program Allowlist</text>
+    <text class="ns" x="15" y="40">first_token = shlex.split(command)[0].split("/")[-1]</text>
+    <text class="ns" x="15" y="56">Must be in SHELL_ALLOWED: python, node, pytest, ls, etc.</text>
+  </g>
+  <path d="M 570 130 L 570 160" class="wy" marker-end="url(#ar7)"/>
+
+  <!-- Layer 2 -->
+  <g transform="translate(380, 260)">
+    <rect class="box" width="380" height="85" fill="#1e293b" stroke="#f59e0b"/>
+    <text class="nt" x="15" y="22">Layer 2: Dangerous Substrings &amp; Compound Operators</text>
+    <text class="ns" x="15" y="40">BLOCKED: "rm ", "sudo", "curl", "wget", "chmod", etc.</text>
+    <text class="ns" x="15" y="56">COMPOUND: "&amp;&amp;", "||", ";", "|", "&amp;", "$(", "`"</text>
+    <text class="ns" x="15" y="72">Triggers confirm(force_ask=True) (interrupts auto mode!)</text>
+  </g>
+  <path d="M 570 230 L 570 260" class="wy" marker-end="url(#ar7)"/>
+
+  <!-- Layer 3 -->
+  <g transform="translate(380, 375)">
+    <rect class="box" width="380" height="75" fill="#7c2d12" stroke="#f97316"/>
+    <text class="nt" x="15" y="22">Layer 3: Human Confirmation Gate</text>
+    <text class="ns" x="15" y="40">Clean command in Step Mode → confirm("run: {command}")</text>
+    <text class="ns" x="15" y="56">Flagged in Layer 2 → confirm(force_ask=True)</text>
+  </g>
+  <path d="M 570 345 L 570 375" class="wy" marker-end="url(#ar7)"/>
+
+  <!-- Layer 4 -->
+  <g transform="translate(380, 480)">
+    <rect class="box" width="380" height="100" fill="#1e293b" stroke="#ea580c"/>
+    <text class="nt" x="15" y="22">Layer 4: Execution &amp; Process Group Isolation</text>
+    <text class="ns" x="15" y="40">Popen(command, cwd=BASE_DIR, start_new_session=True)</text>
+    <text class="ns" x="15" y="56">communicate(timeout=SHELL_TIMEOUT_SECONDS)</text>
+    <text class="ns" x="15" y="72">On Timeout: os.killpg(os.getpgid(pid), SIGKILL) kills whole group</text>
+    <text class="ns" x="15" y="88">Drains partial output, no orphaned child daemon left behind</text>
+  </g>
+  <path d="M 570 450 L 570 480" class="wy" marker-end="url(#ar7)"/>
+
+  <!-- Formatting Output -->
+  <g transform="translate(380, 610)">
+    <rect class="box" width="380" height="65" fill="#065f46" stroke="#34d399"/>
+    <text class="nt" x="15" y="22">5. Triple Stream Formatting (_format_result)</text>
+    <text class="ns" x="15" y="40">Outputs exit_code, stdout (capped), stderr (capped)</text>
+    <text class="ns" x="15" y="56">Independent truncation prevents stdout drowning out stderr</text>
+  </g>
+  <path d="M 570 580 L 570 610" class="wy" marker-end="url(#ar7)"/>
+
+  <!-- Blocked Side-Box -->
+  <g transform="translate(810, 260)">
+    <rect class="box" width="280" height="90" fill="#7f1d1d" stroke="#ef4444"/>
+    <text class="nt" x="15" y="24">Blocked / Denied</text>
+    <text class="ns" x="15" y="44">Returns string observation to model</text>
+    <text class="ns" x="15" y="60">"Blocked: ... is not in allowlist"</text>
+    <text class="ns" x="15" y="76">"Command cancelled by user"</text>
+  </g>
+  <path d="M 760 195 L 810 195" class="wr" marker-end="url(#ar7-r)"/>
+  <path d="M 760 300 L 810 300" class="wr" marker-end="url(#ar7-r)"/>
+  <path d="M 760 410 L 810 410" class="wr" marker-end="url(#ar7-r)"/>
+</svg>

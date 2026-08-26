@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 840" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#090d16"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/></marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#f87171"/></marker>
+    <marker id="arr-grn" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#4ade80"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 20px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .nt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; fill: #ffffff; }
+    .ns { font-family: system-ui, sans-serif; font-size: 11px; fill: #cbd5e1; }
+    .wb { stroke: #38bdf8; stroke-width: 2.5; fill: none; }
+    .wr { stroke: #f87171; stroke-width: 2.5; fill: none; }
+    .wg { stroke: #4ade80; stroke-width: 2.5; fill: none; }
+    .box { rx: 8; ry: 8; stroke-width: 1.5; }
+    .diamond { stroke-width: 1.5; }
+  </style>
+
+  <rect width="1100" height="840" rx="16" fill="url(#bg2)" stroke="#334155" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">CLI AGENT EXECUTION LIFECYCLE (CLI_agent.py)</text>
+    <text class="st" x="0" y="44">REPL Loop, Auto vs Step Mode Routing, Exception Boundaries, and Persistent Token Accounting</text>
+  </g>
+
+  <!-- Step 1: Init -->
+  <g transform="translate(400, 80)">
+    <rect class="box" width="300" height="60" fill="#1e3a8a" stroke="#3b82f6"/>
+    <text class="nt" x="15" y="24">1. Process Startup &amp; Config</text>
+    <text class="ns" x="15" y="42">load_dotenv(), load_token_usage(), OllamaAgent()</text>
+  </g>
+
+  <!-- Step 2: Session Banner -->
+  <g transform="translate(400, 170)">
+    <rect class="box" width="300" height="55" fill="#1e293b" stroke="#64748b"/>
+    <text class="nt" x="15" y="22">2. Print Sandbox &amp; Seed System Prompt</text>
+    <text class="ns" x="15" y="40">messages = [{"role": "system", "content": SYSTEM_PROMPT}]</text>
+  </g>
+  <path d="M 550 140 L 550 170" class="wb" marker-end="url(#arr)"/>
+
+  <!-- Step 3: User Input -->
+  <g transform="translate(400, 255)">
+    <rect class="box" width="300" height="55" fill="#0f766e" stroke="#14b8a6"/>
+    <text class="nt" x="15" y="22">3. REPL Prompt: input("You > ")</text>
+    <text class="ns" x="15" y="40">chat_logger.user_message(user_input)</text>
+  </g>
+  <path d="M 550 225 L 550 255" class="wb" marker-end="url(#arr)"/>
+
+  <!-- Step 4: Decision: Exit? -->
+  <g transform="translate(450, 340)">
+    <polygon points="100,0 200,45 100,90 0,45" fill="#78350f" stroke="#f59e0b" class="diamond"/>
+    <text class="nt" x="55" y="48">Is Exit / Quit?</text>
+  </g>
+  <path d="M 550 310 L 550 340" class="wb" marker-end="url(#arr)"/>
+
+  <!-- Exit Path -->
+  <g transform="translate(800, 355)">
+    <rect class="box" width="250" height="60" fill="#7f1d1d" stroke="#ef4444"/>
+    <text class="nt" x="15" y="24">Exit Cleanly</text>
+    <text class="ns" x="15" y="42">save_session_summary() (LLM Turn)</text>
+    <text class="ns" x="15" y="54">chat_logger.session_end("user_exit")</text>
+  </g>
+  <path d="M 650 385 L 800 385" class="wr" marker-end="url(#arr-red)"/>
+  <text class="ns" x="690" y="375" fill="#f87171">YES ("exit"/"q")</text>
+
+  <!-- Step 5: Mode Decision -->
+  <g transform="translate(450, 470)">
+    <polygon points="100,0 200,45 100,90 0,45" fill="#4c1d95" stroke="#a78bfa" class="diamond"/>
+    <text class="nt" x="48" y="48">auto_mode == True?</text>
+  </g>
+  <path d="M 550 430 L 550 470" class="wb" marker-end="url(#arr)"/>
+  <text class="ns" x="560" y="450" fill="#cbd5e1">NO</text>
+
+  <!-- Auto Mode Path -->
+  <g transform="translate(80, 580)">
+    <rect class="box" width="360" height="100" fill="#312e81" stroke="#818cf8"/>
+    <text class="nt" x="15" y="22">Auto Mode: run_with_auto_mode()</text>
+    <text class="ns" x="15" y="40">1. _generate_plan(tools=None)</text>
+    <text class="ns" x="15" y="56">2. Write &amp; display plan.md</text>
+    <text class="ns" x="15" y="72">3. confirm("Run plan?", force_ask=True)</text>
+    <text class="ns" x="15" y="88">4. run_agent(max_tool_calls=30)</text>
+  </g>
+  <path d="M 450 515 L 260 515 L 260 580" class="wp" marker-end="url(#arr)"/>
+  <text class="ns" x="310" y="505" fill="#a78bfa">YES (auto_mode)</text>
+
+  <!-- Step Mode Path -->
+  <g transform="translate(480, 580)">
+    <rect class="box" width="360" height="100" fill="#065f46" stroke="#34d399"/>
+    <text class="nt" x="15" y="22">Step Mode: run_agent()</text>
+    <text class="ns" x="15" y="40">1. messages.append(user_input)</text>
+    <text class="ns" x="15" y="56">2. ReAct loop with 9 tools</text>
+    <text class="ns" x="15" y="72">3. confirm() prompts on every write/cmd</text>
+    <text class="ns" x="15" y="88">4. Print Agent &gt; Answer</text>
+  </g>
+  <path d="M 650 515 L 660 515 L 660 580" class="wg" marker-end="url(#arr-grn)"/>
+  <text class="ns" x="670" y="505" fill="#4ade80">NO (step_mode)</text>
+
+  <!-- Loop back to REPL -->
+  <path d="M 260 680 L 260 720 L 550 720" class="wb"/>
+  <path d="M 660 680 L 660 720 L 550 720" class="wb"/>
+  <path d="M 550 720 L 50 720 L 50 280 L 400 280" class="wb" marker-end="url(#arr)"/>
+  <text class="ns" x="70" y="710" fill="#38bdf8">Next REPL Turn</text>
+
+  <!-- Shutdown finally block -->
+  <g transform="translate(800, 680)">
+    <rect class="box" width="250" height="85" fill="#1e293b" stroke="#f59e0b"/>
+    <text class="nt" x="15" y="22">finally: _report_token_usage()</text>
+    <text class="ns" x="15" y="40">save_token_usage(session_tokens)</text>
+    <text class="ns" x="15" y="56">Persists to memory.json</text>
+    <text class="ns" x="15" y="72">Runs even on Crash / Ctrl-C</text>
+  </g>
+  <path d="M 925 415 L 925 680" class="wr" marker-end="url(#arr-red)"/>
+
+</svg>

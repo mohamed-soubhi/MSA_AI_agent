@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 760" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#1e1b4b"/></linearGradient>
+    <marker id="ar3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/></marker>
+    <marker id="ar3-grn" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#34d399"/></marker>
+    <marker id="ar3-pur" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#c084fc"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 20px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .ht { font-family: system-ui, sans-serif; font-weight: 700; font-size: 15px; }
+    .nt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; fill: #ffffff; }
+    .ns { font-family: system-ui, sans-serif; font-size: 11px; fill: #cbd5e1; }
+    .box { rx: 8; ry: 8; stroke-width: 1.5; }
+    .col-bg { rx: 12; ry: 12; fill: rgba(15, 23, 42, 0.6); stroke-width: 1.5; }
+    .w { stroke: #64748b; stroke-width: 2; fill: none; }
+    .wg { stroke: #34d399; stroke-width: 2.5; fill: none; }
+    .wp { stroke: #c084fc; stroke-width: 2.5; fill: none; }
+  </style>
+
+  <rect width="1150" height="760" rx="16" fill="url(#bg3)" stroke="#334155" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">EXECUTION MODES: STEP MODE vs. AUTO MODE</text>
+    <text class="st" x="0" y="44">Comparison of Granular Step-by-Step Approval vs. Upfront Plan Approval &amp; Tool Cap</text>
+  </g>
+
+  <!-- Left Column: STEP MODE -->
+  <rect class="col-bg" x="40" y="80" width="510" height="640" stroke="#059669"/>
+  <text class="ht" x="65" y="115" fill="#34d399">STEP MODE (auto_mode = False)</text>
+  <text class="ns" x="65" y="135" fill="#94a3b8">Interactive oversight: human confirms every single side-effecting action</text>
+
+  <g transform="translate(65, 160)">
+    <rect class="box" width="460" height="60" fill="#064e3b" stroke="#10b981"/>
+    <text class="nt" x="15" y="24">1. Direct Execution Request</text>
+    <text class="ns" x="15" y="42">User request added to messages; run_agent() called directly</text>
+  </g>
+
+  <g transform="translate(65, 250)">
+    <rect class="box" width="460" height="85" fill="#1e293b" stroke="#34d399"/>
+    <text class="nt" x="15" y="22">2. ReAct Loop with Granular Gates</text>
+    <text class="ns" x="15" y="40">• fs_tools.write_file() → calls confirm()</text>
+    <text class="ns" x="15" y="56">• fs_tools.create_directory() → calls confirm()</text>
+    <text class="ns" x="15" y="72">• shell_tools.run_command() → calls confirm()</text>
+  </g>
+  <path d="M 295 220 L 295 250" class="wg" marker-end="url(#ar3-grn)"/>
+
+  <g transform="translate(65, 365)">
+    <rect class="box" width="460" height="75" fill="#78350f" stroke="#fbbf24"/>
+    <text class="nt" x="15" y="22">3. Terminal Interactive Prompt per Tool</text>
+    <text class="ns" x="15" y="40">Prompt: "Proceed? (Y/n, Enter = yes)"</text>
+    <text class="ns" x="15" y="56">Waits for human input (120s timeout, _stdin_lock protected)</text>
+  </g>
+  <path d="M 295 335 L 295 365" class="wg" marker-end="url(#ar3-grn)"/>
+
+  <g transform="translate(65, 470)">
+    <rect class="box" width="460" height="65" fill="#064e3b" stroke="#10b981"/>
+    <text class="nt" x="15" y="22">4. Result Observation Fed Back</text>
+    <text class="ns" x="15" y="40">If approved: tool executes and result returns to model</text>
+    <text class="ns" x="15" y="56">If denied: "Cancelled by user" returned as tool observation</text>
+  </g>
+  <path d="M 295 440 L 295 470" class="wg" marker-end="url(#ar3-grn)"/>
+
+  <g transform="translate(65, 565)">
+    <rect class="box" width="460" height="65" fill="#1e293b" stroke="#64748b"/>
+    <text class="nt" x="15" y="22">5. Final Answer</text>
+    <text class="ns" x="15" y="40">Model concludes turn; prompt returned to user for next message</text>
+  </g>
+  <path d="M 295 535 L 295 565" class="wg" marker-end="url(#ar3-grn)"/>
+
+  <!-- Right Column: AUTO MODE -->
+  <rect class="col-bg" x="590" y="80" width="520" height="640" stroke="#7c3aed"/>
+  <text class="ht" x="615" y="115" fill="#c084fc">AUTO MODE (auto_mode = True)</text>
+  <text class="ns" x="615" y="135" fill="#94a3b8">Autonomous plan execution: approve once upfront, run up to 30 tool calls</text>
+
+  <g transform="translate(615, 160)">
+    <rect class="box" width="470" height="60" fill="#4c1d95" stroke="#a78bfa"/>
+    <text class="nt" x="15" y="24">1. Plan Generation (tools=None)</text>
+    <text class="ns" x="15" y="42">_generate_plan(): model proposes numbered steps with NO tools</text>
+  </g>
+
+  <g transform="translate(615, 240)">
+    <rect class="box" width="470" height="65" fill="#312e81" stroke="#818cf8"/>
+    <text class="nt" x="15" y="22">2. Write &amp; Review plan.md</text>
+    <text class="ns" x="15" y="40">Writes plan.md to sandbox; prints full text to terminal</text>
+    <text class="ns" x="15" y="56">One confirm(force_ask=True) gate for the ENTIRE plan</text>
+  </g>
+  <path d="M 850 220 L 850 240" class="wp" marker-end="url(#ar3-pur)"/>
+
+  <g transform="translate(615, 325)">
+    <rect class="box" width="470" height="65" fill="#581c87" stroke="#c084fc"/>
+    <text class="nt" x="15" y="22">3. Set AUTO_MODE = True &amp; Execute</text>
+    <text class="ns" x="15" y="40">shared.run_agent(..., max_tool_calls=30)</text>
+    <text class="ns" x="15" y="56">Routine confirm() calls AUTO-APPROVE without prompt</text>
+  </g>
+  <path d="M 850 305 L 850 325" class="wp" marker-end="url(#ar3-pur)"/>
+
+  <g transform="translate(615, 410)">
+    <rect class="box" width="470" height="85" fill="#7c2d12" stroke="#f97316"/>
+    <text class="nt" x="15" y="22">4. EXCEPTIONS: Hard Safety Interrupts</text>
+    <text class="ns" x="15" y="40">STILL STOP &amp; FORCE PROMPT REGARDLESS OF PLAN:</text>
+    <text class="ns" x="15" y="56">• Destructive commands (rm, sudo, curl) → force_ask=True</text>
+    <text class="ns" x="15" y="72">• Compound operators (&amp;&amp;, ||, ;) → force_ask=True</text>
+  </g>
+  <path d="M 850 390 L 850 410" class="wp" marker-end="url(#ar3-pur)"/>
+
+  <g transform="translate(615, 515)">
+    <rect class="box" width="470" height="60" fill="#1e293b" stroke="#ec4899"/>
+    <text class="nt" x="15" y="22">5. Hard Cap: 30 Tool Calls</text>
+    <text class="ns" x="15" y="40">Halts wandering plans if total_tool_calls &gt; 30</text>
+  </g>
+  <path d="M 850 495 L 850 515" class="wp" marker-end="url(#ar3-pur)"/>
+
+  <g transform="translate(615, 595)">
+    <rect class="box" width="470" height="55" fill="#1e293b" stroke="#a855f7"/>
+    <text class="nt" x="15" y="22">6. Reset Mode in finally Block</text>
+    <text class="ns" x="15" y="40">agent_mode.AUTO_MODE = False (guaranteed return to step mode)</text>
+  </g>
+  <path d="M 850 575 L 850 595" class="wp" marker-end="url(#ar3-pur)"/>
+</svg>

@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg8" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+    <marker id="ar8" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#fbbf24"/></marker>
+    <marker id="ar8-r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#f87171"/></marker>
+    <marker id="ar8-g" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#4ade80"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 20px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .nt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; fill: #ffffff; }
+    .ns { font-family: system-ui, sans-serif; font-size: 11px; fill: #cbd5e1; }
+    .box { rx: 8; ry: 8; stroke-width: 1.5; }
+    .wy { stroke: #fbbf24; stroke-width: 2.5; fill: none; }
+    .wr { stroke: #f87171; stroke-width: 2.5; fill: none; }
+    .wg { stroke: #4ade80; stroke-width: 2.5; fill: none; }
+  </style>
+
+  <rect width="1100" height="760" rx="16" fill="url(#bg8)" stroke="#d97706" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">HUMAN CONFIRMATION GATE &amp; STDIN CONCURRENCY (confirm.py)</text>
+    <text class="st" x="0" y="44">Fail-Closed Philosophy, Pluggable Backends, Stdin Thread Races &amp; Orphan Protection</text>
+  </g>
+
+  <!-- Step 1: Entry & Sanitize -->
+  <g transform="translate(380, 80)">
+    <rect class="box" width="350" height="60" fill="#78350f" stroke="#fbbf24"/>
+    <text class="nt" x="15" y="22">confirm(action, timeout_seconds=120, force_ask)</text>
+    <text class="ns" x="15" y="40">Sanitize action: _ANSI_ESCAPE.sub("", action) + length cap</text>
+  </g>
+
+  <!-- Step 2: Auto mode check -->
+  <g transform="translate(380, 165)">
+    <rect class="box" width="350" height="50" fill="#1e293b" stroke="#a78bfa"/>
+    <text class="nt" x="15" y="22">Auto Mode Check</text>
+    <text class="ns" x="15" y="38">if agent_mode.AUTO_MODE and not force_ask: return True</text>
+  </g>
+  <path d="M 555 140 L 555 165" class="wy" marker-end="url(#ar8)"/>
+
+  <!-- Step 3: Backend check -->
+  <g transform="translate(380, 240)">
+    <rect class="box" width="350" height="50" fill="#1e293b" stroke="#34d399"/>
+    <text class="nt" x="15" y="22">Pluggable Backend Check</text>
+    <text class="ns" x="15" y="38">if _confirm_backend is not None: return bool(_confirm_backend(...))</text>
+  </g>
+  <path d="M 555 215 L 555 240" class="wy" marker-end="url(#ar8)"/>
+
+  <!-- Step 4: TTY check -->
+  <g transform="translate(380, 315)">
+    <rect class="box" width="350" height="50" fill="#1e293b" stroke="#f59e0b"/>
+    <text class="nt" x="15" y="22">TTY Check (Headless / CI Guard)</text>
+    <text class="ns" x="15" y="38">if not sys.stdin.isatty(): return False (Fail-Closed)</text>
+  </g>
+  <path d="M 555 290 L 555 315" class="wy" marker-end="url(#ar8)"/>
+
+  <!-- Step 5: Stdin Lock -->
+  <g transform="translate(380, 390)">
+    <rect class="box" width="350" height="60" fill="#7c2d12" stroke="#ea580c"/>
+    <text class="nt" x="15" y="22">Stdin Concurrency Lock</text>
+    <text class="ns" x="15" y="40">_stdin_lock.acquire(blocking=False)</text>
+    <text class="ns" x="15" y="54">If busy (orphaned prompt alive) → Deny immediately</text>
+  </g>
+  <path d="M 555 365 L 555 390" class="wy" marker-end="url(#ar8)"/>
+
+  <!-- Step 6: Background Reader Thread -->
+  <g transform="translate(380, 480)">
+    <rect class="box" width="350" height="75" fill="#1e293b" stroke="#fbbf24"/>
+    <text class="nt" x="15" y="22">_read_input_with_timeout(prompt, 120s)</text>
+    <text class="ns" x="15" y="40">Spawns daemon Thread calling input(prompt)</text>
+    <text class="ns" x="15" y="56">Main caller waits on queue.get(timeout=120s)</text>
+    <text class="ns" x="15" y="70">Works in any thread (main thread or worker pool)</text>
+  </g>
+  <path d="M 555 450 L 555 480" class="wy" marker-end="url(#ar8)"/>
+
+  <!-- Outcomes -->
+  <g transform="translate(100, 600)">
+    <rect class="box" width="280" height="90" fill="#7f1d1d" stroke="#ef4444"/>
+    <text class="nt" x="15" y="22">ConfirmTimeout Path (120s)</text>
+    <text class="ns" x="15" y="40">leave_lock_held = True</text>
+    <text class="ns" x="15" y="56">Keeps _stdin_lock held to isolate</text>
+    <text class="ns" x="15" y="70">abandoned reader thread. Returns False.</text>
+  </g>
+
+  <g transform="translate(420, 600)">
+    <rect class="box" width="260" height="90" fill="#7f1d1d" stroke="#ef4444"/>
+    <text class="nt" x="15" y="22">Denial / Error / Ctrl-C</text>
+    <text class="ns" x="15" y="40">Releases _stdin_lock in finally</text>
+    <text class="ns" x="15" y="56">Answer != 'y' or EOF or Ctrl-C</text>
+    <text class="ns" x="15" y="70">Returns False.</text>
+  </g>
+
+  <g transform="translate(720, 600)">
+    <rect class="box" width="280" height="90" fill="#065f46" stroke="#34d399"/>
+    <text class="nt" x="15" y="22">Approved Path</text>
+    <text class="ns" x="15" y="40">Releases _stdin_lock in finally</text>
+    <text class="ns" x="15" y="56">Answer is '' (Enter) or 'y' / 'yes'</text>
+    <text class="ns" x="15" y="70">Returns True.</text>
+  </g>
+
+  <path d="M 450 555 L 240 600" class="wr" marker-end="url(#ar8-r)"/>
+  <path d="M 550 555 L 550 600" class="wr" marker-end="url(#ar8-r)"/>
+  <path d="M 650 555 L 860 600" class="wg" marker-end="url(#ar8-g)"/>
+</svg>

@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Code Flow, Architecture & Call Visualizer</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-group">
+        <div class="logo-badge">AG</div>
+        <div>
+          <div class="logo-title">Project Architecture</div>
+          <div class="logo-sub">Code Flow & Visualizer</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="global-search" class="search-input" placeholder="Search functions, flows, files...">
+    </div>
+
+    <nav class="nav-menu">
+      <div class="nav-section-title">Overview</div>
+      <a class="nav-item active" data-tab="architecture">🏛️ System Architecture</a>
+      <a class="nav-item" data-tab="files">📁 Files & Directory Map</a>
+      <a class="nav-item" data-tab="simulator">⚡ Interactive Flow Simulator</a>
+
+      <div class="nav-section-title">Code Flows & Graphs</div>
+      <a class="nav-item" data-tab="flow-cli">🖥️ CLI Agent Lifecycle</a>
+      <a class="nav-item" data-tab="flow-modes">🔀 Auto vs Step Mode</a>
+      <a class="nav-item" data-tab="flow-web">🌐 Web Backend & SSE</a>
+      <a class="nav-item" data-tab="flow-react">🔄 ReAct Tool Loop</a>
+      <a class="nav-item" data-tab="flow-fs">📂 Filesystem Sandbox Gate</a>
+      <a class="nav-item" data-tab="flow-shell">🐚 Shell 4-Layer Defense</a>
+      <a class="nav-item" data-tab="flow-confirm">🛡️ Human Confirmation Gate</a>
+      <a class="nav-item" data-tab="flow-memory">🧠 Persistent Memory Engine</a>
+      <a class="nav-item" data-tab="flow-config">⚙️ Config & Subprocess Engine</a>
+
+      <div class="nav-section-title">Technical Reference</div>
+      <a class="nav-item" data-tab="calls">📞 Calls & Sequence Maps</a>
+      <a class="nav-item" data-tab="security">🔒 Security & Defense-in-Depth</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button id="theme-toggle" class="theme-toggle-btn">☀️ Light</button>
+      <span style="font-size: 11px; color: var(--text-muted);">v2.0 • Sandboxed</span>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+
+    <!-- Top Metrics Summary Banner -->
+    <div class="stats-banner">
+      <div class="stat-card">
+        <span class="stat-label">Active Sandbox Root</span>
+        <span class="stat-value" style="font-size: 18px; color: var(--accent-teal);">workspace/</span>
+        <span class="stat-sub">BASE_DIR resolved choke point</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Available Tools</span>
+        <span class="stat-value">9 Tools</span>
+        <span class="stat-sub">FS, Shell, Human, Memory</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Safety Gates</span>
+        <span class="stat-value">4 Layers</span>
+        <span class="stat-sub">Allow, Block, Confirm, Timeout</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Pytest Test Suite</span>
+        <span class="stat-value">402 Tests</span>
+        <span class="stat-sub">100% Pass Rate</span>
+      </div>
+    </div>
+
+    <!-- ================= TAB 1: SYSTEM ARCHITECTURE ================= -->
+    <section id="architecture" class="tab-content active searchable">
+      <div class="section-header">
+        <h1 class="section-title">🏛️ System Architecture Topology</h1>
+        <p class="section-desc">
+          High-level structural breakdown of the sandboxed AI agent system. Highlights the dual interaction surfaces (Terminal CLI &amp; Web SPA), central asynchronous bridge layer, hardened ReAct execution engine, 4-layer security boundaries, and isolated persistence stores.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in" title="Zoom In">+</button>
+          <button class="diagram-btn btn-zoom-out" title="Zoom Out">−</button>
+          <button class="diagram-btn btn-zoom-reset" title="Reset View">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <!-- Standalone SVG Embedded -->
+          <object type="image/svg+xml" data="svg/system_architecture.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 class="card-title">Dual Interaction Surfaces</h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+            The system provides two interchangeable execution interfaces that share the exact same underlying 9 tools, sandbox enforcement, and confirmation gates:
+          </p>
+          <ul style="font-size: 13px; color: var(--text-secondary); padding-left: 18px; line-height: 1.8;">
+            <li><strong>CLI REPL (<code>CLI_agent.py</code>):</strong> Standard input/output terminal loop supporting both interactive step mode and plan-once auto mode.</li>
+            <li><strong>Web SPA (<code>BE/app/static/chat.html</code>):</strong> FastAPI + SSE + fetch streaming interface with visual activity inspector and remote HTTP confirmation modals.</li>
+            <li><strong>Interactive Config Editor (<code>BE/app/static/config.html</code>):</strong> Real-time inspector and editor for agent and backend settings with drift-safe default extraction.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Sandboxed Isolation Architecture</h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+            Structural separation guarantees the agent cannot tamper with its own source code or persistence records:
+          </p>
+          <ul style="font-size: 13px; color: var(--text-secondary); padding-left: 18px; line-height: 1.8;">
+            <li><strong>Sandbox Root (<code>workspace/</code>):</strong> All file operations and shell commands are locked strictly inside <code>BASE_DIR</code>.</li>
+            <li><strong>Source Code (<code>agent/</code> &amp; <code>BE/</code>):</strong> Sits outside <code>workspace/</code>. <code>resolve_path()</code> blocks all attempts to navigate upwards.</li>
+            <li><strong>Persistent Memory (<code>memory.json</code>) &amp; Logs (<code>logs/*.jsonl</code>):</strong> Reside at project root, physically isolated from tool-level filesystem writes.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: FILES & DIRECTORY MAP ================= -->
+    <section id="files" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">📁 Project Files, Modules &amp; Directory Architecture</h1>
+        <p class="section-desc">
+          Complete map of all modules, source files, backend routers, test suites, and documentation files across the project workspace.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in" title="Zoom In">+</button>
+          <button class="diagram-btn btn-zoom-out" title="Zoom Out">−</button>
+          <button class="diagram-btn btn-zoom-reset" title="Reset View">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/module_dependencies.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Core Module Reference Matrix</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>File Path</th>
+                <th>Role &amp; Responsibilities</th>
+                <th>Key Functions &amp; Classes</th>
+                <th>Security &amp; Concurrency Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>agent/CLI_agent.py</code></td>
+                <td>Single CLI entry point; owns terminal REPL loop, mode dispatch, and exit summary triggers.</td>
+                <td><code>main()</code>, <code>_report_token_usage()</code></td>
+                <td>Catches <code>KeyboardInterrupt</code> &amp; <code>Exception</code>; token tracking in <code>finally</code>.</td>
+              </tr>
+              <tr>
+                <td><code>agent/shared.py</code></td>
+                <td>Hardened Ollama client wrapper &amp; synchronous ReAct tool loop.</td>
+                <td><code>OllamaAgent</code>, <code>run_agent()</code>, <code>_detect_cycle()</code>, <code>_call_signature()</code></td>
+                <td>Timeout (60s), retry backoff, SHA-256 loop detection (periods 1..3), 4000-char observation cap.</td>
+              </tr>
+              <tr>
+                <td><code>agent/auto_runner.py</code></td>
+                <td>Auto-mode orchestration: generates upfront plan, prompts human once, enforces 30-tool cap.</td>
+                <td><code>run_with_auto_mode()</code>, <code>_generate_plan()</code></td>
+                <td>Passes <code>tools=None</code> during planning; resets <code>AUTO_MODE=False</code> in <code>finally</code> block.</td>
+              </tr>
+              <tr>
+                <td><code>agent/fs_tools.py</code></td>
+                <td>Sandboxed filesystem operations with single validation choke point.</td>
+                <td><code>resolve_path()</code>, <code>write_file()</code>, <code>read_file()</code>, <code>create_directory()</code>, <code>list_directory()</code></td>
+                <td>Unicode NFKC normalization, Windows reserved name segment scan, 2MB write cap, TOCTOU symlink checks.</td>
+              </tr>
+              <tr>
+                <td><code>agent/shell_tools.py</code></td>
+                <td>Sandboxed shell execution gated by 4 independent defense layers.</td>
+                <td><code>run_command()</code>, <code>_is_compound()</code>, <code>_format_result()</code></td>
+                <td>Allowlist, Blocklist + compound scan (<code>&amp;&amp;, ||, ;</code>), <code>start_new_session=True</code>, <code>os.killpg()</code>.</td>
+              </tr>
+              <tr>
+                <td><code>agent/confirm.py</code></td>
+                <td>Fail-closed human confirmation gate with concurrency protection.</td>
+                <td><code>confirm()</code>, <code>set_confirm_backend()</code>, <code>_read_input_with_timeout()</code></td>
+                <td>TTY check, non-blocking <code>_stdin_lock</code>, ANSI escape stripping, retained lock on timeout.</td>
+              </tr>
+              <tr>
+                <td><code>agent/human_tools.py</code></td>
+                <td>Conversational clarification tools (model-optional, not a security boundary).</td>
+                <td><code>ask_human()</code>, <code>ask_human_choice()</code>, <code>approve_action()</code>, <code>set_human_backend()</code></td>
+                <td>Pluggable backend hooks route choices to terminal or web UI; <code>approve_action</code> calls <code>confirm()</code>.</td>
+              </tr>
+              <tr>
+                <td><code>agent/memory.py</code></td>
+                <td>Cross-session JSON memory persistence &amp; cumulative token tracker.</td>
+                <td><code>remember_fact()</code>, <code>recall_memory()</code>, <code>save_session_summary()</code>, <code>save_token_usage()</code></td>
+                <td>Atomic swap (<code>os.replace</code>) via PID tmp file, <code>.corrupt.bak</code> recovery, 40-message windowed summary.</td>
+              </tr>
+              <tr>
+                <td><code>agent/chat_logger.py</code></td>
+                <td>Structured JSONL audit logger with recursive secret redaction &amp; rotation.</td>
+                <td><code>ChatLogger</code>, <code>NullChatLogger</code>, <code>get_logger()</code>, <code>_mask_secrets()</code></td>
+                <td>Thread lock on writes, size-based rotation, masks API keys/JWTs/private keys before truncation.</td>
+              </tr>
+              <tr>
+                <td><code>agent/agent_config.py</code></td>
+                <td>Central, env-var-overridable settings repository.</td>
+                <td><code>WORKSPACE_DIR</code>, <code>DEFAULT_MODEL</code>, <code>CHAT_TIMEOUT_SECONDS</code>, <code>SHELL_ALLOWED</code>, ...</td>
+                <td>Loads <code>agent/.env</code>; <code>_env_int</code> typo recovery logs warning and falls back to default.</td>
+              </tr>
+              <tr>
+                <td><code>BE/app/core/approval_bridge.py</code></td>
+                <td>Runs tool loop on background thread; relays events to SSE &amp; blocks for HTTP approval.</td>
+                <td><code>ConversationTurn</code>, <code>_EventForwardingLogger</code>, <code>submit_answer()</code></td>
+                <td>Pluggable callback substitution; Queue-based event dispatch; thread unblocks on <code>POST /respond</code>.</td>
+              </tr>
+              <tr>
+                <td><code>BE/app/core/config_schema.py</code></td>
+                <td>Unified config schema &amp; drift-safe default values extractor.</td>
+                <td><code>agent_defaults()</code>, <code>save_config_file()</code>, <code>FIELDS</code></td>
+                <td>Spawns isolated subprocess stripping env vars to re-import defaults directly from source code.</td>
+              </tr>
+              <tr>
+                <td><code>BE/app/api/chat.py</code></td>
+                <td>FastAPI chat endpoints: streaming SSE, approval responder, and history reset.</td>
+                <td><code>stream_chat()</code>, <code>respond_to_turn()</code>, <code>reset_chat()</code>, <code>get_history()</code></td>
+                <td><code>_turn_lock</code> prevents concurrent runs (409 Conflict); accumulates token usage to <code>memory.json</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: SIMULATOR ================= -->
+    <section id="simulator" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">⚡ Interactive Code Flow Simulator</h1>
+        <p class="section-desc">
+          Step through simulated end-to-end execution scenarios to observe how parameters, safety gates, and background threads interact at each stage.
+        </p>
+      </div>
+
+      <div class="sim-container">
+        <div class="sim-controls">
+          <span style="font-size: 13px; font-weight: 700; color: var(--text-secondary);">Select Scenario:</span>
+          <button class="sim-scenario-btn active" data-scenario="step_mode_file">1. CLI Step Mode File Creation</button>
+          <button class="sim-scenario-btn" data-scenario="auto_mode_run">2. CLI Auto Mode Plan &amp; Run</button>
+          <button class="sim-scenario-btn" data-scenario="web_sse_approval">3. Web Chat SSE &amp; Remote Approval</button>
+          <button class="sim-scenario-btn" data-scenario="blocked_shell">4. Dangerous Shell Command Intercept</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+          <h3 id="sim-scenario-title" style="font-size: 18px; color: var(--text-primary);">Scenario Title</h3>
+          <span id="sim-progress" class="badge badge-purple">Step 1 of 7</span>
+        </div>
+
+        <div class="sim-step-box">
+          <div id="sim-step-num" class="sim-step-num">Step 1: Input</div>
+          <div id="sim-step-title" class="sim-step-title">Step Title</div>
+          <div id="sim-step-desc" class="sim-step-desc">Step description details...</div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 20px;">
+          <button id="sim-prev" class="diagram-btn" style="width: auto; padding: 8px 18px; font-size: 13px;">◀ Previous Step</button>
+          <button id="sim-next" class="diagram-btn" style="width: auto; padding: 8px 18px; font-size: 13px; background: var(--accent-blue); color: white;">Next Step ▶</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: CLI FLOW ================= -->
+    <section id="flow-cli" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🖥️ CLI Agent Lifecycle Flow</h1>
+        <p class="section-desc">
+          Execution pipeline of <code>CLI_agent.py</code> from process startup, memory token loading, REPL loop, exit command handling, and guaranteed token persistence in <code>finally</code>.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/cli_execution_flow.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: MODES FLOW ================= -->
+    <section id="flow-modes" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🔀 Auto Mode vs. Step Mode Execution Logic</h1>
+        <p class="section-desc">
+          Detailed side-by-side comparison of Step Mode (granular confirm per action) vs. Auto Mode (upfront plan approval with <code>plan.md</code> and 30 tool-call safety cap).
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/auto_vs_step_mode.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: WEB BACKEND FLOW ================= -->
+    <section id="flow-web" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🌐 Web Backend &amp; SSE Event Bridge</h1>
+        <p class="section-desc">
+          Asynchronous handoff between FastAPI HTTP request threads, the background <code>ConversationTurn</code> daemon thread, and Server-Sent Event queues.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/backend_sse_approval_flow.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: REACT LOOP ================= -->
+    <section id="flow-react" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🔄 ReAct Tool Loop &amp; Cycle Detection</h1>
+        <p class="section-desc">
+          Inner mechanics of <code>shared.run_agent()</code>: model chat invocation, argument binding validation, SHA-256 signature hashing, multi-period oscillation detection, and worker timeouts.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/react_tool_loop.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: FS SANDBOX ================= -->
+    <section id="flow-fs" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">📂 Filesystem Sandbox Security Choke Point</h1>
+        <p class="section-desc">
+          Single choke point <code>fs_tools.resolve_path()</code> enforcing strict containment inside <code>workspace/</code> with null byte rejection, Unicode normalization, Windows reserved name checks, and symlink rejection.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/filesystem_sandbox_gate.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: SHELL 4-LAYER ================= -->
+    <section id="flow-shell" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🐚 Shell Tools 4-Layer Defense Gate</h1>
+        <p class="section-desc">
+          Stacked defenses in <code>shell_tools.run_command()</code>: Program Allowlist, Substring Blocklist &amp; Compound Operator Detection, Human Confirmation, and Subprocess Group Isolation with <code>os.killpg()</code>.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/shell_4layer_defense.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: CONFIRM GATE ================= -->
+    <section id="flow-confirm" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🛡️ Human Confirmation Gate &amp; Stdin Concurrency</h1>
+        <p class="section-desc">
+          Fail-closed confirmation architecture in <code>confirm.py</code>. Explains pluggable backends, TTY checks, non-blocking <code>_stdin_lock</code>, daemon reader threads, and orphan reader isolation on timeout.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/confirm_gate_concurrency.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: MEMORY FLOW ================= -->
+    <section id="flow-memory" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🧠 Persistent Memory &amp; Atomic Swap Engine</h1>
+        <p class="section-desc">
+          Cross-session fact persistence and token counter tracking in <code>agent/memory.py</code>. Details atomic file replacement via <code>os.replace</code> and <code>.corrupt.bak</code> recovery.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/memory_atomic_persistence.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: CONFIG FLOW ================= -->
+    <section id="flow-config" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">⚙️ Config Management &amp; Drift-Safe Defaults</h1>
+        <p class="section-desc">
+          Config schema synchronization in <code>BE/app/core/config_schema.py</code>. Explains isolated subprocess extraction of genuine code defaults and comment-preserving <code>.env</code> file writing.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/config_drift_safe_engine.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: CALLS ================= -->
+    <section id="calls" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">📞 Function Calls &amp; Method Sequences</h1>
+        <p class="section-desc">
+          Comprehensive function call hierarchy, signatures, return types, and failure handling pathways.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Inter-Module Call Reference Table</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Caller</th>
+                <th>Callee Function</th>
+                <th>Parameters</th>
+                <th>Return Value</th>
+                <th>Error Behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>CLI_agent.py:main</code></td>
+                <td><code>shared.run_agent</code></td>
+                <td><code>agent, messages, tools, tool_map, chat_logger</code></td>
+                <td><code>str</code> (Final answer)</td>
+                <td>Returns stop reason string; never crashes loop.</td>
+              </tr>
+              <tr>
+                <td><code>CLI_agent.py:main</code></td>
+                <td><code>auto_runner.run_with_auto_mode</code></td>
+                <td><code>agent, user_input, tools, tool_map, chat_logger</code></td>
+                <td><code>str</code> (Final answer)</td>
+                <td>Returns cancellation message if plan rejected.</td>
+              </tr>
+              <tr>
+                <td><code>shared.run_agent</code></td>
+                <td><code>shared._run_tool_with_timeout</code></td>
+                <td><code>func, arguments, timeout_seconds=30</code></td>
+                <td><code>Any</code> (Raw tool result)</td>
+                <td>Raises <code>TimeoutError</code>; caught &amp; converted to observation string.</td>
+              </tr>
+              <tr>
+                <td><code>fs_tools.write_file</code></td>
+                <td><code>fs_tools.resolve_path</code></td>
+                <td><code>path: str</code></td>
+                <td><code>pathlib.Path</code> (Absolute in sandbox)</td>
+                <td>Raises <code>ValueError</code> on escape; caught by tool loop.</td>
+              </tr>
+              <tr>
+                <td><code>fs_tools.write_file</code></td>
+                <td><code>confirm.confirm</code></td>
+                <td><code>action: str, timeout_seconds=120</code></td>
+                <td><code>bool</code> (True = approved)</td>
+                <td>Returns <code>False</code> on timeout/denial/error (Fail-Closed).</td>
+              </tr>
+              <tr>
+                <td><code>shell_tools.run_command</code></td>
+                <td><code>confirm.confirm</code></td>
+                <td><code>action: str, force_ask=True (if blocked)</code></td>
+                <td><code>bool</code> (True = approved)</td>
+                <td>Returns <code>False</code> on denial; command skipped.</td>
+              </tr>
+              <tr>
+                <td><code>BE/app/api/chat.py</code></td>
+                <td><code>approval_bridge.ConversationTurn.start</code></td>
+                <td>None</td>
+                <td>None (Launches daemon thread)</td>
+                <td>Relays exceptions as <code>{"type": "error"}</code> SSE events.</td>
+              </tr>
+              <tr>
+                <td><code>approval_bridge._handle_confirm</code></td>
+                <td><code>queue.Queue.get</code></td>
+                <td><code>timeout=120</code></td>
+                <td><code>bool</code></td>
+                <td>Raises <code>queue.Empty</code>; pushes <code>approval_timeout</code> event.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: SECURITY ================= -->
+    <section id="security" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🔒 Security Architecture &amp; Defense-in-Depth</h1>
+        <p class="section-desc">
+          Deep-dive analysis of the 10 structural security and robustness decisions implemented across the codebase.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 class="card-title">1. Sandbox Separation (SEC-FIX)</h3>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            <code>BASE_DIR</code> is resolved relative to <code>agent_config.py</code> as <code>PROJECT_ROOT / "workspace"</code> rather than <code>Path.cwd()</code>. Prevents the agent from modifying its own Python files even if started from the repository root.
+          </p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">2. Chained Shell Operator Detection (SEC-01)</h3>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            <code>_is_compound()</code> scans for <code>&amp;&amp;, ||, ;, |, &amp;, $(, `</code>. Prevents hidden subcommands from slipping past Layer 1 allowlists without human oversight.
+          </p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">3. Subprocess Process Group Isolation (SEC-02)</h3>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            <code>start_new_session=True</code> assigns subprocesses their own process group ID. On timeout, <code>os.killpg(SIGKILL)</code> terminates the entire subtree, preventing orphaned background daemons.
+          </p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">4. JSONL Secret Masking (SEC-03)</h3>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            <code>_mask_secrets()</code> recursively redacts RSA private keys, JWT tokens, OpenAI API keys, AWS keys, GitHub tokens, and Bearer headers before disk serialization.
+          </p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">5. Stdin Concurrency &amp; Orphan Protection (BUG-FIX)</h3>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            A process-wide non-blocking <code>_stdin_lock</code> prevents racing terminal input threads. On timeout, the lock is retained to isolate abandoned daemon readers.
+          </p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">6. Atomic Memory File Replacement (ROB-02)</h3>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            <code>memory.py</code> writes to <code>memory.json.tmp{pid}</code> and swaps atomically via <code>os.replace()</code>. Corrupt files are automatically backed up as <code>.corrupt.bak</code>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

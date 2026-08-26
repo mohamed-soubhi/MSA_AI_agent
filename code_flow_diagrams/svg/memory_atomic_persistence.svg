@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg9" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+    <marker id="ar9" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#c084fc"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 20px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .nt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; fill: #ffffff; }
+    .ns { font-family: system-ui, sans-serif; font-size: 11px; fill: #cbd5e1; }
+    .box { rx: 8; ry: 8; stroke-width: 1.5; }
+    .wp { stroke: #c084fc; stroke-width: 2.5; fill: none; }
+  </style>
+
+  <rect width="1100" height="760" rx="16" fill="url(#bg9)" stroke="#7c3aed" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">PERSISTENT MEMORY &amp; ATOMIC SWAP ENGINE (agent/memory.py)</text>
+    <text class="st" x="0" y="44">Cross-Session Fact Persistence, Exit Summarization, Token Tracking &amp; .corrupt.bak Recovery</text>
+  </g>
+
+  <!-- Left: Operations -->
+  <g transform="translate(60, 90)">
+    <rect class="box" width="340" height="130" fill="#4c1d95" stroke="#a78bfa"/>
+    <text class="nt" x="15" y="24">Model Tools (In-Session)</text>
+    <text class="ns" x="15" y="44">• remember_fact(text, tags) → {id, fact, text, ts}</text>
+    <text class="ns" x="15" y="62">• recall_memory(query, tags) → Case-insensitive search</text>
+    <text class="ns" x="15" y="80">Capped at MEMORY_MAX_ENTRIES (500)</text>
+    <text class="ns" x="15" y="98">Recall capped at 10 results</text>
+  </g>
+
+  <g transform="translate(60, 245)">
+    <rect class="box" width="340" height="115" fill="#312e81" stroke="#818cf8"/>
+    <text class="nt" x="15" y="24">Host CLI Operations (Exit / Crash)</text>
+    <text class="ns" x="15" y="44">• save_session_summary(agent, msgs)</text>
+    <text class="ns" x="15" y="60">  Summarizes last 40 msgs via agent.chat(tools=None)</text>
+    <text class="ns" x="15" y="78">• save_token_usage(session_tokens)</text>
+    <text class="ns" x="15" y="94">  Runs in finally block on EVERY exit path</text>
+  </g>
+
+  <!-- Middle: Load & Write Engine -->
+  <g transform="translate(450, 90)">
+    <rect class="box" width="310" height="130" fill="#1e293b" stroke="#a78bfa"/>
+    <text class="nt" x="15" y="24">Robust Load Engine (_load_data)</text>
+    <text class="ns" x="15" y="44">1. Reads PROJECT_ROOT / memory.json</text>
+    <text class="ns" x="15" y="62">2. If JSON is Corrupt:</text>
+    <text class="ns" x="15" y="80">   Writes memory.json.corrupt.bak for recovery</text>
+    <text class="ns" x="15" y="98">   Falls back to {} instead of crashing</text>
+  </g>
+
+  <g transform="translate(450, 245)">
+    <rect class="box" width="310" height="130" fill="#1e293b" stroke="#a78bfa"/>
+    <text class="nt" x="15" y="24">Atomic Write Engine (_save_data)</text>
+    <text class="ns" x="15" y="44">1. Writes to temporary file:</text>
+    <text class="ns" x="15" y="62">   memory.json.tmp{os.getpid()}</text>
+    <text class="ns" x="15" y="80">2. Atomic swap: os.replace(tmp, memory.json)</text>
+    <text class="ns" x="15" y="98">3. Zero risk of half-written file corruption</text>
+  </g>
+
+  <!-- Right: Storage Layout -->
+  <g transform="translate(800, 90)">
+    <rect class="box" width="260" height="285" fill="#0f172a" stroke="#38bdf8"/>
+    <text class="nt" x="15" y="24">memory.json Layout</text>
+    <text class="ns" x="15" y="44" fill="#38bdf8">{</text>
+    <text class="ns" x="25" y="62" fill="#93c5fd">"entries": [</text>
+    <text class="ns" x="35" y="80" fill="#cbd5e1">{ "id": "a1b2c3d4",</text>
+    <text class="ns" x="45" y="98" fill="#cbd5e1">"type": "fact",</text>
+    <text class="ns" x="45" y="116" fill="#cbd5e1">"text": "...",</text>
+    <text class="ns" x="45" y="134" fill="#cbd5e1">"tags": ["pref"],</text>
+    <text class="ns" x="45" y="152" fill="#cbd5e1">"timestamp": "..." }</text>
+    <text class="ns" x="25" y="172" fill="#93c5fd">],</text>
+    <text class="ns" x="25" y="194" fill="#fbbf24">"token_usage_total": 48291</text>
+    <text class="ns" x="15" y="214" fill="#38bdf8">}</text>
+    <text class="ns" x="15" y="245" fill="#f87171">OUTSIDE workspace/ sandbox</text>
+    <text class="ns" x="15" y="260" fill="#94a3b8">Model tools cannot overwrite file directly</text>
+  </g>
+
+  <!-- Bottom: Summary of Guarantees -->
+  <g transform="translate(60, 420)">
+    <rect class="box" width="1000" height="150" fill="#1e293b" stroke="#334155"/>
+    <text class="nt" x="20" y="28">Security &amp; Operational Guarantees</text>
+    <text class="ns" x="20" y="52">• Sandbox Isolation: memory.json sits at Project/memory.json, preventing model fs_tools from altering its own memory.</text>
+    <text class="ns" x="20" y="72">• Summarizer Safety: save_session_summary calls agent.chat(tools=None), preventing the summarizer from executing actions.</text>
+    <text class="ns" x="20" y="92">• Windowed Summary: Only the last 40 messages are summarized, preventing context overflow during automated exit.</text>
+    <text class="ns" x="20" y="112">• Cumulative Tracking: Tokens accumulate across both CLI and Web sessions into a single shared counter.</text>
+  </g>
+</svg>

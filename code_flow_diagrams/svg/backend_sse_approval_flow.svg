@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 820" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#022c22"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+    <marker id="ar4" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#34d399"/></marker>
+    <marker id="ar4-b" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/></marker>
+    <marker id="ar4-y" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#fbbf24"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 20px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .col-title { font-family: system-ui, sans-serif; font-weight: 700; font-size: 14px; fill: #34d399; }
+    .box { rx: 8; ry: 8; stroke-width: 1.5; }
+    .nt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 12px; fill: #ffffff; }
+    .ns { font-family: system-ui, sans-serif; font-size: 10px; fill: #cbd5e1; }
+    .wg { stroke: #34d399; stroke-width: 2; fill: none; }
+    .wb { stroke: #38bdf8; stroke-width: 2; fill: none; }
+    .wy { stroke: #fbbf24; stroke-width: 2; fill: none; }
+    .lifeline { stroke: #334155; stroke-dasharray: 4 4; stroke-width: 2; }
+  </style>
+
+  <rect width="1180" height="820" rx="16" fill="url(#bg4)" stroke="#065f46" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">BACKEND CHAT &amp; ASYNC APPROVAL BRIDGE (FastAPI + SSE)</text>
+    <text class="st" x="0" y="44">Sequence of Thread Handoff, Server-Sent Events, and HTTP Response Unblocking</text>
+  </g>
+
+  <!-- Lifeline Headers -->
+  <g transform="translate(80, 80)">
+    <rect class="box" width="180" height="45" fill="#064e3b" stroke="#10b981"/>
+    <text class="col-title" x="25" y="28">Browser (chat.html)</text>
+    <line x1="90" y1="45" x2="90" y2="700" class="lifeline"/>
+  </g>
+
+  <g transform="translate(360, 80)">
+    <rect class="box" width="200" height="45" fill="#1e293b" stroke="#38bdf8"/>
+    <text class="col-title" x="20" y="28" fill="#38bdf8">FastAPI (api/chat.py)</text>
+    <line x1="100" y1="45" x2="100" y2="700" class="lifeline"/>
+  </g>
+
+  <g transform="translate(660, 80)">
+    <rect class="box" width="220" height="45" fill="#1e1b4b" stroke="#a78bfa"/>
+    <text class="col-title" x="15" y="28" fill="#a78bfa">ConversationTurn Thread</text>
+    <line x1="110" y1="45" x2="110" y2="700" class="lifeline"/>
+  </g>
+
+  <g transform="translate(960, 80)">
+    <rect class="box" width="160" height="45" fill="#78350f" stroke="#fbbf24"/>
+    <text class="col-title" x="25" y="28" fill="#fbbf24">confirm.py Gate</text>
+    <line x1="80" y1="45" x2="80" y2="700" class="lifeline"/>
+  </g>
+
+  <!-- Step 1: POST /stream -->
+  <g transform="translate(170, 160)">
+    <line x1="0" y1="0" x2="290" y2="0" class="wb" marker-end="url(#ar4-b)"/>
+    <text class="nt" x="15" y="-8">1. fetch("POST /api/chat/stream", body={message})</text>
+  </g>
+
+  <!-- Step 2: Spawn Background Turn -->
+  <g transform="translate(460, 200)">
+    <line x1="0" y1="0" x2="310" y2="0" class="wg" marker-end="url(#ar4)"/>
+    <text class="nt" x="15" y="-8">2. turn.start() → Thread runs run_agent()</text>
+    <text class="ns" x="15" y="14">Installs set_confirm_backend(self._handle_confirm)</text>
+  </g>
+
+  <!-- Step 3: SSE Connection Established -->
+  <g transform="translate(460, 240)">
+    <line x1="0" y1="0" x2="-290" y2="0" class="wg" marker-end="url(#ar4)"/>
+    <text class="nt" x="-260" y="-8">3. Returns StreamingResponse(event_generator)</text>
+  </g>
+
+  <!-- Step 4: Stream Thoughts & Tool Calls -->
+  <g transform="translate(770, 290)">
+    <line x1="0" y1="0" x2="-310" y2="0" class="wg" marker-end="url(#ar4)"/>
+    <text class="ns" x="-250" y="-8">_logger puts {"type": "thought"} &amp; {"type": "tool_call"}</text>
+  </g>
+  <g transform="translate(460, 310)">
+    <line x1="0" y1="0" x2="-290" y2="0" class="wg" marker-end="url(#ar4)"/>
+    <text class="ns" x="-260" y="-8">SSE yields `data: {"type": "tool_call", ...}
+
+`</text>
+  </g>
+
+  <!-- Step 5: Side-Effect hits confirm() -->
+  <g transform="translate(770, 360)">
+    <line x1="0" y1="0" x2="270" y2="0" class="wy" marker-end="url(#ar4-y)"/>
+    <text class="nt" x="25" y="-8">4. Tool calls confirm(action)</text>
+  </g>
+  <g transform="translate(1040, 390)">
+    <line x1="0" y1="0" x2="-270" y2="0" class="wy" marker-end="url(#ar4-y)"/>
+    <text class="ns" x="-250" y="-8">_confirm_backend() → _handle_confirm()</text>
+  </g>
+
+  <!-- Step 6: approval_request SSE event & thread block -->
+  <g transform="translate(770, 430)">
+    <rect class="box" x="-30" y="-12" width="280" height="40" fill="#78350f" stroke="#fbbf24"/>
+    <text class="nt" x="-20" y="8">5. BLOCKS on _pending_answer.get(120s)</text>
+    <text class="ns" x="-20" y="22">events.put({"type": "approval_request", id, action})</text>
+  </g>
+  <g transform="translate(770, 490)">
+    <line x1="0" y1="0" x2="-600" y2="0" class="wy" marker-end="url(#ar4-y)"/>
+    <text class="nt" x="-500" y="-8">6. SSE pushes approval_request event to Browser UI</text>
+  </g>
+
+  <!-- Step 7: User Clicks Approve in Browser -->
+  <g transform="translate(170, 540)">
+    <line x1="0" y1="0" x2="290" y2="0" class="wb" marker-end="url(#ar4-b)"/>
+    <text class="nt" x="15" y="-8">7. fetch("POST /api/chat/respond", {request_id, approved: true})</text>
+  </g>
+
+  <!-- Step 8: FastAPI Unblocks Thread -->
+  <g transform="translate(460, 580)">
+    <line x1="0" y1="0" x2="310" y2="0" class="wb" marker-end="url(#ar4-b)"/>
+    <text class="nt" x="15" y="-8">8. turn.submit_answer(id, True) → _pending_answer.put(True)</text>
+  </g>
+
+  <!-- Step 9: Worker Thread Resumes & Finishes -->
+  <g transform="translate(770, 620)">
+    <line x1="0" y1="0" x2="270" y2="0" class="wg" marker-end="url(#ar4)"/>
+    <text class="nt" x="25" y="-8">9. _handle_confirm returns True to tool</text>
+  </g>
+  <g transform="translate(770, 660)">
+    <line x1="0" y1="0" x2="-600" y2="0" class="wg" marker-end="url(#ar4)"/>
+    <text class="nt" x="-500" y="-8">10. events.put({"type": "final"}) &amp; {"type": "stream_end"}</text>
+  </g>
+</svg>

@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 860" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+    <linearGradient id="cli" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient>
+    <linearGradient id="web" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#047857"/></linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+    <linearGradient id="sec" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+    <linearGradient id="tools" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ec4899"/><stop offset="100%" stop-color="#be185d"/></linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#14b8a6"/><stop offset="100%" stop-color="#0f766e"/></linearGradient>
+    <linearGradient id="store" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#64748b"/><stop offset="100%" stop-color="#334155"/></linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/></filter>
+    <marker id="ar" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#94a3b8"/></marker>
+    <marker id="ar-b" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/></marker>
+    <marker id="ar-g" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#34d399"/></marker>
+    <marker id="ar-p" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#a78bfa"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 22px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .bt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 14px; fill: #ffffff; }
+    .bs { font-family: system-ui, sans-serif; font-size: 11px; fill: #cbd5e1; }
+    .bdg { font-family: monospace; font-size: 10px; font-weight: 600; }
+    .w { stroke: #64748b; stroke-width: 2; fill: none; }
+    .wb { stroke: #38bdf8; stroke-width: 2.5; fill: none; }
+    .wg { stroke: #34d399; stroke-width: 2.5; fill: none; }
+    .wp { stroke: #a78bfa; stroke-width: 2.5; fill: none; }
+    .lbg { rx: 12; ry: 12; fill: rgba(30, 41, 59, 0.75); stroke: #334155; stroke-width: 1.5; filter: url(#shadow); }
+    .nb { rx: 8; ry: 8; filter: url(#shadow); }
+  </style>
+
+  <rect width="1200" height="860" rx="16" fill="url(#bg)" stroke="#334155" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">SYSTEM ARCHITECTURE — HIGH LEVEL TOPOLOGY</text>
+    <text class="st" x="0" y="44">Dual Interaction Surfaces (CLI / Web UI), Core ReAct Engine, Pluggable Gates &amp; Sandbox</text>
+  </g>
+
+  <!-- L1 -->
+  <rect class="lbg" x="40" y="80" width="1120" height="110"/>
+  <text class="bt" x="60" y="104" fill="#93c5fd">1. INTERACTION LAYER (DUAL SURFACES)</text>
+  <g transform="translate(70, 115)">
+    <rect class="nb" width="280" height="60" fill="url(#cli)"/>
+    <text class="bt" x="15" y="25">CLI REPL Terminal</text>
+    <text class="bs" x="15" y="45">agent/CLI_agent.py (auto / step)</text>
+    <rect x="200" y="8" width="70" height="18" rx="4" fill="#1e3a8a"/><text class="bdg" x="208" y="21" fill="#93c5fd">STDIN/TTY</text>
+  </g>
+  <g transform="translate(430, 115)">
+    <rect class="nb" width="320" height="60" fill="url(#web)"/>
+    <text class="bt" x="15" y="25">Web UI (SPA Chat &amp; Config)</text>
+    <text class="bs" x="15" y="45">BE/app/static/chat.html &amp; config.html</text>
+    <rect x="235" y="8" width="75" height="18" rx="4" fill="#064e3b"/><text class="bdg" x="242" y="21" fill="#6ee7b7">SSE + FETCH</text>
+  </g>
+  <g transform="translate(830, 115)">
+    <rect class="nb" width="290" height="60" fill="url(#store)"/>
+    <text class="bt" x="15" y="25">Nginx Reverse Proxy</text>
+    <text class="bs" x="15" y="45">BE/nginx/nginx.conf (:80 → :8000)</text>
+    <rect x="210" y="8" width="70" height="18" rx="4" fill="#1e293b"/><text class="bdg" x="220" y="21" fill="#cbd5e1">PORT 80</text>
+  </g>
+  <path d="M 750 145 L 830 145" class="w" marker-end="url(#ar)"/>
+
+  <!-- L2 -->
+  <rect class="lbg" x="40" y="210" width="1120" height="135"/>
+  <text class="bt" x="60" y="234" fill="#a7f3d0">2. BACKEND API &amp; ASYNC BRIDGES (BE/app/)</text>
+  <g transform="translate(70, 248)">
+    <rect class="nb" width="240" height="80" fill="#065f46" stroke="#10b981" stroke-width="1.5"/>
+    <text class="bt" x="15" y="24">FastAPI Application</text>
+    <text class="bs" x="15" y="44">BE/app/main.py</text>
+    <text class="bs" x="15" y="62">Routers: /chat, /config, /models</text>
+  </g>
+  <g transform="translate(340, 248)">
+    <rect class="nb" width="370" height="80" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+    <text class="bt" x="15" y="24">Approval &amp; Human Bridge</text>
+    <text class="bs" x="15" y="44">BE/app/core/approval_bridge.py</text>
+    <text class="bs" x="15" y="62">ConversationTurn (Daemon Worker + Queue)</text>
+    <rect x="260" y="8" width="95" height="18" rx="4" fill="#047857"/><text class="bdg" x="267" y="21" fill="#a7f3d0">EVENT QUEUE</text>
+  </g>
+  <g transform="translate(740, 248)">
+    <rect class="nb" width="380" height="80" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+    <text class="bt" x="15" y="24">Tool &amp; Agent Bridges</text>
+    <text class="bs" x="15" y="44">BE/app/core/tool_bridge.py &amp; agent_bridge.py</text>
+    <text class="bs" x="15" y="62">Reuses agent/ shared code &amp; 9 exact tools</text>
+  </g>
+  <path d="M 975 175 L 975 220 L 190 220 L 190 248" class="w" marker-end="url(#ar)"/>
+  <path d="M 310 288 L 340 288" class="wg" marker-end="url(#ar-g)"/>
+  <path d="M 710 288 L 740 288" class="wb" marker-end="url(#ar-b)"/>
+
+  <!-- L3 -->
+  <rect class="lbg" x="40" y="365" width="1120" height="135"/>
+  <text class="bt" x="60" y="389" fill="#c4b5fd">3. CORE AGENT ENGINE (agent/shared.py &amp; auto_runner.py)</text>
+  <g transform="translate(70, 405)">
+    <rect class="nb" width="260" height="75" fill="url(#core)"/>
+    <text class="bt" x="15" y="24">OllamaAgent Wrapper</text>
+    <text class="bs" x="15" y="44">Timeout (60s) + Retry (2x)</text>
+    <text class="bs" x="15" y="60">Token Tracking (total_tokens)</text>
+  </g>
+  <g transform="translate(360, 405)">
+    <rect class="nb" width="410" height="75" fill="#4c1d95" stroke="#a78bfa" stroke-width="1.5"/>
+    <text class="bt" x="15" y="24">run_agent() ReAct Loop</text>
+    <text class="bs" x="15" y="44">Max 40 Iterations | Cycle Detect (p=1..3) | Sig Hash</text>
+    <text class="bs" x="15" y="60">Arg Validation | Observation Sanitize (4000c limit)</text>
+  </g>
+  <g transform="translate(800, 405)">
+    <rect class="nb" width="320" height="75" fill="#312e81" stroke="#818cf8" stroke-width="1.5"/>
+    <text class="bt" x="15" y="24">Auto Mode Orchestration</text>
+    <text class="bs" x="15" y="44">auto_runner.py: _generate_plan(tools=None)</text>
+    <text class="bs" x="15" y="60">writes plan.md | 30 Tool Cap</text>
+  </g>
+  <path d="M 150 175 L 150 405" class="wb" marker-end="url(#ar-b)"/>
+  <path d="M 525 328 L 525 365 L 450 365 L 450 405" class="wg" marker-end="url(#ar-g)"/>
+  <path d="M 330 442 L 360 442" class="wp" marker-end="url(#ar-p)"/>
+  <path d="M 770 442 L 800 442" class="wp" marker-end="url(#ar-p)"/>
+
+  <!-- L4 -->
+  <rect class="lbg" x="40" y="520" width="1120" height="115"/>
+  <text class="bt" x="60" y="544" fill="#fde68a">4. PLUGGABLE APPROVAL GATE &amp; SAFETY BOUNDARIES</text>
+  <g transform="translate(70, 555)">
+    <rect class="nb" width="340" height="65" fill="url(#sec)"/>
+    <text class="bt" x="15" y="22">confirm.py (Fail-Closed Gate)</text>
+    <text class="bs" x="15" y="40">TTY Check | _stdin_lock | force_ask Override</text>
+    <text class="bs" x="15" y="55">ANSI Strip Sanitization | Timeout (120s)</text>
+  </g>
+  <g transform="translate(440, 555)">
+    <rect class="nb" width="310" height="65" fill="#78350f" stroke="#fbbf24" stroke-width="1.5"/>
+    <text class="bt" x="15" y="22">Pluggable Backends</text>
+    <text class="bs" x="15" y="40">set_confirm_backend(fn)</text>
+    <text class="bs" x="15" y="55">set_human_backend(fn)</text>
+  </g>
+  <g transform="translate(780, 555)">
+    <rect class="nb" width="340" height="65" fill="#7c2d12" stroke="#f97316" stroke-width="1.5"/>
+    <text class="bt" x="15" y="22">Shell 4-Layer Defense Gate</text>
+    <text class="bs" x="15" y="40">1: Allowlist | 2: Blocklist + Compound | 3: confirm</text>
+    <text class="bs" x="15" y="55">4: Subprocess Timeout &amp; os.killpg(SIGKILL)</text>
+  </g>
+
+  <!-- L5 -->
+  <rect class="lbg" x="40" y="655" width="1120" height="175"/>
+  <text class="bt" x="60" y="679" fill="#fbcfe8">5. TOOLS, SANDBOX (workspace/) &amp; PERSISTENCE</text>
+  <g transform="translate(70, 695)">
+    <rect class="nb" width="250" height="115" fill="url(#tools)"/>
+    <text class="bt" x="12" y="20">fs_tools.py (Sandbox)</text>
+    <text class="bs" x="12" y="38">list_dir, read_file</text>
+    <text class="bs" x="12" y="54">write_file (2MB cap), create_dir</text>
+    <text class="bs" x="12" y="70">resolve_path() Choke Point</text>
+    <text class="bs" x="12" y="86">Unicode NFKC + Reserved Check</text>
+  </g>
+  <g transform="translate(340, 695)">
+    <rect class="nb" width="220" height="115" fill="url(#tools)"/>
+    <text class="bt" x="12" y="20">shell_tools.py</text>
+    <text class="bs" x="12" y="38">run_command()</text>
+    <text class="bs" x="12" y="54">Cwd = BASE_DIR</text>
+    <text class="bs" x="12" y="70">start_new_session=True</text>
+    <text class="bs" x="12" y="86">Triple stream cap (_format_result)</text>
+  </g>
+  <g transform="translate(580, 695)">
+    <rect class="nb" width="250" height="115" fill="url(#tools)"/>
+    <text class="bt" x="12" y="20">human_tools &amp; memory</text>
+    <text class="bs" x="12" y="38">ask_human, ask_human_choice</text>
+    <text class="bs" x="12" y="54">remember_fact, recall_memory</text>
+    <text class="bs" x="12" y="70">save_session_summary (on exit)</text>
+    <text class="bs" x="12" y="86">save_token_usage (in finally)</text>
+  </g>
+  <g transform="translate(850, 695)">
+    <rect class="nb" width="270" height="115" fill="url(#sand)"/>
+    <text class="bt" x="12" y="20">Sandbox &amp; External Stores</text>
+    <text class="bs" x="12" y="38">workspace/ (Sandboxed BASE_DIR)</text>
+    <text class="bs" x="12" y="54">memory.json (Atomic replace)</text>
+    <text class="bs" x="12" y="70">logs/*.jsonl (Redacted Secrets)</text>
+    <text class="bs" x="12" y="86">agent/.env &amp; BE/.env</text>
+  </g>
+  <path d="M 240 620 L 240 655 L 195 655 L 195 695" class="w" marker-end="url(#ar)"/>
+  <path d="M 950 620 L 950 655 L 450 655 L 450 695" class="w" marker-end="url(#ar)"/>
+  <path d="M 700 750 L 850 750" class="w" marker-end="url(#ar)"/>
+</svg>
