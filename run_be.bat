@@ -16,7 +16,7 @@ set LOCK_ROOT=%ROOT_DIR%.port-locks
 if not exist "%LOCK_ROOT%" mkdir "%LOCK_ROOT%"
 
 :check_port
-powershell -NoProfile -Command "exit (Test-NetConnection -ComputerName '%BE_HOST%' -Port %BE_PORT% -WarningAction SilentlyContinue).TcpTestSucceeded"
+powershell -NoProfile -Command "if ((Test-NetConnection -ComputerName '%BE_HOST%' -Port %BE_PORT% -WarningAction SilentlyContinue).TcpTestSucceeded) { exit 0 } else { exit 1 }"
 if %ERRORLEVEL%==0 (
     echo Port %BE_PORT% is in use, trying next port...
     set /a BE_PORT=%BE_PORT%+1
