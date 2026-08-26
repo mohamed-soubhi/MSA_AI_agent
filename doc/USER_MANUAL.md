@@ -16,18 +16,28 @@ chat API itself isn't wired up yet).
 
 ## 2. First-time setup
 
-```bash
-# Agent dependencies
-pip install -r agent/requirements.txt
-# (or: pip install --break-system-packages -r agent/requirements.txt,
-#  if your system Python refuses global installs — PEP 668)
+This project is packaged as one [uv](https://docs.astral.sh/uv/)
+project, rooted at `pyproject.toml` + `uv.lock` — one lockfile for both
+the agent and the backend, isolated in its own `.venv` that never
+touches your system Python. Install uv once, then everything else is
+`uv run`:
 
-# BE dependencies (only needed if you're running the backend/config editor)
-cd BE
-python3 -m venv .venv && source .venv/bin/activate   # .venv\Scripts\activate on Windows
-pip install -r requirements.txt
-cd ..
+```bash
+# 1. Install uv itself (one-time, machine-wide — not project-specific)
+curl -LsSf https://astral.sh/uv/install.sh | sh   # Linux/macOS/WSL
+# Windows (PowerShell): irm https://astral.sh/uv/install.ps1 | iex
+
+# 2. From the project root: create .venv and install everything
+#    (agent + BE dependencies, from the one root pyproject.toml)
+uv sync --group dev
 ```
+
+That's it — no `pip install`, no manually activating a venv.
+`run_be.sh`/`.bat` and `run_cli_agent.sh`/`.bat` all invoke `uv run`
+internally, which resolves `.venv` automatically (creating it on first
+use if `uv sync` wasn't run explicitly). See
+[§10 "Working with uv"](#10-working-with-uv-dependency-management)
+below for adding dependencies, offline use, CI, and other cases.
 
 You also need [Ollama](https://ollama.com) installed and running
 locally, with a model pulled that matches `WORKSHOP_MODEL` (default
@@ -37,11 +47,13 @@ via the config editor or `agent/.env` if you'd rather run offline).
 ## 3. Running the agent
 
 ```bash
-python3 agent/CLI_agent.py
+uv run agent/CLI_agent.py
 ```
 
-Or double-click / run `run_cli_agent.bat` (Windows) at the project
-root — it `cd`s to the right place for you, so it works from anywhere.
+Or run `./run_cli_agent.sh` (Linux/WSL) / double-click `run_cli_agent.bat`
+(Windows) at the project root — both `cd` to the right place and run
+through `uv run`, so they work from anywhere without you activating
+anything first.
 
 You'll see a startup banner (sandbox path, mode, tokens used so far),
 then a `You >` prompt. Type a request; the agent will list/read/write
@@ -149,11 +161,14 @@ rather skip the UI.
 ## 7. Running the tests
 
 ```bash
-python3 -m pytest tests/ -v          # agent test suite (402+ tests)
-cd BE && pytest tests/ -v            # BE test suite
+uv run --group dev pytest tests/ -v                    # agent test suite
+uv run --group dev --directory BE pytest tests/ -v      # BE test suite
 ```
 
-See [README.md](README.md#running-the-tests) for coverage/report-
+`--directory BE` runs pytest with `BE/` as its working directory
+(so it picks up `BE/pytest.ini`) while still using the one root
+`.venv` — no separate BE virtualenv needed. See
+[README.md](README.md#running-the-tests) for coverage/report-
 generation commands.
 
 ## 8. Common tasks
@@ -168,7 +183,37 @@ generation commands.
 | Recover from a stuck/looping agent | It self-detects (`MAX_REPEAT_CALLS`, cycle detection) and stops on its own — see [shared.md](shared.md) |
 | See what happened in a past session | `logs/*.jsonl` (one file per session by default) — see [chat_logger.md](chat_logger.md) |
 
-## 9. Troubleshooting
+## 10. Working with uv (dependency management)
+
+Everything below runs from the project root, where `pyproject.toml` +
+`uv.lock` live. `uv.lock` is committed — it pins every dependency
+(direct and transitive) to an exact version, so `uv sync` reproduces
+the *identical* environment on any machine, any OS, isolated from
+whatever else is installed system-wide.
+
+| Case | Command |
+|---|---|
+| Fresh clone, first run | `uv sync --group dev` |
+| Run the agent | `uv run agent/CLI_agent.py` (or `./run_cli_agent.sh` / `run_cli_agent.bat`) |
+| Run the backend | `./run_be.sh` / `run_be.bat` (wraps `uv run uvicorn ...` internally) |
+| Run any one-off script/command in the project's env | `uv run <command>`, e.g. `uv run python -c "import fastapi"` |
+| Run tests | `uv run --group dev pytest tests/ -v` (add `--directory BE` for the BE suite) |
+| Add a new dependency | `uv add <package>` — updates `pyproject.toml` + `uv.lock` together |
+| Add a dev-only dependency (tests, linters) | `uv add --group dev <package>` |
+| Remove a dependency | `uv remove <package>` |
+| Someone else changed `pyproject.toml`/`uv.lock` | `uv sync --group dev` — brings your `.venv` back in line |
+| Regenerate the lockfile after manual `pyproject.toml` edits | `uv lock` |
+| Check the lockfile isn't stale (CI-style check) | `uv lock --check` |
+| Pin/verify the Python version | `requires-python = ">=3.12"` in `pyproject.toml`; uv downloads a matching interpreter itself if none is found (no separate `pyenv` needed) |
+| Nuke and rebuild the environment from scratch | `rm -rf .venv && uv sync --group dev` |
+| Offline, `uv.lock` already committed | Works as long as uv's package cache (`~/.cache/uv`) already has everything — `uv sync --offline` |
+| CI pipeline | `uv sync --group dev --frozen` — fails instead of silently updating the lockfile if `pyproject.toml` and `uv.lock` disagree |
+
+`.venv/` and `.port-locks/` are both git-ignored — they're
+machine-local, reproducible, and safe to delete any time. `uv.lock` is
+the only thing that needs to be committed for reproducibility.
+
+## 11. Troubleshooting
 
 - **"Blocked: 'X' is not in the allowlist"** — the agent tried to run a
   program not in `SHELL_ALLOWED`. Add it via the config editor if it's
@@ -182,7 +227,16 @@ generation commands.
 - **Config editor shows old values after saving** — that's expected;
   it shows what's *currently loaded in the running process*, not the
   file. Restart the relevant service and reload the page.
-- **`pip install` fails with "externally-managed-environment"** — your
-  system Python refuses global installs (PEP 668). Use a virtualenv,
-  or add `--break-system-packages` (BE's setup already recommends a
-  `.venv`; the agent doesn't have one by default today).
+- **`uv run` seems to reinstall/re-resolve every time** — that's uv
+  checking `pyproject.toml`/`uv.lock` are still in sync before running;
+  it's fast (milliseconds) once `.venv` exists and nothing changed. If
+  it's actually slow, check `uv.lock` isn't being regenerated on every
+  call (`uv lock --check` should report clean).
+- **`MEMORY_FILE`/other path settings look wrong after switching
+  between Windows and WSL** — `agent/.env` and `BE/.env` store
+  *absolute* paths (by design, see [agent_config.md](agent_config.md)).
+  A path written while running under Windows (`C:\...`) won't resolve
+  under WSL/Linux and vice versa. Fix by clearing the field in the
+  config editor (falls back to the built-in default, which resolves
+  relative to the project root on whichever OS is currently running)
+  or hand-editing the `.env` file for the OS you're on.

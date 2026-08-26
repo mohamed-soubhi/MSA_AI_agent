@@ -178,6 +178,62 @@
   #status.ok { color: var(--ok); }
   #status.err { color: var(--err); }
   #loading { padding: 40px; text-align: center; color: var(--text-dim); }
+  .lock-banner {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .lock-banner.unlocked { border-color: var(--ok); }
+  .lock-banner .code {
+    font-family: monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+  }
+  .lock-banner input {
+    width: 120px;
+    display: inline-block;
+  }
+  .lock-banner .hint {
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    flex-basis: 100%;
+  }
+  #memory-section .entry {
+    border-top: 1px solid var(--border);
+    padding: 10px 0;
+  }
+  #memory-section .entry:first-child { border-top: none; padding-top: 0; }
+  #memory-section .entry .meta {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  #memory-section .entry .type-badge {
+    display: inline-block;
+    background: var(--border);
+    border-radius: 4px;
+    padding: 1px 8px;
+    margin-right: 8px;
+    font-weight: 600;
+  }
+  #memory-section .entry .text { font-size: 0.875rem; white-space: pre-wrap; }
+  #memory-section .empty { color: var(--text-dim); font-size: 0.875rem; }
+  #memory-section .totals {
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
 </style>
 </head>
 <body>
@@ -189,15 +245,66 @@
   </div>
 </header>
 <main>
+  <div id="lock-banner" class="lock-banner">
+    <span>Editing is locked. Type the code <span class="code" id="lock-code"></span> below to unlock:</span>
+    <input type="text" id="lock-input" inputmode="numeric" maxlength="5" placeholder="00000" />
+    <button type="button" id="unlock-btn">Unlock editing</button>
+    <span class="hint">Or ignore this and just browse the settings read-only.</span>
+  </div>
   <div id="loading">Loading current configuration…</div>
   <form id="config-form" style="display:none"></form>
+  <div id="memory-section" class="section" style="display:none">
+    <h2>Memory <span style="font-weight:400; font-size:0.8rem; color:var(--text-dim);">(read-only)</span></h2>
+    <div id="memory-body"></div>
+  </div>
 </main>
 <div class="bar">
   <span id="status"></span>
-  <button type="submit" form="config-form" id="save-btn">Save</button>
+  <button type="submit" form="config-form" id="save-btn" disabled>Save</button>
 </div>
 
 <script>
+// Editing gate: a random 5-digit code is shown on screen; the same
+// person reading the page has to retype it to enable editing. This is
+// not authentication (anyone looking at the screen can just read the
+// code) -- it's a deliberate-action gate so a stray click never edits
+// live settings, while browsing values read-only needs zero friction.
+let unlocked = false;
+
+function setUpLockGate() {
+  const code = String(Math.floor(10000 + Math.random() * 90000));
+  document.getElementById("lock-code").textContent = code;
+
+  const banner = document.getElementById("lock-banner");
+  const input = document.getElementById("lock-input");
+  const btn = document.getElementById("unlock-btn");
+
+  function tryUnlock() {
+    if (input.value.trim() !== code) {
+      input.style.borderColor = "var(--err)";
+      return;
+    }
+    unlocked = true;
+    banner.classList.add("unlocked");
+    banner.innerHTML = "Editing unlocked.";
+    setFormLocked(false);
+  }
+
+  btn.addEventListener("click", tryUnlock);
+  input.addEventListener("keydown", (e) => {
+    input.style.borderColor = "";
+    if (e.key === "Enter") tryUnlock();
+  });
+}
+
+function setFormLocked(locked) {
+  const form = document.getElementById("config-form");
+  for (const el of form.querySelectorAll("input, textarea, button")) {
+    el.disabled = locked;
+  }
+  document.getElementById("save-btn").disabled = locked;
+}
+
 async function loadConfig() {
   const res = await fetch("/api/config");
   const data = await res.json();
@@ -224,6 +331,44 @@ async function loadConfig() {
 
   document.getElementById("loading").style.display = "none";
   form.style.display = "block";
+  setFormLocked(!unlocked);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function loadMemory() {
+  const section = document.getElementById("memory-section");
+  const body = document.getElementById("memory-body");
+  try {
+    const res = await fetch("/api/memory");
+    const data = await res.json();
+
+    if (!data.exists) {
+      body.innerHTML = `<div class="empty">No memory file yet at <code>${escapeHtml(data.path)}</code>.</div>`;
+    } else if (!data.entries.length) {
+      body.innerHTML = `<div class="totals">Tokens used all-time: ${data.token_usage_total}</div><div class="empty">No memory entries yet.</div>`;
+    } else {
+      const totals = `<div class="totals">${data.entries.length} entr${data.entries.length === 1 ? "y" : "ies"} · Tokens used all-time: ${data.token_usage_total} · <code>${escapeHtml(data.path)}</code></div>`;
+      const rows = data.entries.map((e) => `
+        <div class="entry">
+          <div class="meta">
+            <span class="type-badge">${escapeHtml(e.type)}</span>
+            ${escapeHtml(e.timestamp)}
+            ${e.tags.length ? " · " + e.tags.map(escapeHtml).join(", ") : ""}
+          </div>
+          <div class="text">${escapeHtml(e.text)}</div>
+        </div>
+      `).join("");
+      body.innerHTML = totals + rows;
+    }
+  } catch (err) {
+    body.innerHTML = `<div class="empty">Error loading memory: ${escapeHtml(err.message)}</div>`;
+  }
+  section.style.display = "block";
 }
 
 function renderField(f) {
@@ -261,7 +406,7 @@ function renderField(f) {
     input = document.createElement("textarea");
   } else {
     input = document.createElement("input");
-    input.type = (f.type === "int" || f.type === "int_or_none") ? "number" : "text";
+    input.type = (f.type === "int") ? "number" : "text";
   }
   input.id = f.key;
   input.name = f.key;
@@ -501,7 +646,9 @@ async function saveConfig(event) {
 }
 
 document.getElementById("config-form").addEventListener("submit", saveConfig);
+setUpLockGate();
 loadConfig();
+loadMemory();
 </script>
 </body>
 </html>

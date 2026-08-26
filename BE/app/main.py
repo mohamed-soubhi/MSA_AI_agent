@@ -23,6 +23,7 @@ from fastapi.responses import FileResponse
 from app.api import chat as chat_api
 from app.api import config as config_api
 from app.api import health
+from app.api import memory as memory_api
 from app.api import models as models_api
 from app.core.config import get_settings
 
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(config_api.router)
     app.include_router(models_api.router)
     app.include_router(chat_api.router)
+    app.include_router(memory_api.router)
 
     @app.get("/config", include_in_schema=False)
     def config_page() -> FileResponse:

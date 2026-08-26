@@ -35,3 +35,6 @@ memory.json
 # Keep the directory itself (.gitkeep) but not its generated contents.
 workspace/*
 !workspace/.gitkeep
+
+# run_be.sh / run_be.bat port reservation locks
+.port-locks/

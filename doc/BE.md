@@ -179,17 +179,21 @@ See [agent_config.md](agent_config.md) for the full settings reference.
 
 ## Running it
 
+Dependencies are managed by [uv](https://docs.astral.sh/uv/) from the
+project root's `pyproject.toml`/`uv.lock` — one lockfile for both
+`agent/` and `BE/`, no separate `BE/.venv`. From the project root:
+
 ```bash
-cd BE
-python3 -m venv .venv && source .venv/bin/activate   # or .venv\Scripts\activate on Windows
-pip install -r requirements.txt
+uv sync --group dev
 ```
 
 Then either:
-- `../run_be.sh` (or `run_be.bat` on Windows) from the project root, or
-- `uvicorn app.main:app --reload` from inside `BE/` directly.
+- `../run_be.sh` (or `run_be.bat` on Windows) from the project root
+  (both wrap `uv run uvicorn ...`), or
+- `uv run --directory BE uvicorn app.main:app --reload` directly.
 
-Both read `BE_HOST`/`BE_PORT` (default `0.0.0.0:8000`). Copy
+Both read `BE_HOST`/`BE_PORT` (default `127.0.0.1:8000`, and
+`run_be.sh`/`.bat` auto-increment the port if it's already taken). Copy
 `.env.example` to `.env` and adjust as needed — `BE_CORS_ORIGINS` in
 particular, once a real frontend origin exists (empty by default = no
 cross-origin access at all).
