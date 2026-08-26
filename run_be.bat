@@ -3,7 +3,8 @@ REM Launches the BE FastAPI service with Uvicorn via `uv run`, using the
 REM root pyproject.toml/uv.lock -- no manual venv activation needed, uv
 REM creates/reuses .venv itself. Safe to double-click or run from any
 REM directory -- cds to this script's own folder first.
-set ROOT_DIR=%~dp0
+set "ROOT_DIR=%~dp0"
+if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
 cd /d "%ROOT_DIR%"
 if "%BE_HOST%"=="" set BE_HOST=127.0.0.1
 if "%BE_PORT%"=="" set BE_PORT=8000
@@ -12,7 +13,7 @@ REM Lock directory is shared with run_be.sh (same repo path, reachable from
 REM both Windows and WSL) so simultaneous launches can't race onto the same
 REM port -- a plain "is the port open" check has a gap between two
 REM processes starting at nearly the same instant.
-set LOCK_ROOT=%ROOT_DIR%.port-locks
+set LOCK_ROOT=%ROOT_DIR%\.port-locks
 if not exist "%LOCK_ROOT%" mkdir "%LOCK_ROOT%"
 
 :check_port
@@ -49,6 +50,6 @@ echo   Config: http://%BE_HOST%:%BE_PORT%/config
 echo.
 
 uv run --directory "%ROOT_DIR%" uvicorn app.main:app --app-dir BE ^
-  --reload --reload-dir "%ROOT_DIR%BE" --host %BE_HOST% --port %BE_PORT%
+  --reload --reload-dir "%ROOT_DIR%\BE" --host %BE_HOST% --port %BE_PORT%
 rmdir "%LOCK_DIR%" 2>nul
 pause
