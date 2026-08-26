@@ -17,7 +17,8 @@ BE/
 │   │   ├── health.py      — GET /health
 │   │   ├── config.py      — GET/POST /api/config (interactive config editor's API)
 │   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
-│   │   └── chat.py        — GET/POST /api/chat/* (tool-calling chat, see "Chat page" below)
+│   │   ├── chat.py        — GET/POST /api/chat/* (tool-calling chat, see "Chat page" below)
+│   │   └── memory.py      — GET /api/memory (read-only view of memory.json for config UI)
 │   ├── core/
 │   │   ├── config.py           — Settings (pydantic-settings), BE_-prefixed env vars
 │   │   ├── config_schema.py    — field list + .env read/write + default-value resolver
@@ -26,14 +27,15 @@ BE/
 │   │   └── approval_bridge.py  — ConversationTurn: runs run_agent() on a background
 │   │                              thread, routes confirm()/ask_human() over SSE + HTTP
 │   └── static/
-│       ├── config.html    — the editor page itself (served at GET /config)
+│       ├── config.html    — the editor page itself (served at GET /config, with unlock gate & memory view)
 │       └── chat.html      — the chat page itself (served at GET /chat)
 ├── tests/
-│   ├── conftest.py           — adds BE/ to sys.path (same pattern as tests/conftest.py)
+│   ├── conftest.py           — adds BE/ and agent/ to sys.path
 │   ├── test_health.py
 │   ├── test_config.py
 │   ├── test_models.py
 │   ├── test_chat.py
+│   ├── test_memory_api.py    — read-only memory API tests
 │   └── test_approval_bridge.py  — direct unit tests of ConversationTurn's approval/human handoff
 ├── nginx/
 │   └── nginx.conf          — reverse proxy: Nginx :80 → Uvicorn 127.0.0.1:8000
@@ -174,6 +176,23 @@ default). BE-side (`BE_*`) defaults don't need this — pydantic-settings
 already keeps a field's declared default separate from its
 env-file-overridden value, so those are read directly off
 `Settings.model_fields`.
+
+### Deliberate Unlock Gate (`app/static/config.html`)
+
+To prevent accidental modification of live settings while allowing frictionless
+read-only inspection, the config page is locked by default. A random 5-digit
+confirmation code is generated on-screen; typing this code unlocks form fields
+and the **Save** button.
+
+### Read-Only Memory View (`GET /api/memory`)
+
+The config page also displays a live, read-only **Memory** section at the bottom:
+- Fetches from `GET /api/memory`, returning all `entries` in `memory.json` in reverse
+  chronological order (newest first).
+- Displays entry type badges (`fact`, `summary`), timestamps, associated tags, and text.
+- Displays cumulative token counts (`token_usage_total`).
+- Fails safely if `memory.json` is missing or corrupt (returning an empty list and 0 tokens
+  without raising an error).
 
 See [agent_config.md](agent_config.md) for the full settings reference.
 

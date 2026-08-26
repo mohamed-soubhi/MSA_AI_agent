@@ -135,14 +135,20 @@ timeouts, the tool loop, filesystem/sandbox limits, shell allow/block
 lists, the confirmation gate, memory, the full system prompt, logging,
 and the BE server itself — grouped into sections, pre-filled with
 whatever's currently in effect. Each field also shows a **recommended
-default** underneath, with a one-click "Use default" button. Edit what
-you want, click **Save**.
+default** underneath, with a one-click "Use default" button.
+
+- **Deliberate Unlock Gate**: Editing is locked by default to prevent
+  stray clicks. A random 5-digit verification code appears in the top
+  banner; typing the code enables editing and activates the **Save** button.
+- **Read-Only Memory Inspector**: Below the config form, a live **Memory**
+  section displays existing entries in `memory.json` (facts and session summaries)
+  and cumulative all-time token usage.
 
 Next to the Model field, a **"Load models"** button queries your local
 Ollama installation and lists every model it knows about — split into
 **Local** (already pulled, with real specs: size, parameter count,
 quantization) and **Cloud** (resolved via ollama.com). Click one to
-fill the field.
+fill the field. Edit what you want, click **Save**.
 
 **Important**: saving does **not** apply changes to an already-running
 agent or BE process. Both only read their settings once, at startup.
