@@ -1,4 +1,4 @@
-"""Make the assignment2 package importable from tests/ without installing it,
+"""Make the MSA_AI_agent package importable from tests/ without installing it,
 and surface each test's @pytest.mark.tid id in normal `-v` output.
 """
 

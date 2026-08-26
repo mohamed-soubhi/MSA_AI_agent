@@ -1,4 +1,4 @@
-# assignment2 — documentation index
+# MSA_AI_agent — documentation index
 
 **New here? Start with the [User Manual](USER_MANUAL.md)** — practical,
 task-oriented instructions for running the agent, the backend, and the

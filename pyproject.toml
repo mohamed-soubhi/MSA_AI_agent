@@ -1,5 +1,5 @@
 [project]
-name = "assignment2"
+name = "MSA_AI_agent"
 version = "1.0.0"
 description = "Sandboxed AI coding agent (CLI + FastAPI backend) built on Ollama tool-calling"
 readme = "README.md"

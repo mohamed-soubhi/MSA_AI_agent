@@ -1,4 +1,4 @@
-# assignment2 — sandboxed AI coding agent
+# MSA_AI_agent — sandboxed AI coding agent
 
 A sandboxed CLI coding agent built on Ollama tool-calling, plus a
 FastAPI backend that exposes the same agent over a web chat UI, a
