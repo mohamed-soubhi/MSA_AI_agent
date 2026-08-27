@@ -33,6 +33,7 @@ def _fetch_response(title, content, links=None):
 
 # -- web_search -----------------------------------------------------------
 
+@pytest.mark.tid("WEBTOOL-001")
 def test_web_search_formats_ranked_results(monkeypatch):
     monkeypatch.setattr(agent_config, "WEB_SEARCH_MAX_RESULTS", 5)
     monkeypatch.setattr(
@@ -49,6 +50,7 @@ def test_web_search_formats_ranked_results(monkeypatch):
     assert "2. Second" in out
 
 
+@pytest.mark.tid("WEBTOOL-002")
 def test_web_search_clamps_max_results_to_config_ceiling(monkeypatch):
     seen = {}
     monkeypatch.setattr(agent_config, "WEB_SEARCH_MAX_RESULTS", 3)
@@ -63,16 +65,19 @@ def test_web_search_clamps_max_results_to_config_ceiling(monkeypatch):
     assert seen["max_results"] == 3
 
 
+@pytest.mark.tid("WEBTOOL-003")
 def test_web_search_empty_query_is_rejected():
     assert web_tools.web_search("   ").startswith("Error:")
 
 
+@pytest.mark.tid("WEBTOOL-004")
 def test_web_search_missing_api_key(monkeypatch):
     monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
     out = web_tools.web_search("q")
     assert "OLLAMA_API_KEY" in out and out.startswith("Error:")
 
 
+@pytest.mark.tid("WEBTOOL-005")
 def test_web_search_denied_by_confirm(monkeypatch):
     monkeypatch.setattr(web_tools, "confirm", lambda _msg: False)
     called = {"hit": False}
@@ -86,6 +91,7 @@ def test_web_search_denied_by_confirm(monkeypatch):
     assert called["hit"] is False  # gate ran before the network call
 
 
+@pytest.mark.tid("WEBTOOL-006")
 def test_web_search_response_error_is_friendly(monkeypatch):
     def boom(q, max_results):
         raise web_tools.ollama.ResponseError("401 unauthorized")
@@ -97,6 +103,7 @@ def test_web_search_response_error_is_friendly(monkeypatch):
 
 # -- web_fetch ----------------------------------------------------------
 
+@pytest.mark.tid("WEBTOOL-007")
 def test_web_fetch_returns_title_and_body(monkeypatch):
     monkeypatch.setattr(agent_config, "WEB_FETCH_MAX_CHARS", 8000)
     monkeypatch.setattr(
@@ -111,6 +118,7 @@ def test_web_fetch_returns_title_and_body(monkeypatch):
     assert "truncated" not in out
 
 
+@pytest.mark.tid("WEBTOOL-008")
 def test_web_fetch_truncates_to_config_cap(monkeypatch):
     monkeypatch.setattr(agent_config, "WEB_FETCH_MAX_CHARS", 20)
     monkeypatch.setattr(
@@ -124,17 +132,20 @@ def test_web_fetch_truncates_to_config_cap(monkeypatch):
     assert "[content truncated at 20 chars]" in out
 
 
+@pytest.mark.tid("WEBTOOL-009")
 def test_web_fetch_rejects_non_http_scheme():
     assert web_tools.web_fetch("ftp://example.com").startswith("Error:")
     assert web_tools.web_fetch("file:///etc/passwd").startswith("Error:")
 
 
+@pytest.mark.tid("WEBTOOL-010")
 def test_web_fetch_missing_api_key(monkeypatch):
     monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
     out = web_tools.web_fetch("https://example.com")
     assert "OLLAMA_API_KEY" in out
 
 
+@pytest.mark.tid("WEBTOOL-011")
 def test_web_fetch_denied_by_confirm(monkeypatch):
     monkeypatch.setattr(web_tools, "confirm", lambda _msg: False)
     out = web_tools.web_fetch("https://example.com")

@@ -86,11 +86,12 @@ path over a display feature.
 
 ## `main() -> None`
 
-1. Creates an `OllamaAgent()` and offers **nine** tools: `list_directory`,
-   `read_file`, `write_file`, `create_directory` (from `fs_tools.py`),
-   `run_command` (from `shell_tools.py`), `ask_human`, `ask_human_choice`
-   (from `human_tools.py`), `remember_fact`, `recall_memory` (from
-   `memory.py`).
+1. Creates an `OllamaAgent()` and resolves active tools via
+   `tools_registry.get_active_tools()` — the base nine tools (`list_directory`,
+   `read_file`, `write_file`, `create_directory` from `fs_tools.py`, `run_command`
+   from `shell_tools.py`, `ask_human`, `ask_human_choice` from `human_tools.py`,
+   `remember_fact`, `recall_memory` from `memory.py`), plus `web_search` and
+   `web_fetch` (`web_tools.py`) when `agent_config.WEB_TOOLS_ENABLED` is `True`.
 2. Opens one JSONL session log via `get_logger("full_agent", agent.model)`.
 3. Prints the startup banner, including
    `f"Tokens used all-time so far (loaded from memory): {load_token_usage()}"`

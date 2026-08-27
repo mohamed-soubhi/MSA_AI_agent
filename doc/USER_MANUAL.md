@@ -239,6 +239,7 @@ generation commands.
 | Turn off memory entirely | Config editor → "Memory" → Memory enabled = off |
 | Make the agent less chatty in logs | Config editor → "Logging" → Echo to terminal = off |
 | Recover from a stuck/looping agent | It self-detects (`MAX_REPEAT_CALLS`, cycle detection) and stops on its own — see [shared.md](shared.md) |
+| Enable web search & web fetch | Config editor → "Web tools" → Enable web tools = on, and set `OLLAMA_API_KEY` in environment — see [web_tools.md](web_tools.md) |
 | See what happened in a past session | `logs/*.jsonl` (one file per session by default) — see [chat_logger.md](chat_logger.md) |
 
 ## 9. Working with uv (dependency management)

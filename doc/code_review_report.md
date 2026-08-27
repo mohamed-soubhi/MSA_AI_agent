@@ -4,7 +4,7 @@
 **Date:** 2026-08-27  
 **Status:** Active Defects Remediated & Dropped from Backlog  
 **HTML Version:** [code_review_report.html](code_review_report.html)  
-**Test Suite:** 510 Passed / 0 Failed (100% across core agent & backend)  
+**Test Suite:** 524 Passed / 0 Failed (100% across core agent & backend)  
 
 ---
 
@@ -19,8 +19,8 @@ The active defect backlog currently contains **0 open defects**, and the one pre
 | **Active / Open Defects** | **0** | Clean active backlog |
 | **Remediated & Dropped Issues** | **10** | Resolved in code and verified by test suite |
 | **Documented Design Tradeoffs** | **0** | ARCH-01 (formerly accepted) is now fixed |
-| **Test Suite Pass Rate** | **100% (510/510)** | Zero failing tests across 20 test modules (435 agent + 75 BE) |
-| **Modules Audited** | **13 Source Modules** | ~3,700 LoC core + ~6,000 LoC tests/docs |
+| **Test Suite Pass Rate** | **100% (524/524)** | Zero failing tests across 22 test modules (446 agent + 78 BE) |
+| **Modules Audited** | **15 Source Modules** | ~4,000 LoC core + ~6,500 LoC tests/docs |
 
 ---
 
@@ -58,7 +58,7 @@ The following 9 issues have been remediated in code and dropped from the active 
 
 ## Module Architecture & Quality Matrix
 
-### Agent Core Modules (435 Tests)
+### Agent Core Modules (446 Tests)
 
 | Module | Primary Responsibility | Safety & Isolation Gate | Concurrency Safety | Test Count | Status |
 |---|---|---|---|---|---|
@@ -75,12 +75,15 @@ The following 9 issues have been remediated in code and dropped from the active 
 | [`agent/memory.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/memory.py) | Cross-session durable memory | Atomic replace, score search & deduplication | Thread lock + Atomic rename | 43 tests | **Robust** |
 | [`agent/shared.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/shared.py) | ReAct loop, Ollama wrapper & timeout | N-gram cycle detection & token accumulator | ThreadPoolExecutor per tool | 69 tests | **Robust** |
 | [`agent/shell_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/shell_tools.py) | Allowlisted terminal execution | Compound operator gate & killpg | Process group scoping | 48 tests | **Robust** |
+| [`agent/web_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/web_tools.py) | Config-gated internet web search & fetch | Confirmation gate & truncation limit | Non-blocking API wrapper | 11 tests | **Robust** |
+| [`agent/tools_registry.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/tools_registry.py) | Unified active tool assembly | Dynamic config flag resolution | Thread-safe registry lookup | Integrated | **Robust** |
 
-### Backend Service Modules (75 Tests)
+### Backend Service Modules (78 Tests)
 
 | Module | Primary Responsibility | Safety & Isolation Gate | Concurrency Safety | Test Count | Status |
 |---|---|---|---|---|---|
 | [`BE/app/core/approval_bridge.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/core/approval_bridge.py) | Async approval & human bridge | ID mismatch rejection & timeout handling | Multi-threaded event queue | 7 tests | **Robust** |
+| [`BE/app/core/tool_bridge.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/core/tool_bridge.py) | Tool registry re-exporter & wrapper | Live `WEB_TOOLS_ENABLED` evaluation | Thread-safe tool map | 3 tests | **Robust** |
 | [`BE/app/api/chat.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/chat.py) | Streaming chat & history API | `_turn_lock` active-turn concurrency limit | Async lock + SSE disconnect | 14 tests | **Robust** |
 | [`BE/app/api/config.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/config.py) | Config editor & directory picker | Comment-preserving diff & restart gating | Live hot-reloading | 21 tests | **Robust** |
 | [`BE/app/api/health.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/health.py) | Service health monitoring | Liveness probing | Stateless ASGI | 2 tests | **Robust** |

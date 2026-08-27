@@ -150,6 +150,17 @@ folder sitting next to `agent/` (the source code), not inside it — see
 
 See [memory.md](memory.md) for what each setting controls.
 
+### Web tools (`web_tools.py` & `tools_registry.py`)
+
+| Constant | Env var | Default |
+|---|---|---|
+| `WEB_TOOLS_ENABLED` | `WEB_TOOLS_ENABLED` | `False` |
+| `WEB_SEARCH_MAX_RESULTS` | `WEB_SEARCH_MAX_RESULTS` | `5` |
+| `WEB_FETCH_MAX_CHARS` | `WEB_FETCH_MAX_CHARS` | `8000` |
+| `WEB_TOOLS_REQUIRE_CONFIRMATION` | `WEB_TOOLS_REQUIRE_CONFIRMATION` | `True` |
+
+See [web_tools.md](web_tools.md) for detailed descriptions.
+
 ### System prompt (`CLI_agent.py`)
 
 | Constant | Env var | Default |

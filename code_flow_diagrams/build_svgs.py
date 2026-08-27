@@ -1141,24 +1141,26 @@ def write_svgs():
     <text class="ns" x="35" y="124">│   ├── auto_runner.py # Auto mode plan-and-run</text>
     <text class="ns" x="35" y="142">│   ├── fs_tools.py    # 4 Sandboxed FS tools</text>
     <text class="ns" x="35" y="160">│   ├── shell_tools.py # 4-Layer shell execution</text>
-    <text class="ns" x="35" y="178">│   ├── confirm.py     # Fail-closed approval gate</text>
-    <text class="ns" x="35" y="196">│   ├── agent_mode.py  # AUTO_MODE global state</text>
-    <text class="ns" x="35" y="214">│   ├── human_tools.py # Clarification tools</text>
-    <text class="ns" x="35" y="232">│   ├── memory.py      # Persistent JSON memory</text>
-    <text class="ns" x="35" y="250">│   ├── chat_logger.py # JSONL structured logger</text>
-    <text class="ns" x="35" y="268">│   ├── log_config.py  # Logging configuration</text>
-    <text class="ns" x="35" y="286">│   └── agent_config.py# Central settings &amp; env</text>
-    <text class="ns" x="25" y="310" fill="#a78bfa">├── BE/              # Backend Service</text>
-    <text class="ns" x="35" y="328">│   ├── app/main.py    # FastAPI application</text>
-    <text class="ns" x="35" y="346">│   ├── app/api/       # chat, config, models, health, memory, ws, shutdown</text>
-    <text class="ns" x="35" y="364">│   ├── app/core/      # approval, agent, tool bridges</text>
-    <text class="ns" x="35" y="382">│   ├── app/static/    # chat.html, config.html</text>
-    <text class="ns" x="35" y="400">│   └── nginx/         # nginx.conf reverse proxy</text>
-    <text class="ns" x="25" y="424" fill="#fbbf24">├── workspace/       # Sandbox (BASE_DIR)</text>
-    <text class="ns" x="25" y="444" fill="#f43f5e">├── tests/           # Pytest Suite (510 tests: 435 agent + 75 BE)</text>
-    <text class="ns" x="25" y="464" fill="#94a3b8">├── logs/            # JSONL Session Logs</text>
-    <text class="ns" x="25" y="484" fill="#94a3b8">├── doc/             # Documentation &amp; Audits</text>
-    <text class="ns" x="25" y="504" fill="#38bdf8">└── memory.json      # Persistent Memory</text>
+    <text class="ns" x="35" y="178">│   ├── web_tools.py   # Web search &amp; fetch</text>
+    <text class="ns" x="35" y="196">│   ├── tools_registry # Unified tool assembly</text>
+    <text class="ns" x="35" y="214">│   ├── confirm.py     # Fail-closed approval gate</text>
+    <text class="ns" x="35" y="232">│   ├── agent_mode.py  # AUTO_MODE global state</text>
+    <text class="ns" x="35" y="250">│   ├── human_tools.py # Clarification tools</text>
+    <text class="ns" x="35" y="268">│   ├── memory.py      # Persistent JSON memory</text>
+    <text class="ns" x="35" y="286">│   ├── chat_logger.py # JSONL structured logger</text>
+    <text class="ns" x="35" y="304">│   ├── log_config.py  # Logging configuration</text>
+    <text class="ns" x="35" y="322">│   └── agent_config.py# Central settings &amp; env</text>
+    <text class="ns" x="25" y="346" fill="#a78bfa">├── BE/              # Backend Service</text>
+    <text class="ns" x="35" y="364">│   ├── app/main.py    # FastAPI application</text>
+    <text class="ns" x="35" y="382">│   ├── app/api/       # chat, config, models, health, memory, ws, shutdown</text>
+    <text class="ns" x="35" y="400">│   ├── app/core/      # approval, agent, tool bridges</text>
+    <text class="ns" x="35" y="418">│   ├── app/static/    # chat.html, config.html</text>
+    <text class="ns" x="35" y="436">│   └── nginx/         # nginx.conf reverse proxy</text>
+    <text class="ns" x="25" y="460" fill="#fbbf24">├── workspace/       # Sandbox (BASE_DIR)</text>
+    <text class="ns" x="25" y="480" fill="#f43f5e">├── tests/           # Pytest Suite (524 tests: 446 agent + 78 BE)</text>
+    <text class="ns" x="25" y="500" fill="#94a3b8">├── logs/            # JSONL Session Logs</text>
+    <text class="ns" x="25" y="520" fill="#94a3b8">├── doc/             # Documentation &amp; Audits</text>
+    <text class="ns" x="25" y="540" fill="#38bdf8">└── memory.json      # Persistent Memory</text>
   </g>
 
   <!-- Right: Dependency Architecture Boxes -->

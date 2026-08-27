@@ -479,8 +479,8 @@
         <div class="meta-item"><strong>Date:</strong> 2026-08-27</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
         <div class="meta-item"><strong>Audit State:</strong> Active Defects Remediated &amp; Dropped</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 510 Passed / 0 Failed (100%)</div>
-        <div class="meta-item"><strong>Architecture Scope:</strong> 13 Audited Modules</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 524 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Architecture Scope:</strong> 15 Audited Modules</div>
       </div>
     </div>
   </header>
@@ -506,8 +506,8 @@
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">510/510</span>
-        <span class="metric-desc">100% pass across 20 test modules (435 agent + 75 BE)</span>
+        <span class="metric-value val-success">524/524</span>
+        <span class="metric-desc">100% pass across 22 test modules (446 agent + 78 BE)</span>
       </div>
     </div>
 
@@ -795,12 +795,28 @@
             <td>48 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
+          <tr>
+            <td><code>agent/web_tools.py</code></td>
+            <td>Config-gated internet web search &amp; fetch</td>
+            <td>Confirmation gate &amp; truncation limit</td>
+            <td>Non-blocking API wrapper</td>
+            <td>11 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>agent/tools_registry.py</code></td>
+            <td>Unified active tool assembly</td>
+            <td>Dynamic config flag resolution</td>
+            <td>Thread-safe registry lookup</td>
+            <td>Integrated</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Backend Service Quality Matrix -->
-    <h2 class="section-title">Backend Service Architecture &amp; Quality Matrix (75 Tests)</h2>
+    <h2 class="section-title">Backend Service Architecture &amp; Quality Matrix (78 Tests)</h2>
     <div class="table-container">
       <table>
         <thead>
@@ -820,6 +836,14 @@
             <td>ID mismatch rejection &amp; timeout handling</td>
             <td>Multi-threaded event queue</td>
             <td>7 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/core/tool_bridge.py</code></td>
+            <td>Tool registry re-exporter &amp; wrapper</td>
+            <td>Live <code>WEB_TOOLS_ENABLED</code> evaluation</td>
+            <td>Thread-safe tool map</td>
+            <td>3 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>

@@ -25,7 +25,7 @@ BE/
 │   │   ├── config.py           — Settings (pydantic-settings), BE_-prefixed env vars
 │   │   ├── config_schema.py    — field list + .env read/write + default-value resolver
 │   │   ├── agent_bridge.py     — reuses agent/shared.py's OllamaAgent for chat.py
-│   │   ├── tool_bridge.py      — the same 9 tools CLI_agent.py wires up
+│   │   ├── tool_bridge.py      — re-exports get_active_tools() from agent/tools_registry.py
 │   │   └── approval_bridge.py  — ConversationTurn: runs run_agent() on a background
 │   │                              thread, routes confirm()/ask_human() over SSE + HTTP
 │   └── static/
@@ -39,6 +39,7 @@ BE/
 │   ├── test_chat.py
 │   ├── test_memory_api.py    — read-only memory API tests
 │   ├── test_shutdown.py      — POST /api/shutdown (process group SIGTERM tests)
+│   ├── test_tool_bridge.py   — tool registry activation tests (3 tests)
 │   ├── test_workspace.py     — GET /api/workspace/file(-raw) & POST /api/workspace/open (11 tests)
 │   └── test_approval_bridge.py  — direct unit tests of ConversationTurn's approval/human handoff
 ├── nginx/
@@ -55,14 +56,12 @@ right showing tool calls, tool results, and any pending
 approval/question. Runs the full tool-calling loop (`shared.run_agent()`)
 over Server-Sent Events, streaming every step back as it happens.
 
-- **Same 9 tools as `CLI_agent.py`, exactly.** `app/core/tool_bridge.py`
-  imports `list_directory`/`read_file`/`write_file`/`create_directory`
-  (`fs_tools.py`), `run_command` (`shell_tools.py`),
-  `ask_human`/`ask_human_choice` (`human_tools.py`), and
-  `remember_fact`/`recall_memory` (`memory.py`) — the same functions
-  `CLI_agent.py`'s `main()` wires up, never reimplemented. Same
-  sandbox (`fs_tools.BASE_DIR` / `WORKSPACE_DIR`), same shell allow/
-  block lists, same everything — only the approval channel differs.
+- **Same tools as `CLI_agent.py`, sourced from `agent/tools_registry.py`.** `app/core/tool_bridge.py`
+  re-exports `get_active_tools()` from `agent/tools_registry.py` (`list_directory`/`read_file`/`write_file`/`create_directory`
+  from `fs_tools.py`, `run_command` from `shell_tools.py`, `ask_human`/`ask_human_choice` from `human_tools.py`,
+  `remember_fact`/`recall_memory` from `memory.py`, and `web_search`/`web_fetch` from `web_tools.py` when enabled) —
+  ensuring both CLI and web share identical tool definitions without drift. Same sandbox (`fs_tools.BASE_DIR` / `WORKSPACE_DIR`),
+  same shell allow/block lists, same confirmation rules — only the approval channel differs.
 - **Approval over HTTP, not a terminal.** `confirm()` (`confirm.py`)
   and `ask_human()`/`ask_human_choice()` (`human_tools.py`) each gained
   a pluggable backend (`set_confirm_backend()`/`set_human_backend()`,

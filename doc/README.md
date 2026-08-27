@@ -61,10 +61,12 @@ All files below live in `agent/` (e.g. `agent/agent_config.py`).
 
 | File | Purpose | Docs |
 |---|---|---|
-| `agent_config.py` | Central, env-var-overridable settings for every module below (chat, tool loop, filesystem, shell, confirm, auto mode) | [agent_config.md](agent_config.md) |
+| `agent_config.py` | Central, env-var-overridable settings for every module below (chat, tool loop, filesystem, shell, confirm, auto mode, web tools) | [agent_config.md](agent_config.md) |
 | `shared.py` | `OllamaAgent` (hardened chat wrapper) + `run_agent()` (the ReAct tool-calling loop, with an optional `max_tool_calls` cap) | [shared.md](shared.md) |
 | `fs_tools.py` | Sandboxed filesystem tools: `list_directory`, `read_file`, `write_file`, `create_directory` | [fs_tools.md](fs_tools.md) |
 | `shell_tools.py` | Sandboxed shell execution: `run_command`, gated by allowlist + blocklist(→force-ask) + `confirm()` + timeout | [shell_tools.md](shell_tools.md) |
+| `web_tools.py` | Config-gated internet tools: `web_search` and `web_fetch` via Ollama hosted search API | [web_tools.md](web_tools.md) |
+| `tools_registry.py` | Unified active tool assembly shared between CLI and web chat | [web_tools.md](web_tools.md) |
 | `confirm.py` | Fail-closed human-in-the-loop confirmation gate; also the one place auto/step mode is decided | [confirm.md](confirm.md) |
 | `agent_mode.py` | The single `AUTO_MODE` toggle `confirm()` reads | [agent_mode.md](agent_mode.md) |
 | `auto_runner.py` | Auto-mode orchestration: generate a plan, approve once, run to completion | [auto_runner.md](auto_runner.md) |
@@ -83,6 +85,7 @@ All files below live in `agent/` (e.g. `agent/agent_config.py`).
 
 ```
 CLI_agent.py (main)
+ ├── tools_registry.get_active_tools() — base 9 tools + web_tools when enabled
  ├── shared.OllamaAgent           — talks to Ollama
  ├── auto_mode == False:
  │     shared.run_agent()         — the tool-calling loop (step mode)
@@ -94,6 +97,8 @@ CLI_agent.py (main)
  │       │     ├── blocklist (layer 2) → confirm.confirm(force_ask=True)
  │       │     ├── confirm.confirm() (layer 3)
  │       │     └── subprocess timeout (layer 4)
+ │       ├── web_tools.{web_search, web_fetch}  (when WEB_TOOLS_ENABLED)
+ │       │     └── confirm.confirm() (when WEB_TOOLS_REQUIRE_CONFIRMATION)
  │       ├── human_tools.{ask_human, ask_human_choice}
  │       │     — conversational, model-optional; NOT a security boundary
  │       └── memory.{remember_fact, recall_memory}
@@ -133,8 +138,8 @@ layout" above), so launch location doesn't affect where the sandbox is.
 ## Running the tests
 
 ```bash
-uv run pytest tests/ -v                                        # agent suite (435 tests)
-uv run --directory BE pytest tests/ -v                          # BE suite (70 tests)
+uv run pytest tests/ -v                                        # agent suite (446 tests)
+uv run --directory BE pytest tests/ -v                          # BE suite (78 tests)
 uv run pytest tests/ --cov=agent --cov-report=term-missing      # with coverage
 ```
 
@@ -149,9 +154,9 @@ and `input()`/`confirm()` prompts are mocked in the test suite.
 ## Test IDs
 
 Every test carries a `@pytest.mark.tid("PREFIX-NNN")` marker, sequential
-per file (e.g. `FSTOOLS-014`, `CONFIRM-007`, `CFGRELOAD-001`), registered in `pytest.ini`.
+per file (e.g. `FSTOOLS-014`, `CONFIRM-007`, `WEBTOOL-001`), registered in `pytest.ini`.
 Prefixes: `CONFIRM`, `FSTOOLS`, `LOGCFG`, `CHATLOG`, `SHARED`, `HUMAN`,
-`SHELL`, `FULLAGENT`, `AUTORUN`, `AGENTCFG`, `MEMORY`, `CFGRELOAD`. Filter by id or module the
+`SHELL`, `FULLAGENT`, `AUTORUN`, `AGENTCFG`, `MEMORY`, `CFGRELOAD`, `WEBTOOL`. Filter by id or module the
 normal pytest way:
 
 ```bash
@@ -165,7 +170,7 @@ python3 -m pytest tests/test_fs_tools.py -v
 python3 tests/generate_report.py
 ```
 
-- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 435 tests, 100% pass rate (510 tests across full suite: 435 agent + 75 BE).
+- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 446 tests, 100% pass rate (524 tests across full suite: 446 agent + 78 BE).
 - **Code Review & Defect Assessment Report (HTML)**: [`code_review_report.html`](code_review_report.html) — interactive audit dashboard.
 - **Code Review & Defect Assessment Report (Markdown)**: [`code_review_report.md`](code_review_report.md) — comprehensive static analysis and defect assessment.
 
