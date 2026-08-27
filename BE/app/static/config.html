@@ -843,13 +843,16 @@ async function closeAgent() {
   status.className = "";
   try {
     await fetch("/api/shutdown", { method: "POST" });
-    status.textContent = "BE service is shutting down. Restart it to use this page again.";
-    status.className = "ok";
   } catch (err) {
-    status.textContent = "Error: " + err.message;
-    status.className = "err";
-    closeBtn.disabled = false;
+    // A rejected fetch here ("Failed to fetch") is the SUCCESS signal:
+    // POST /api/shutdown SIGTERMs the worker, which (especially under
+    // uvicorn --reload) often exits before it can flush the HTTP
+    // response, tearing down the connection mid-request. The process
+    // going away is exactly what Close asked for -- not an error.
   }
+  status.textContent =
+    "BE service is shutting down. Restart it (run_be.sh / run_be.bat) to use this page again.";
+  status.className = "ok";
 }
 
 document.getElementById("config-form").addEventListener("submit", saveConfig);
