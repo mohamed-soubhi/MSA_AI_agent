@@ -59,6 +59,7 @@ logger = logging.getLogger("agent.core")
 CONFIRM_GATED_TOOLS = frozenset({
     "write_file", "create_directory", "run_command",
     "ask_human", "ask_human_choice", "approve_action",
+    "web_search", "web_fetch",
 })
 
 

@@ -24,6 +24,7 @@ from human_tools import ask_human, ask_human_choice
 from memory import (
     load_token_usage, recall_memory, remember_fact, save_session_summary, save_token_usage,
 )
+from tools_registry import get_active_tools
 from chat_logger import get_logger
 from auto_runner import run_with_auto_mode
 from agent_config import SYSTEM_PROMPT
@@ -64,22 +65,12 @@ def _report_token_usage(agent) -> None:
 def main() -> None:
     """Run the full agent: files, terminal, and human-in-the-loop clarification."""
     agent = OllamaAgent()
-    tools = [
-        list_directory, read_file, write_file, create_directory,
-        run_command, ask_human, ask_human_choice,
-        remember_fact, recall_memory,
-    ]
-    tool_map = {
-        "list_directory": list_directory,
-        "read_file": read_file,
-        "write_file": write_file,
-        "create_directory": create_directory,
-        "run_command": run_command,
-        "ask_human": ask_human,
-        "ask_human_choice": ask_human_choice,
-        "remember_fact": remember_fact,
-        "recall_memory": recall_memory,
-    }
+    # Assembled by tools_registry so this CLI and BE's chat API can
+    # never offer different tools. The base 9 are always on; web_search
+    # / web_fetch join only when WEB_TOOLS_ENABLED (agent_config /
+    # config editor). Read once here at startup -- a CLI run picks up a
+    # changed setting on its next launch.
+    tools, tool_map = get_active_tools()
 
     chat_logger = get_logger("full_agent", agent.model)
 

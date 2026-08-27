@@ -39,7 +39,7 @@ from pydantic import BaseModel
 
 from app.core.agent_bridge import CHAT_SYSTEM_PROMPT, get_agent
 from app.core.approval_bridge import ConversationTurn
-from app.core.tool_bridge import TOOL_MAP, TOOLS
+from app.core.tool_bridge import get_active_tools
 from chat_logger import get_logger
 from memory import save_token_usage
 
@@ -180,7 +180,11 @@ def stream_chat(chat_request: ChatRequest, http_request: Request):
         logger = _get_chat_logger(agent.model)
         logger.user_message(chat_request.message)
 
-        turn = ConversationTurn(agent, snapshot, logger, TOOLS, TOOL_MAP)
+        # Per turn, not import-time: get_active_tools() reflects the
+        # current WEB_TOOLS_ENABLED, so toggling web tools in the config
+        # editor takes effect on the next message with no BE restart.
+        tools, tool_map = get_active_tools()
+        turn = ConversationTurn(agent, snapshot, logger, tools, tool_map)
         _current_turn = turn
 
     tokens_before = agent.total_tokens

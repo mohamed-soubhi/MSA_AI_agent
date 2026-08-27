@@ -162,6 +162,23 @@ SHELL_TIMEOUT_SECONDS = _env_int("SHELL_TIMEOUT_SECONDS", 120)
 SHELL_MAX_OUTPUT_LINES = _env_int("SHELL_MAX_OUTPUT_LINES", 50)
 
 # --------------------------------------------------------------------------
+# Web tools (web_tools.py) -- Ollama's hosted web_search / web_fetch,
+# wired in as agent tools ONLY when WEB_TOOLS_ENABLED is true (see
+# tools_registry.get_active_tools()). Off by default: these reach the
+# public internet (via Ollama's servers), unlike every other tool,
+# which stays inside WORKSPACE_DIR or the human-in-the-loop.
+#
+# The Ollama Cloud API key is read straight from the OLLAMA_API_KEY
+# environment variable by the ollama client itself -- deliberately NOT
+# a field in the config editor, so a credential never lands in
+# agent/.env or a GET /api/config response.
+# --------------------------------------------------------------------------
+WEB_TOOLS_ENABLED = _env_bool("WEB_TOOLS_ENABLED", False)
+WEB_SEARCH_MAX_RESULTS = _env_int("WEB_SEARCH_MAX_RESULTS", 5)
+WEB_FETCH_MAX_CHARS = _env_int("WEB_FETCH_MAX_CHARS", 8000)  # truncate fetched page text before it enters context
+WEB_TOOLS_REQUIRE_CONFIRMATION = _env_bool("WEB_TOOLS_REQUIRE_CONFIRMATION", True)  # confirm() before every web_search / web_fetch
+
+# --------------------------------------------------------------------------
 # confirm() (confirm.py)
 # --------------------------------------------------------------------------
 CONFIRM_TIMEOUT_SECONDS = _env_int_or_none("CONFIRM_TIMEOUT_SECONDS", 120)

@@ -102,6 +102,22 @@ FIELDS: list[Field] = [
     Field("SHELL_MAX_OUTPUT_LINES", "Shell tools", "Max output lines", "int", "agent",
           "stdout/stderr each capped to the last N lines."),
 
+    # -- Web tools (web_tools.py) ----------------------------------------
+    Field("WEB_TOOLS_ENABLED", "Web tools", "Enable web tools", "bool", "agent",
+          "Adds Ollama's hosted web_search and web_fetch as agent tools. Off by "
+          "default -- unlike every other tool these reach the public internet "
+          "(the request is made by Ollama's servers). Needs OLLAMA_API_KEY set "
+          "in the environment (not here -- a credential is never stored in .env)."),
+    Field("WEB_SEARCH_MAX_RESULTS", "Web tools", "Search max results", "int", "agent",
+          "How many results web_search returns per call (also the ceiling if the "
+          "model asks for more)."),
+    Field("WEB_FETCH_MAX_CHARS", "Web tools", "Fetch max chars", "int", "agent",
+          "web_fetch truncates a page's text to this many characters before it "
+          "enters the model's context."),
+    Field("WEB_TOOLS_REQUIRE_CONFIRMATION", "Web tools", "Confirm each call", "bool", "agent",
+          "Ask for approval before every web_search / web_fetch, exactly like "
+          "write_file and run_command."),
+
     # -- confirm() --------------------------------------------------------
     Field("CONFIRM_TIMEOUT_SECONDS", "Confirmation gate", "Confirm timeout (s)", "int_or_none", "agent",
           "Deny and move on if unanswered in time. Empty/'none' disables the timeout."),
@@ -213,6 +229,10 @@ def _snapshot(ac, lc) -> dict[str, str]:
         "SHELL_BLOCKED": _render(ac.SHELL_BLOCKED),
         "SHELL_TIMEOUT_SECONDS": _render(ac.SHELL_TIMEOUT_SECONDS),
         "SHELL_MAX_OUTPUT_LINES": _render(ac.SHELL_MAX_OUTPUT_LINES),
+        "WEB_TOOLS_ENABLED": _render(ac.WEB_TOOLS_ENABLED),
+        "WEB_SEARCH_MAX_RESULTS": _render(ac.WEB_SEARCH_MAX_RESULTS),
+        "WEB_FETCH_MAX_CHARS": _render(ac.WEB_FETCH_MAX_CHARS),
+        "WEB_TOOLS_REQUIRE_CONFIRMATION": _render(ac.WEB_TOOLS_REQUIRE_CONFIRMATION),
         "CONFIRM_TIMEOUT_SECONDS": _render(ac.CONFIRM_TIMEOUT_SECONDS),
         "CONFIRM_MAX_ACTION_LEN": _render(ac.CONFIRM_MAX_ACTION_LEN),
         "MAX_AUTO_TOOL_CALLS": _render(ac.MAX_AUTO_TOOL_CALLS),
