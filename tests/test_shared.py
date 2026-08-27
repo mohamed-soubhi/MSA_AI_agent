@@ -606,6 +606,8 @@ class TestRunAgent:
         agent = FakeAgent([repeated_call] * 5)
         result = run_agent(agent, [], tools=[echo], tool_map={"echo": echo}, verbose=False)
         assert "stuck" in result
+        assert "called 3 times" in result
+        assert "MAX_REPEAT_CALLS=3" in result
 
     @pytest.mark.tid("SHARED-050")
     def test_stuck_loop_detection_catches_alternating_ab_pattern(self, monkeypatch):
@@ -696,6 +698,7 @@ class TestRunAgent:
             agent, [], tools=[], tool_map={}, verbose=False, max_wall_seconds=-1,
         )
         assert "exceeded maximum run time" in result
+        assert "MAX_WALL_SECONDS=-1s" in result
 
     @pytest.mark.tid("SHARED-070")
     def test_unlimited_mode_skips_wall_timeout(self, monkeypatch):

@@ -140,6 +140,32 @@ def test_save_config_escapes_newlines_for_round_trip(tmp_path, monkeypatch):
     assert "\nline two" not in content  # not a literal raw newline mid-value
 
 
+def test_save_config_empty_value_removes_existing_key_line(tmp_path, monkeypatch):
+    agent_env = tmp_path / "agent.env"
+    agent_env.write_text(
+        '# a comment\nWORKSPACE_DIR="/mnt/c/old/workspace"\nMEMORY_ENABLED="true"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(config_schema, "AGENT_ENV_FILE", agent_env)
+
+    response = client().post("/api/config", json={"values": {"WORKSPACE_DIR": ""}})
+    assert response.status_code == 200
+    content = agent_env.read_text()
+    assert "WORKSPACE_DIR" not in content
+    # unrelated lines untouched
+    assert "# a comment" in content
+    assert 'MEMORY_ENABLED="true"' in content
+
+
+def test_save_config_empty_value_for_new_key_writes_nothing(tmp_path, monkeypatch):
+    agent_env = tmp_path / "agent.env"
+    monkeypatch.setattr(config_schema, "AGENT_ENV_FILE", agent_env)
+
+    response = client().post("/api/config", json={"values": {"WORKSPACE_DIR": ""}})
+    assert response.status_code == 200
+    assert not agent_env.exists() or "WORKSPACE_DIR" not in agent_env.read_text()
+
+
 def test_config_page_is_served():
     response = client().get("/config")
     assert response.status_code == 200

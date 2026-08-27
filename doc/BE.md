@@ -166,6 +166,16 @@ Nginx, `http://<host>/config`) while the BE service is running.
   value into `agent/.env` as a permanent override the next time ANY
   field was saved, breaking the other OS the next time it read the
   same file even though that field was never touched.
+- **"Clear override (auto-resolve per OS)"**, next to "Use default" on
+  `WORKSPACE_DIR`/`MEMORY_FILE`/`LOG_DIR` — submits an empty value for
+  that field, which `_write_env_file()` treats as "remove this key's
+  line entirely" rather than writing `KEY=""`. `KEY=""` would still
+  count as "set" to `os.getenv()` (breaking the per-OS auto-resolve
+  these three fields depend on when unset), so cleaning up an override
+  already baked into `agent/.env` from before the diff-only-Save fix
+  above requires actually deleting the line, not blanking it — "Use
+  default" alone can't do that, since it bakes in THIS OS's resolved
+  value as a new override, still wrong for the other OS.
 - **Live, except three settings**: `save_config()` calls
   `config_reload.reload_all()` (agent settings) and
   `get_settings.cache_clear()` (BE settings) right after writing the

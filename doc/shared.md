@@ -203,7 +203,11 @@ no extra cap beyond `max_iterations`.
 ### Per-round flow
 
 1. **Wall-clock check**: if elapsed time exceeds `max_wall_seconds` →
-   return `"(stopped: exceeded maximum run time)"`.
+   return `"(stopped: exceeded maximum run time -- MAX_WALL_SECONDS=
+   {max_wall_seconds}s, ran for {elapsed:.1f}s. Raise MAX_WALL_SECONDS
+   in the config editor, or enable UNLIMITED_MODE for no cap at all.)"`
+   — skipped entirely under `UNLIMITED_MODE` (see
+   [agent_config.md](agent_config.md#unlimited-mode)).
 2. **Model call**: `agent.chat(messages, tools=tools)`. If this raises
    (past `OllamaAgent.chat`'s own retries) → return `"(stopped: error
    communicating with the model)"`.
@@ -233,17 +237,29 @@ no extra cap beyond `max_iterations`.
      triggers if the exact same signature repeats `MAX_REPEAT_CALLS`
      times, or if an alternating 2-step (A,B,A,B,...) or 3-step
      (A,B,C,A,B,C,...) cycle repeats `MAX_REPEAT_CALLS` times → return
-     `"(stopped: '{tool}' is part of a repeating tool-call pattern — agent appears stuck)"`.
+     `"(stopped: '{tool}' called {repeat_count} times with the same/
+     repeating pattern -- MAX_REPEAT_CALLS={MAX_REPEAT_CALLS}, agent
+     appears stuck)"`. Not disabled by `UNLIMITED_MODE` — the same tool
+     call repeating with zero progress is a malfunction, never
+     legitimate work.
    - `func is None` → unknown-tool error observation, doesn't call
      anything.
    - Otherwise run via `_run_tool_with_timeout(func, arguments,
-     TOOL_TIMEOUT_SECONDS)`, catching `TimeoutError` and any other
+     _effective_tool_timeout(tool_name))` — `TOOL_TIMEOUT_SECONDS` for
+     most tools, that much on top of a full `CONFIRM_TIMEOUT_SECONDS`
+     for `CONFIRM_GATED_TOOLS` (so approval-wait time and execution
+     time don't compete for the same clock), or `None` under
+     `UNLIMITED_MODE` regardless of tool — catching `TimeoutError` and any other
      `Exception` (full traceback goes only to the log, never into the
      model's context — just `"{ExceptionType}: {message}"`).
    - Sanitize the result via `_sanitize_for_model()` and append it as a
      `{"role": "tool", "name": tool_name, "content": result}` message.
 7. If `max_iterations` rounds complete without a final answer → return
-   `"(stopped: too many tool rounds)"`.
+   `"(stopped: exceeded maximum tool rounds -- MAX_ITERATIONS=
+   {max_iterations}. Raise it in the config editor, or enable
+   UNLIMITED_MODE for no cap at all.)"` — under `UNLIMITED_MODE` the
+   round loop uses `itertools.count()` instead of `range(max_iterations)`,
+   so this never fires.
 
 ### Guarantees
 

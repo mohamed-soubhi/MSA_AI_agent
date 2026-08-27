@@ -166,9 +166,10 @@ default** underneath, with a one-click "Use default" button.
   count and 600s wall-clock, per-tool and shell command timeouts, how
   long a `confirm()` approval can wait, the auto-mode tool-call cap.
   For long-running work (training a model, a big data pipeline) where
-  the usual defaults would cut it off mid-run -- e.g. `(stopped:
-  exceeded maximum run time)` is `MAX_WALL_SECONDS` (default 600s)
-  firing on the whole turn. Does **not** disable stuck-loop detection
+  the usual defaults would cut it off mid-run -- e.g. a `(stopped:
+  exceeded maximum run time -- MAX_WALL_SECONDS=600s, ...)` reply is
+  `MAX_WALL_SECONDS` (default 600s) firing on the whole turn. Does
+  **not** disable stuck-loop detection
   (`MAX_REPEAT_CALLS`) -- the same tool call repeating with zero
   progress still stops the run, since that's a malfunction, never
   legitimate work.
