@@ -161,6 +161,17 @@ default** underneath, with a one-click "Use default" button.
 - **Read-Only Memory Inspector**: Below the config form, a live **Memory**
   section displays existing entries in `memory.json` (facts and session summaries)
   and cumulative all-time token usage.
+- **Unlimited mode** (top section): one switch that removes every
+  time/trial cap at once -- chat timeouts, the tool loop's iteration
+  count and 600s wall-clock, per-tool and shell command timeouts, how
+  long a `confirm()` approval can wait, the auto-mode tool-call cap.
+  For long-running work (training a model, a big data pipeline) where
+  the usual defaults would cut it off mid-run -- e.g. `(stopped:
+  exceeded maximum run time)` is `MAX_WALL_SECONDS` (default 600s)
+  firing on the whole turn. Does **not** disable stuck-loop detection
+  (`MAX_REPEAT_CALLS`) -- the same tool call repeating with zero
+  progress still stops the run, since that's a malfunction, never
+  legitimate work.
 
 Next to the Model field, a **"Load models"** button queries your local
 Ollama installation and lists every model it knows about — split into

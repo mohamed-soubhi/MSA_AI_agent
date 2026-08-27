@@ -22,7 +22,7 @@ import uuid
 from typing import Optional
 
 import agent_mode
-from agent_config import CONFIRM_TIMEOUT_SECONDS, CONFIRM_MAX_ACTION_LEN
+from agent_config import CONFIRM_TIMEOUT_SECONDS, CONFIRM_MAX_ACTION_LEN, UNLIMITED_MODE
 
 logger = logging.getLogger("agent.confirm")
 
@@ -187,6 +187,13 @@ def confirm(action: str, *, timeout_seconds: Optional[int] = CONFIRM_TIMEOUT_SEC
 
     request_id = uuid.uuid4().hex[:8]
     clean_action = _sanitize(action)
+
+    # UNLIMITED_MODE overrides even an explicit caller-provided
+    # timeout_seconds -- a human/approval-bridge answer can take as
+    # long as it takes, regardless of what any individual call site
+    # asked for.
+    if UNLIMITED_MODE:
+        timeout_seconds = None
 
     if agent_mode.AUTO_MODE and not force_ask:
         logger.info("confirm_auto_approved id=%s action=%r", request_id, clean_action)

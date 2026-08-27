@@ -41,6 +41,7 @@ from agent_config import (
     SHELL_BLOCKED as BLOCKED,
     SHELL_TIMEOUT_SECONDS as TIMEOUT_SECONDS,
     SHELL_MAX_OUTPUT_LINES as MAX_OUTPUT_LINES,
+    UNLIMITED_MODE,
 )
 
 logger = logging.getLogger("agent.shell_tools")
@@ -136,7 +137,7 @@ def run_command(command: str) -> str:
             start_new_session=True,
         )
         try:
-            stdout, stderr = proc.communicate(timeout=TIMEOUT_SECONDS)
+            stdout, stderr = proc.communicate(timeout=None if UNLIMITED_MODE else TIMEOUT_SECONDS)
             logger.info("shell_finished command=%r exit_code=%s", command, proc.returncode)
             return _format_result(proc.returncode, stdout, stderr)
 

@@ -96,6 +96,25 @@ def _env_list(name: str, default: list) -> list:
 
 
 # --------------------------------------------------------------------------
+# Unlimited mode -- one switch for every time/trial cap below
+# (CHAT_TIMEOUT_SECONDS, CHAT_STREAM_IDLE_TIMEOUT_SECONDS, MAX_ITERATIONS,
+# MAX_WALL_SECONDS, TOOL_TIMEOUT_SECONDS, CONFIRM_TIMEOUT_SECONDS,
+# SHELL_TIMEOUT_SECONDS, MAX_AUTO_TOOL_CALLS). Each site checks this
+# global directly (not via its own cap's value) so flipping it always
+# means "wait/run as long as it takes", regardless of whatever number
+# that cap happens to be set to.
+#
+# Deliberately does NOT disable MAX_REPEAT_CALLS (the stuck-loop
+# detector in shared.py) -- that catches a genuine malfunction (the
+# exact same tool call, same arguments, repeating with zero progress),
+# never a legitimate long-running analysis. Removing every OTHER cap
+# but keeping this one means unlimited mode can run as long as real
+# work is happening, without becoming a way to silently burn tokens/
+# compute forever on a broken loop.
+# --------------------------------------------------------------------------
+UNLIMITED_MODE = _env_bool("UNLIMITED_MODE", False)
+
+# --------------------------------------------------------------------------
 # Ollama / chat (shared.py — OllamaAgent)
 # --------------------------------------------------------------------------
 DEFAULT_MODEL = os.getenv("WORKSHOP_MODEL", "glm-5.2:cloud")

@@ -49,6 +49,15 @@ class Field:
 
 
 FIELDS: list[Field] = [
+    # -- Unlimited mode (agent_config.py) -----------------------------------
+    Field("UNLIMITED_MODE", "Unlimited mode", "Unlimited mode", "bool", "agent",
+          "Removes every time/trial cap below at once (chat timeouts, tool-loop "
+          "iterations/wall-clock, tool/shell timeouts, confirm approval wait, "
+          "auto-mode tool-call cap) -- for long-running data analysis where the "
+          "usual defaults would cut work off early. Does NOT disable stuck-loop "
+          "detection (the same tool call repeating with zero progress still "
+          "stops the run -- that's a malfunction, never legitimate work)."),
+
     # -- Chat / Ollama (agent_config.py) --------------------------------
     Field("WORKSHOP_MODEL", "Chat / Ollama", "Model", "str", "agent",
           "Ollama model tag used for every chat() call."),
@@ -186,6 +195,7 @@ def _snapshot(ac, lc) -> dict[str, str]:
         agent_config.py/log_config.py change (see agent_defaults()).
     """
     return {
+        "UNLIMITED_MODE": _render(ac.UNLIMITED_MODE),
         "WORKSHOP_MODEL": _render(ac.DEFAULT_MODEL),
         "CHAT_TIMEOUT_SECONDS": _render(ac.CHAT_TIMEOUT_SECONDS),
         "CHAT_MAX_RETRIES": _render(ac.CHAT_MAX_RETRIES),

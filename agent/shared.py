@@ -16,6 +16,7 @@ One default model, defined once, so there's no drift between files.
 import concurrent.futures
 import hashlib
 import inspect
+import itertools
 import json
 import logging
 import queue
@@ -31,7 +32,7 @@ from agent_config import (
     DEFAULT_MODEL, CHAT_TIMEOUT_SECONDS, CHAT_MAX_RETRIES, CHAT_RETRY_BACKOFF_SECONDS,
     CHAT_STREAM_IDLE_TIMEOUT_SECONDS,
     MAX_ITERATIONS, MAX_WALL_SECONDS, TOOL_TIMEOUT_SECONDS, MAX_REPEAT_CALLS,
-    MAX_OBSERVATION_CHARS, CONFIRM_TIMEOUT_SECONDS,
+    MAX_OBSERVATION_CHARS, CONFIRM_TIMEOUT_SECONDS, UNLIMITED_MODE,
 )
 
 logger = logging.getLogger("agent.core")
@@ -147,7 +148,7 @@ class OllamaAgent:
                         messages=messages,
                         tools=tools,
                     )
-                    response = future.result(timeout=CHAT_TIMEOUT_SECONDS)
+                    response = future.result(timeout=None if UNLIMITED_MODE else CHAT_TIMEOUT_SECONDS)
                     self.total_tokens += _extract_token_count(response)
                     return response
 
@@ -227,7 +228,7 @@ class OllamaAgent:
         try:
             while True:
                 try:
-                    kind, payload = chunk_queue.get(timeout=CHAT_STREAM_IDLE_TIMEOUT_SECONDS)
+                    kind, payload = chunk_queue.get(timeout=None if UNLIMITED_MODE else CHAT_STREAM_IDLE_TIMEOUT_SECONDS)
                 except queue.Empty:
                     logger.error(
                         "chat_stream_idle_timeout model=%s timeout=%s",
@@ -331,6 +332,8 @@ def _effective_tool_timeout(tool_name: str):
     explicitly disabled confirm timeout means "wait as long as it
     takes", not "add None seconds"). See CONFIRM_GATED_TOOLS above for
     why this split exists."""
+    if UNLIMITED_MODE:
+        return None
     if tool_name not in CONFIRM_GATED_TOOLS:
         return TOOL_TIMEOUT_SECONDS
     if CONFIRM_TIMEOUT_SECONDS is None:
@@ -418,10 +421,17 @@ def run_agent(agent, messages, tools, tool_map, verbose=True,
     logger.info("agent_run_started id=%s max_iterations=%s max_tool_calls=%s",
                 run_id, max_iterations, max_tool_calls)
 
-    for round_num in range(max_iterations):
+    # UNLIMITED_MODE checked here (a bare global read inside the function
+    # body), not via max_iterations/max_wall_seconds themselves -- those
+    # are ordinary default-argument values, frozen at function-definition
+    # time, so a later config_reload() can't retroactively change what an
+    # already-compiled default evaluates to. A global read is live on
+    # every call regardless.
+    round_iterator = itertools.count() if UNLIMITED_MODE else range(max_iterations)
+    for round_num in round_iterator:
 
         elapsed = time.monotonic() - started_at
-        if elapsed > max_wall_seconds:
+        if not UNLIMITED_MODE and elapsed > max_wall_seconds:
             logger.warning("agent_run_stopped id=%s reason=wall_timeout elapsed=%.1fs",
                             run_id, elapsed)
             chat_logger.error("wall_timeout", elapsed_seconds=round(elapsed, 1))

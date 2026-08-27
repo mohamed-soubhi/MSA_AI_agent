@@ -39,9 +39,9 @@ _AGENT_DIR = Path(__file__).resolve().parent
 # Every module that copied an agent_config name into its own namespace
 # via `from agent_config import X` (same name on both sides).
 _PROPAGATE = {
-    "auto_runner": ["MAX_AUTO_TOOL_CALLS", "SYSTEM_PROMPT"],
+    "auto_runner": ["MAX_AUTO_TOOL_CALLS", "SYSTEM_PROMPT", "UNLIMITED_MODE"],
     "CLI_agent": ["SYSTEM_PROMPT"],
-    "confirm": ["CONFIRM_TIMEOUT_SECONDS", "CONFIRM_MAX_ACTION_LEN"],
+    "confirm": ["CONFIRM_TIMEOUT_SECONDS", "CONFIRM_MAX_ACTION_LEN", "UNLIMITED_MODE"],
     "fs_tools": ["MAX_WRITE_BYTES", "REQUIRE_CONFIRMATION", "WORKSPACE_DIR"],
     "memory": [
         "MEMORY_ENABLED", "MEMORY_FILE", "MEMORY_MAX_ENTRIES",
@@ -53,6 +53,7 @@ _PROPAGATE = {
         "CHAT_RETRY_BACKOFF_SECONDS", "CHAT_STREAM_IDLE_TIMEOUT_SECONDS",
         "MAX_ITERATIONS", "MAX_WALL_SECONDS", "TOOL_TIMEOUT_SECONDS",
         "MAX_REPEAT_CALLS", "MAX_OBSERVATION_CHARS", "CONFIRM_TIMEOUT_SECONDS",
+        "UNLIMITED_MODE",
     ],
 }
 
@@ -64,6 +65,7 @@ _PROPAGATE_ALIASED = {
         "BLOCKED": "SHELL_BLOCKED",
         "TIMEOUT_SECONDS": "SHELL_TIMEOUT_SECONDS",
         "MAX_OUTPUT_LINES": "SHELL_MAX_OUTPUT_LINES",
+        "UNLIMITED_MODE": "UNLIMITED_MODE",
     },
 }
 

@@ -23,7 +23,7 @@ import agent_mode
 from confirm import confirm
 from fs_tools import BASE_DIR
 from shared import run_agent
-from agent_config import MAX_AUTO_TOOL_CALLS, SYSTEM_PROMPT
+from agent_config import MAX_AUTO_TOOL_CALLS, SYSTEM_PROMPT, UNLIMITED_MODE
 
 # MAX_AUTO_TOOL_CALLS now lives in agent_config.py — see that file to
 # tune or override it via environment variable.
@@ -116,7 +116,7 @@ def run_with_auto_mode(agent, user_request: str, tools, tool_map, chat_logger=No
         return run_agent(
             agent, messages, tools, tool_map,
             chat_logger=chat_logger,
-            max_tool_calls=MAX_AUTO_TOOL_CALLS,
+            max_tool_calls=None if UNLIMITED_MODE else MAX_AUTO_TOOL_CALLS,
         )
     finally:
         # Always return to step mode once this run ends, whether it
