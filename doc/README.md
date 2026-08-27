@@ -33,10 +33,11 @@ Project/
 
 ## Backend service (`BE/`)
 
-A FastAPI + Uvicorn + Nginx scaffold — currently just a `/health`
-endpoint proving the stack runs end to end, no agent wiring yet. Run it
-with `run_be.sh` / `run_be.bat` at the project root. See
-[BE.md](BE.md) for the full layout, config, and how to run it.
+A FastAPI + Uvicorn + Nginx backend service providing health monitoring (`/health`),
+an interactive live config editor (`/config`), tool-calling web chat streaming (`/chat`),
+Ollama model catalog inspection (`/models`), memory inspection (`/memory`), sandboxed
+file previews (`/workspace`), and graceful shutdown (`/shutdown`). Run it with `run_be.sh`
+/ `run_be.bat` at the project root. See [BE.md](BE.md) for the full layout, config, and how to run it.
 
 **Sandbox-escape fix**: `agent/` and `workspace/` used to be the same
 directory (the project root) — the agent's own source code sat right

@@ -83,3 +83,4 @@ Every reload pathway is verified through unit tests:
 - `CFGRELOAD-008`: Backend consumer module propagation (`app.api.memory`, `app.core.approval_bridge`, `app.core.agent_bridge`)
 - `CFGRELOAD-009`: Live propagation into `app.api.chat` (`CHAT_SYSTEM_PROMPT`) ensuring `reset_chat()` seeds fresh prompts
 - `CFGRELOAD-010`: Derived `app.core.tool_bridge.BASE_DIR` synchronization
+- `CFGRELOAD-011`: Propagation of `UNLIMITED_MODE` to every gated module (`shared`, `confirm`, `shell_tools`, `auto_runner`)
