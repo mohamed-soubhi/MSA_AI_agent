@@ -39,9 +39,10 @@
   .side-pane {
     flex: 1 1 45%;
     min-width: 280px;
-    padding: 24px;
-    overflow-y: auto;
     color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   header {
     padding: 16px 20px;
@@ -141,9 +142,17 @@
   }
   #composer button:hover { background: var(--accent-hover); }
   #composer button:disabled { opacity: 0.6; cursor: not-allowed; }
-  .side-pane { display: flex; flex-direction: column; }
   .side-pane h2 { color: var(--text); font-size: 1rem; margin: 0 0 10px; }
-  .pane-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  /* Fixed at top, same as <header> in .chat-pane -- only .pane-view
+     below scrolls, so the tabs are always reachable no matter how long
+     the Activity log grows (matches the chat side: header/composer
+     fixed, only #messages scrolls). */
+  .pane-tabs {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 6px;
+    padding: 20px 24px 14px;
+  }
   .pane-tabs button {
     background: none;
     border: 1px solid var(--border);
@@ -154,7 +163,14 @@
     cursor: pointer;
   }
   .pane-tabs button.active { background: var(--accent); border-color: var(--accent); color: white; }
-  .pane-view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .pane-view {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0 24px 24px;
+  }
   .pane-view.active { display: flex; }
   #preview-frame {
     display: none;
