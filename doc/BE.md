@@ -37,6 +37,7 @@ BE/
 │   ├── test_models.py
 │   ├── test_chat.py
 │   ├── test_memory_api.py    — read-only memory API tests
+│   ├── test_workspace.py     — GET /api/workspace/file (Preview tab backend)
 │   └── test_approval_bridge.py  — direct unit tests of ConversationTurn's approval/human handoff
 ├── nginx/
 │   └── nginx.conf          — reverse proxy: Nginx :80 → Uvicorn 127.0.0.1:8000
