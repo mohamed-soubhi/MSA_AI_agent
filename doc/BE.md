@@ -134,7 +134,12 @@ over Server-Sent Events, streaming every step back as it happens.
   `fs_tools.read_file()`'s own sandbox enforcement -- no new way to
   reach outside `workspace/`) into a sandboxed `<iframe srcdoc="...">`.
   Switching tabs doesn't tear down the other one -- Activity keeps
-  logging live tool calls underneath while Preview is showing.
+  logging live tool calls underneath while Preview is showing. The most
+  recently seen path also gets mirrored onto a persistent **View**
+  button next to the Activity/Preview tabs themselves
+  (`registerReportPath()`, called from every place an inline View
+  button is created) -- a fixed shortcut to the last report without
+  scrolling back through the transcript to find its own button.
 - **Logged through the agent's own `chat_logger.py`** — same JSONL
   format, same `logs/` directory as the CLI agent, including every
   `tool_call`/`tool_result` and `prompt_eval_count`/`eval_count`/

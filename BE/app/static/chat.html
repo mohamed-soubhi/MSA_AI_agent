@@ -174,6 +174,18 @@
     cursor: pointer;
   }
   .pane-tabs button.active { background: var(--accent); border-color: var(--accent); color: white; }
+  /* Mirrors whatever the most recent inline "View" button (in the chat
+     text or an Activity item) points at -- lets you jump to the last
+     report without hunting back through the transcript for its
+     button. Pushed to the far right of the tab row so it never looks
+     like a third tab. */
+  #tab-last-report {
+    margin-left: auto;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  #tab-last-report.hidden { display: none; }
   .pane-view {
     display: none;
     flex: 1;
@@ -357,6 +369,7 @@
     <div class="pane-tabs">
       <button type="button" id="tab-activity" class="active">Activity</button>
       <button type="button" id="tab-preview">Preview</button>
+      <button type="button" id="tab-last-report" class="hidden" title="">View</button>
     </div>
     <div class="pane-view active" id="pane-activity">
       <div class="activity" id="activity">
@@ -489,9 +502,10 @@ function renderMarkdown(text) {
   // produced by a run_command script (e.g. a Python one-liner calling
   // fig.write_html(...)) rather than the agent's own write_file tool
   // -- it just tells you the path as plain text.
-  working = working.replace(/\b[\w][\w.\/\\-]*\.html?\b/gi, (path) =>
-    `${path} <button type="button" class="view-file-btn" onclick="previewFile('${escapeForJsString(path)}')">View</button>`
-  );
+  working = working.replace(/\b[\w][\w.\/\\-]*\.html?\b/gi, (path) => {
+    registerReportPath(path);
+    return `${path} <button type="button" class="view-file-btn" onclick="previewFile('${escapeForJsString(path)}')">View</button>`;
+  });
 
   // Restore bare URLs unchanged -- this renderer never auto-links
   // plain URLs, only proper markdown [label](url) syntax.
@@ -505,6 +519,7 @@ function renderMarkdown(text) {
   working = working.replace(/\u0001LINK(\d+)\u0001/g, (_, idx) => {
     const [label, url] = links[Number(idx)];
     if (/^[\w.\/\\-][^:]*\.html?$/i.test(url)) {
+      registerReportPath(url);
       return `${escapeHtml(label)} <button type="button" class="view-file-btn" onclick="previewFile('${escapeForJsString(url)}')">View</button>`;
     }
     return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
@@ -579,6 +594,7 @@ function addViewButtons(item, text) {
     const path = m[0];
     if (seen.has(path)) continue;
     seen.add(path);
+    registerReportPath(path);
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "view-file-btn";
@@ -607,6 +623,26 @@ function switchTab(name) {
 
 tabActivityBtn.addEventListener("click", () => switchTab("activity"));
 tabPreviewBtn.addEventListener("click", () => switchTab("preview"));
+
+// Mirrors the most recent inline "View" button (chat text or an
+// Activity item) next to the Activity/Preview tabs themselves, so
+// there's always a fixed spot to jump to the last report from without
+// scrolling back to find its inline button. The inline buttons stay
+// exactly as they were; this is purely an additional shortcut.
+const tabLastReportBtn = document.getElementById("tab-last-report");
+let lastReportPath = null;
+
+function registerReportPath(path) {
+  lastReportPath = path;
+  const name = path.split(/[\\/]/).pop();
+  tabLastReportBtn.textContent = `View ${name}`;
+  tabLastReportBtn.title = path;
+  tabLastReportBtn.classList.remove("hidden");
+}
+
+tabLastReportBtn.addEventListener("click", () => {
+  if (lastReportPath) previewFile(lastReportPath);
+});
 
 const previewFrame = document.getElementById("preview-frame");
 const previewPath = document.getElementById("preview-path");
@@ -933,6 +969,8 @@ async function newChat() {
   previewPath.textContent = "";
   previewPlaceholder.textContent = 'Click "View" on an HTML file the agent wrote to preview it here.';
   previewPlaceholder.style.display = "block";
+  lastReportPath = null;
+  tabLastReportBtn.classList.add("hidden");
   switchTab("activity");
 }
 

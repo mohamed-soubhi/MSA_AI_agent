@@ -113,7 +113,9 @@ running). See [BE.md](BE.md).
 Open **`http://localhost:8000/chat`**. Type a message, hit Enter (or
 click Send) — the reply streams in as it's generated. Uses whatever
 model `WORKSHOP_MODEL` is currently set to (config editor, "Chat /
-Ollama" section).
+Ollama" section). Sending another message before the first one
+finishes doesn't error out — it queues (shown dimmed as "Queued…" in
+the transcript) and starts as soon as its turn comes up, one at a time.
 
 **Same file/shell tools as the CLI** — this runs the full tool-calling
 loop (`shared.run_agent()`), the same 9 tools `CLI_agent.py` wires up
@@ -131,7 +133,10 @@ sandbox. The right-hand panel has two tabs:
   keeps logging underneath while Preview is showing. Backed by
   `GET /api/workspace/file?path=...`, which reads through the exact
   same sandbox `fs_tools.read_file()` already enforces — no new way to
-  reach outside `workspace/`.
+  reach outside `workspace/`. The most recent report also gets a
+  persistent **View** shortcut next to the Activity/Preview tabs
+  themselves, so you don't have to scroll back through the chat to
+  find its own button.
 
 When a tool needs your approval or is asking you something
 (`ask_human`/`ask_human_choice`), a modal opens on top of the chat with
