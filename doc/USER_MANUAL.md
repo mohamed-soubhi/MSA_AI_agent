@@ -122,14 +122,16 @@ sandbox. The right-hand panel has two tabs:
 - **Activity** — every tool call/result live as the turn runs.
 - **Preview** — an HTML file the agent wrote (a data-analysis report,
   a Plotly chart, ...), rendered in a sandboxed iframe. Click **View**
-  on a `write_file` call that wrote an `.html`/`.htm` file, or on a
-  `[label](path/to/file.html)` link in the agent's own answer (which
-  also gets basic markdown rendering — bold, inline code, fenced code
-  blocks, lists — instead of raw text). Switching tabs never loses the
-  other one's state; Activity keeps logging underneath while Preview is
-  showing. Backed by `GET /api/workspace/file?path=...`, which reads
-  through the exact same sandbox `fs_tools.read_file()` already
-  enforces — no new way to reach outside `workspace/`.
+  on a `write_file`/`run_command` tool call or result that mentions an
+  `.html`/`.htm` path, or on any such mention in the agent's own
+  answer — a proper `[label](path/to/file.html)` markdown link or just
+  a bare path as plain text (the answer also gets basic markdown
+  rendering — bold, inline code, fenced code blocks, lists — instead of
+  raw text). Switching tabs never loses the other one's state; Activity
+  keeps logging underneath while Preview is showing. Backed by
+  `GET /api/workspace/file?path=...`, which reads through the exact
+  same sandbox `fs_tools.read_file()` already enforces — no new way to
+  reach outside `workspace/`.
 
 When a tool needs your approval or is asking you something
 (`ask_human`/`ask_human_choice`), a modal opens on top of the chat with

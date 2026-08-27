@@ -121,9 +121,15 @@ over Server-Sent Events, streaming every step back as it happens.
   recognizes produce real markup -- the model's own text can't inject
   raw HTML.
 - **Preview tab, next to Activity**, for data-analysis output (an HTML
-  report/Plotly chart the agent wrote with `write_file`). A `write_file`
-  call ending in `.html`/`.htm`, or a `[label](path.html)` link in the
-  answer, gets a **View** button that loads the file via
+  report/Plotly chart the agent wrote). A **View** button appears on
+  any `.html`/`.htm` mention: a `[label](path.html)` markdown link or a
+  bare path in the answer text, and on the Activity panel's own
+  `tool_call`/`tool_result` items (`addViewButtons()` scans the full
+  arguments/output text, not just `write_file`'s `path` argument) --
+  since the report is just as often produced by `run_command` (a
+  Python one-liner calling `fig.write_html(...)`) as by the agent's own
+  `write_file`, and the model usually just mentions the path as plain
+  text rather than proper markdown link syntax. Loads the file via
   `GET /api/workspace/file?path=...` (`app/api/workspace.py`, reusing
   `fs_tools.read_file()`'s own sandbox enforcement -- no new way to
   reach outside `workspace/`) into a sandboxed `<iframe srcdoc="...">`.
