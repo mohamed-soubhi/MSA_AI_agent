@@ -409,6 +409,16 @@ function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
+// Safe to drop into a single-quoted JS string literal embedded in an
+// onclick="..." attribute (e.g. previewFile('...')). Backslash must be
+// escaped BEFORE the quote -- a Windows-style path (outputs\report.html,
+// common when the agent runs on native Windows) contains raw backslashes
+// that would otherwise form unintended escape sequences or break the
+// string early.
+function escapeForJsString(text) {
+  return text.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
 // Small, dependency-free markdown-ish renderer -- no CDN, no build
 // step, this is one static HTML file. Escapes everything first, so
 // the model's own text can never inject raw HTML/script; only the
@@ -468,8 +478,8 @@ function renderMarkdown(text) {
   // produced by a run_command script (e.g. a Python one-liner calling
   // fig.write_html(...)) rather than the agent's own write_file tool
   // -- it just tells you the path as plain text.
-  working = working.replace(/\b[\w][\w.\/-]*\.html?\b/gi, (path) =>
-    `${path} <button type="button" class="view-file-btn" onclick="previewFile('${path.replace(/'/g, "\\'")}')">View</button>`
+  working = working.replace(/\b[\w][\w.\/\\-]*\.html?\b/gi, (path) =>
+    `${path} <button type="button" class="view-file-btn" onclick="previewFile('${escapeForJsString(path)}')">View</button>`
   );
 
   // Restore bare URLs unchanged -- this renderer never auto-links
@@ -483,8 +493,8 @@ function renderMarkdown(text) {
   // agent's own analysis output, not a real URL.
   working = working.replace(/\u0001LINK(\d+)\u0001/g, (_, idx) => {
     const [label, url] = links[Number(idx)];
-    if (/^[\w./-][^:]*\.html?$/i.test(url)) {
-      return `${escapeHtml(label)} <button type="button" class="view-file-btn" onclick="previewFile('${url.replace(/'/g, "\\'")}')">View</button>`;
+    if (/^[\w.\/\\-][^:]*\.html?$/i.test(url)) {
+      return `${escapeHtml(label)} <button type="button" class="view-file-btn" onclick="previewFile('${escapeForJsString(url)}')">View</button>`;
     }
     return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
   });
@@ -553,7 +563,7 @@ function addViewButtons(item, text) {
   // previewFile() for what's actually an external link, not a workspace
   // path.
   const withoutUrls = text.replace(/\bhttps?:\/\/\S+/gi, "");
-  const matches = withoutUrls.matchAll(/\b[\w][\w.\/-]*\.html?\b/gi);
+  const matches = withoutUrls.matchAll(/\b[\w][\w.\/\\-]*\.html?\b/gi);
   for (const m of matches) {
     const path = m[0];
     if (seen.has(path)) continue;
