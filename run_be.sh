@@ -59,5 +59,13 @@ echo "  Chat:   http://$HOST:$PORT/chat"
 echo "  Config: http://$HOST:$PORT/config"
 echo ""
 
+# --reload-exclude: the automated "AGY Tester and Reviewer" writes test
+# and doc files into BE/ on its own schedule. Without these, every such
+# write bounces the worker via WatchFiles -- and a reload landing on an
+# in-flight /api/chat/stream turn aborts it and logs a noisy
+# KeyboardInterrupt/CancelledError unwind. Real source edits under
+# BE/app/** still reload normally.
 uv run --directory "$ROOT_DIR" uvicorn app.main:app --app-dir BE \
-  --reload --reload-dir "$ROOT_DIR/BE" --host "$HOST" --port "$PORT"
+  --reload --reload-dir "$ROOT_DIR/BE" \
+  --reload-exclude "*/tests/*" --reload-exclude "test_*.py" \
+  --host "$HOST" --port "$PORT"

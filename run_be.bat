@@ -56,7 +56,15 @@ echo   Chat:   http://%BE_HOST%:%BE_PORT%/chat
 echo   Config: http://%BE_HOST%:%BE_PORT%/config
 echo.
 
+REM --reload-exclude: the automated "AGY Tester and Reviewer" writes
+REM test/doc files into BE\ on its own schedule. Without these, every
+REM such write bounces the worker via WatchFiles -- and a reload landing
+REM on an in-flight /api/chat/stream turn aborts it and logs a noisy
+REM KeyboardInterrupt/CancelledError unwind. Real source edits under
+REM BE\app\** still reload normally.
 uv run --directory "%ROOT_DIR%" uvicorn app.main:app --app-dir BE ^
-  --reload --reload-dir "%ROOT_DIR%\BE" --host %BE_HOST% --port %BE_PORT%
+  --reload --reload-dir "%ROOT_DIR%\BE" ^
+  --reload-exclude "*/tests/*" --reload-exclude "test_*.py" ^
+  --host %BE_HOST% --port %BE_PORT%
 rmdir "%LOCK_DIR%" 2>nul
 pause

@@ -217,6 +217,14 @@ def stream_chat(chat_request: ChatRequest, http_request: Request):
                 yield _sse(event)
                 if event["type"] == "stream_end":
                     break
+        except asyncio.CancelledError:
+            # The ASGI task was cancelled out from under us -- client
+            # navigated away, or uvicorn --reload is bouncing the worker
+            # mid-stream. The finally below still clears _current_turn;
+            # returning here (instead of re-raising) keeps it from
+            # surfacing as a noisy "Exception in ASGI application"
+            # traceback on every reload-during-a-turn.
+            turn.cancelled = True
         finally:
             with _turn_lock:
                 if _current_turn is turn:
