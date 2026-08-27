@@ -74,6 +74,13 @@ _PROPAGATE_BE = {
 }
 _PROPAGATE_BE_ALIASED = {
     "app.core.agent_bridge": {"CHAT_SYSTEM_PROMPT": "SYSTEM_PROMPT"},
+    # chat.py copied agent_bridge.CHAT_SYSTEM_PROMPT again at ITS OWN
+    # import time (`from app.core.agent_bridge import CHAT_SYSTEM_PROMPT`)
+    # -- a second by-value copy, one level removed from agent_config.
+    # Without this, Save updates agent_bridge's copy correctly but
+    # reset_chat()/_messages' seed (both read chat.py's own stale name)
+    # keep using whatever prompt was in effect when chat.py first loaded.
+    "app.api.chat": {"CHAT_SYSTEM_PROMPT": "SYSTEM_PROMPT"},
 }
 
 
