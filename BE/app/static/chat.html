@@ -174,6 +174,7 @@
   .view-file-btn {
     display: inline-block;
     margin-top: 8px;
+    margin-right: 6px;
     background: var(--accent);
     color: white;
     border: none;
@@ -408,16 +409,41 @@ function renderMarkdown(text) {
 
   working = escapeHtml(working);
 
-  working = working.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
-  // [label](url) -- workspace-relative .html/.htm links get a "View"
-  // button (openPreviewFromLink) instead of a normal navigation, since
-  // they're usually the agent's own analysis output, not a real URL.
+  // [label](url) markdown links are extracted into placeholders BEFORE
+  // the bare-path pass below runs -- otherwise a real [label](path.html)
+  // link's own path text would ALSO get matched (and mangled) by the
+  // bare-path scan, since regex has no notion of "already inside a
+  // link" once both patterns are just scanning the same plain string.
+  const links = [];
   working = working.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
+    links.push([label, url]);
+    return `\u0001LINK${links.length - 1}\u0001`;
+  });
+
+  // Bare mention of a workspace .html path (never inside a markdown
+  // link at this point -- those are already placeholders). The model
+  // doesn't always wrap the path it mentions in proper markdown link
+  // syntax, especially when the file was produced by a run_command
+  // script (e.g. a Python one-liner calling fig.write_html(...))
+  // rather than the agent's own write_file tool -- it just tells you
+  // the path as plain text.
+  working = working.replace(/\b[\w][\w.\/-]*\.html?\b/gi, (path) =>
+    `${path} <button type="button" class="view-file-btn" onclick="previewFile('${path.replace(/'/g, "\\'")}')">View</button>`
+  );
+
+  working = working.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
+
+  // Restore links -- workspace-relative .html/.htm links get a "View"
+  // button instead of a normal navigation, since they're usually the
+  // agent's own analysis output, not a real URL.
+  working = working.replace(/\u0001LINK(\d+)\u0001/g, (_, idx) => {
+    const [label, url] = links[Number(idx)];
     if (/^[\w./-][^:]*\.html?$/i.test(url)) {
       return `${escapeHtml(label)} <button type="button" class="view-file-btn" onclick="previewFile('${url.replace(/'/g, "\\'")}')">View</button>`;
     }
     return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
   });
+
   working = working.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
   working = working.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
   working = working.replace(/(^|\n)[-*] (.+)/g, (_, pre, item) => `${pre}<li>${item}</li>`);
@@ -466,6 +492,27 @@ function addPre(item, text) {
   const pre = document.createElement("pre");
   pre.textContent = text;
   item.appendChild(pre);
+}
+
+// Finds every distinct .html/.htm path mentioned anywhere in `text`
+// and adds a View button per match -- used on both tool_call (its
+// arguments, e.g. run_command's own command string) and tool_result
+// (a script's own printed output) Activity items, since the report is
+// just as often produced by a shell command as by write_file.
+function addViewButtons(item, text) {
+  const seen = new Set();
+  const matches = text.matchAll(/\b[\w][\w.\/-]*\.html?\b/gi);
+  for (const m of matches) {
+    const path = m[0];
+    if (seen.has(path)) continue;
+    seen.add(path);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "view-file-btn";
+    btn.textContent = `View ${path}`;
+    btn.addEventListener("click", () => previewFile(path));
+    item.appendChild(btn);
+  }
 }
 
 // Activity/Preview tab switch -- a permanent split was the other
@@ -707,24 +754,21 @@ async function sendMessage(event) {
           case "tool_call": {
             const item = addActivity(`Tool: ${payload.name}`);
             addPre(item, JSON.stringify(payload.arguments, null, 2));
-            // write_file writing an HTML file is exactly the "data
-            // analysis output" case this preview pane is for -- offer
-            // a View button right on the tool call, not just via a
-            // link the model has to remember to include in its answer.
-            const filePath = payload.arguments && payload.arguments.path;
-            if (payload.name === "write_file" && /\.html?$/i.test(filePath || "")) {
-              const btn = document.createElement("button");
-              btn.type = "button";
-              btn.className = "view-file-btn";
-              btn.textContent = "View";
-              btn.addEventListener("click", () => previewFile(filePath));
-              item.appendChild(btn);
-            }
+            // The report is just as often produced by run_command
+            // (a Python one-liner calling fig.write_html(...)) as by
+            // the agent's own write_file -- scan whatever the call
+            // actually contains (path, command, any argument text),
+            // not just a write_file-specific "path" argument.
+            addViewButtons(item, JSON.stringify(payload.arguments || {}));
             break;
           }
           case "tool_result": {
             const item = addActivity(`Result: ${payload.name}`, payload.error ? "error" : "");
             addPre(item, payload.result);
+            // A script's own printed output ("Report saved to
+            // outputs/report.html") is often the only place the exact
+            // path appears.
+            addViewButtons(item, payload.result || "");
             break;
           }
           case "approval_request":
