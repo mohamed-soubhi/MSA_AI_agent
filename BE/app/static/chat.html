@@ -420,18 +420,47 @@ function renderMarkdown(text) {
     return `\u0001LINK${links.length - 1}\u0001`;
   });
 
+  // Inline code spans are extracted into placeholders too, BEFORE the
+  // bare-path pass below -- otherwise a .html path mentioned inside
+  // `backticks` gets a <button> spliced into the middle of the span
+  // before it becomes <code>...</code>, e.g. "see `report.html` here"
+  // rendering as <code>report.html <button ...>View</button></code>
+  // (a live button nested inside a monospace code element).
+  const inlineCode = [];
+  working = working.replace(/`([^`]+)`/g, (_, code) => {
+    inlineCode.push(code);
+    return `\u0002CODE${inlineCode.length - 1}\u0002`;
+  });
+
+  // Bare http(s):// URLs are extracted the same way -- the bare-path
+  // regex below has no scheme awareness, so without this a real
+  // external link mentioned as plain text (not markdown syntax), e.g.
+  // "https://example.com/reports/summary.html", would match on
+  // "example.com/reports/summary.html" and get a View button wired to
+  // previewFile() -- silently dropping the scheme/host and treating an
+  // internet URL as a workspace-relative path.
+  const urls = [];
+  working = working.replace(/\bhttps?:\/\/\S+/gi, (url) => {
+    urls.push(url);
+    return `\u0003URL${urls.length - 1}\u0003`;
+  });
+
   // Bare mention of a workspace .html path (never inside a markdown
-  // link at this point -- those are already placeholders). The model
-  // doesn't always wrap the path it mentions in proper markdown link
-  // syntax, especially when the file was produced by a run_command
-  // script (e.g. a Python one-liner calling fig.write_html(...))
-  // rather than the agent's own write_file tool -- it just tells you
-  // the path as plain text.
+  // link, inline code span, or URL at this point -- those are already
+  // placeholders). The model doesn't always wrap the path it mentions
+  // in proper markdown link syntax, especially when the file was
+  // produced by a run_command script (e.g. a Python one-liner calling
+  // fig.write_html(...)) rather than the agent's own write_file tool
+  // -- it just tells you the path as plain text.
   working = working.replace(/\b[\w][\w.\/-]*\.html?\b/gi, (path) =>
     `${path} <button type="button" class="view-file-btn" onclick="previewFile('${path.replace(/'/g, "\\'")}')">View</button>`
   );
 
-  working = working.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
+  // Restore bare URLs unchanged -- this renderer never auto-links
+  // plain URLs, only proper markdown [label](url) syntax.
+  working = working.replace(/\u0003URL(\d+)\u0003/g, (_, idx) => urls[Number(idx)]);
+
+  working = working.replace(/\u0002CODE(\d+)\u0002/g, (_, idx) => `<code>${inlineCode[Number(idx)]}</code>`);
 
   // Restore links -- workspace-relative .html/.htm links get a "View"
   // button instead of a normal navigation, since they're usually the
@@ -501,7 +530,14 @@ function addPre(item, text) {
 // just as often produced by a shell command as by write_file.
 function addViewButtons(item, text) {
   const seen = new Set();
-  const matches = text.matchAll(/\b[\w][\w.\/-]*\.html?\b/gi);
+  // Strip real URLs first -- same reason as renderMarkdown()'s bare-path
+  // pass: the [\w.\/-] character class has no scheme awareness and would
+  // otherwise match "example.com/report.html" out of a plain-text
+  // "https://example.com/report.html" mention, wiring a View button to
+  // previewFile() for what's actually an external link, not a workspace
+  // path.
+  const withoutUrls = text.replace(/\bhttps?:\/\/\S+/gi, "");
+  const matches = withoutUrls.matchAll(/\b[\w][\w.\/-]*\.html?\b/gi);
   for (const m of matches) {
     const path = m[0];
     if (seen.has(path)) continue;
