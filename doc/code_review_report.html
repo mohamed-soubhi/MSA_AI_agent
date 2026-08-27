@@ -479,7 +479,7 @@
         <div class="meta-item"><strong>Date:</strong> 2026-08-27</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
         <div class="meta-item"><strong>Audit State:</strong> Active Defects Remediated &amp; Dropped</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 500 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 505 Passed / 0 Failed (100%)</div>
         <div class="meta-item"><strong>Architecture Scope:</strong> 13 Audited Modules</div>
       </div>
     </div>
@@ -506,8 +506,8 @@
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">500/500</span>
-        <span class="metric-desc">100% pass across 20 test modules (435 agent + 65 BE)</span>
+        <span class="metric-value val-success">505/505</span>
+        <span class="metric-desc">100% pass across 20 test modules (435 agent + 70 BE)</span>
       </div>
     </div>
 
@@ -527,7 +527,7 @@
     </div>
 
     <!-- Documented Design Scope & Architectural Tradeoffs -->
-    <h2 class="section-title">Documented Architectural Scope &amp; Design Tradeoffs</h2>
+    <h2 class="section-title">Architectural Scope &amp; Remediated Tradeoffs</h2>
     <div class="findings-list">
 
       <!-- Item: ARCH-01 -->
@@ -535,41 +535,41 @@
         <div class="finding-header">
           <div class="finding-title-group">
             <span class="finding-id">ARCH-01</span>
-            <span class="finding-title">Module-Level Static Path Resolution (Single-Workspace CLI Tradeoff)</span>
+            <span class="finding-title">Sandbox Escape via cwd-Relative BASE_DIR</span>
           </div>
           <div>
-            <span class="badge badge-doc">DOCUMENTED TRADEOFF</span>
+            <span class="badge badge-low" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.3);">RESOLVED IN CODE</span>
           </div>
         </div>
         <div class="finding-body">
           <div class="meta-grid">
             <div class="meta-row">
               <span class="meta-label">Target File</span>
-              <span class="meta-val">fs_tools.py (lines 37–48)</span>
+              <span class="meta-val">agent/fs_tools.py, agent/agent_config.py</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Design Pattern</span>
-              <span class="meta-val">Import-Time Global Path Resolution (BASE_DIR)</span>
+              <span class="meta-val">Fixed Project-Root-Relative BASE_DIR (agent_config.WORKSPACE_DIR)</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Status</span>
-              <span class="meta-val" style="color: #c084fc; font-weight: 700;">DOCUMENTED &amp; ACCEPTED</span>
+              <span class="meta-val" style="color: var(--accent-emerald); font-weight: 700;">REMEDIATED &amp; TESTED</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">Deployment Boundary</span>
-              <span class="meta-val">Single-process, single-workspace CLI REPL</span>
+              <span class="meta-val">Fixed &lt;project_root&gt;/workspace sandbox root</span>
             </div>
           </div>
           <div>
-            <h4 class="finding-section-title">Architectural Scope</h4>
+            <h4 class="finding-section-title">Remediation Summary</h4>
             <p class="finding-text">
-              <code>BASE_DIR = Path.cwd().resolve()</code> is evaluated once at import time. This is an intentional design simplicity choice for a single-process CLI REPL where <code>cwd</code> remains constant for the lifetime of the process. If the agent is ever embedded into a long-lived multi-tenant service running concurrent distinct workspaces in a single process, workspace paths should be encapsulated in an injectable <code>WorkspaceContext</code>.
+              Escalated from an accepted design tradeoff to a permanent fix: agent source files were moved into <code>agent/</code>, and <code>BASE_DIR</code> now resolves strictly from <code>agent_config.WORKSPACE_DIR</code> based on the config file's own on-disk location (<code>Path(__file__).resolve().parent.parent / "workspace"</code>), regardless of launch cwd.
             </p>
           </div>
           <div class="recommendation-box">
-            <h4 class="finding-section-title" style="color: var(--accent-purple);">Design Documentation</h4>
+            <h4 class="finding-section-title" style="color: var(--accent-emerald);">Verification Test Cases</h4>
             <p>
-              Documented directly in <code>fs_tools.py</code> code comments and architectural reference guides as an accepted design boundary for single-workspace CLI usage.
+              Covered by <code>AGENTCFG-028</code>–<code>031</code> in <code>tests/test_agent_config.py</code>.
             </p>
           </div>
         </div>
@@ -596,7 +596,7 @@
             <td><code>SEC-01</code></td>
             <td>Shell Command Chaining &amp; Operator Bypass</td>
             <td><span class="badge badge-medium">Critical</span></td>
-            <td><code>shell_tools.py</code></td>
+            <td><code>agent/shell_tools.py</code></td>
             <td><code>_is_compound()</code> detection + <code>force_ask=True</code> gate</td>
             <td><code>SHELL-028</code>–<code>SHELL-031</code></td>
           </tr>
@@ -604,7 +604,7 @@
             <td><code>SEC-02</code></td>
             <td>Subprocess Group Leak on Timeout</td>
             <td><span class="badge badge-medium">High</span></td>
-            <td><code>shell_tools.py</code></td>
+            <td><code>agent/shell_tools.py</code></td>
             <td><code>start_new_session=True</code> + <code>os.killpg()</code></td>
             <td><code>SHELL-032</code>–<code>SHELL-033</code></td>
           </tr>
@@ -612,7 +612,7 @@
             <td><code>ROB-01</code></td>
             <td>Signal / Thread Conflict in Confirmation Gate</td>
             <td><span class="badge badge-medium">High</span></td>
-            <td><code>confirm.py</code></td>
+            <td><code>agent/confirm.py</code></td>
             <td>Thread-safe <code>_read_input_with_timeout()</code> daemon queue</td>
             <td><code>CONFIRM-010</code>–<code>CONFIRM-012</code>, <code>CONFIRM-033</code></td>
           </tr>
@@ -620,7 +620,7 @@
             <td><code>ROB-02</code></td>
             <td>Non-Atomic Persistence &amp; Memory Corruption</td>
             <td><span class="badge badge-medium">High</span></td>
-            <td><code>memory.py</code></td>
+            <td><code>agent/memory.py</code></td>
             <td>Atomic tempfile + <code>os.replace()</code> &amp; <code>.corrupt.bak</code> backup</td>
             <td><code>MEMORY-019</code>, <code>MEMORY-026</code>–<code>MEMORY-027</code></td>
           </tr>
@@ -628,7 +628,7 @@
             <td><code>ROB-03</code></td>
             <td>Alternating Tool Call Stuck-Loop Blindspot</td>
             <td><span class="badge badge-medium">Medium</span></td>
-            <td><code>shared.py</code></td>
+            <td><code>agent/shared.py</code></td>
             <td>2-gram and 3-gram cycle detection (<code>_detect_cycle</code>)</td>
             <td><code>SHARED-050</code>–<code>SHARED-052</code></td>
           </tr>
@@ -636,7 +636,7 @@
             <td><code>ROB-04</code></td>
             <td>Summarizer Context Window Overflow</td>
             <td><span class="badge badge-medium">Medium</span></td>
-            <td><code>memory.py</code></td>
+            <td><code>agent/memory.py</code></td>
             <td>Conversation windowing (<code>MEMORY_SUMMARY_MAX_MESSAGES</code>)</td>
             <td><code>MEMORY-028</code>–<code>MEMORY-029</code></td>
           </tr>
@@ -644,7 +644,7 @@
             <td><code>UX-01</code></td>
             <td>Plan Generator Missing System Prompt</td>
             <td><span class="badge badge-medium">Medium</span></td>
-            <td><code>auto_runner.py</code></td>
+            <td><code>agent/auto_runner.py</code></td>
             <td><code>SYSTEM_PROMPT</code> prepended to planning prompt</td>
             <td><code>AUTORUN-013</code></td>
           </tr>
@@ -652,7 +652,7 @@
             <td><code>SEC-03</code></td>
             <td>Plaintext Secrets in JSONL Audit Logs</td>
             <td><span class="badge badge-medium">Low</span></td>
-            <td><code>chat_logger.py</code></td>
+            <td><code>agent/chat_logger.py</code></td>
             <td><code>_mask_secrets()</code> regex redaction suite</td>
             <td><code>CHATLOG-025</code>–<code>CHATLOG-032</code></td>
           </tr>
@@ -660,16 +660,24 @@
             <td><code>ROB-05</code></td>
             <td>Numeric Environment Variable Crash</td>
             <td><span class="badge badge-medium">Low</span></td>
-            <td><code>agent_config.py</code></td>
+            <td><code>agent/agent_config.py</code></td>
             <td><code>_env_int</code> wrapped in <code>try...except ValueError</code></td>
             <td><code>CONFIG-010</code>, <code>CONFIG-011</code></td>
+          </tr>
+          <tr>
+            <td><code>ARCH-01</code></td>
+            <td>Sandbox Escape via cwd-Relative BASE_DIR</td>
+            <td><span class="badge badge-medium">High</span></td>
+            <td><code>agent/fs_tools.py</code>, <code>agent/agent_config.py</code></td>
+            <td>Fixed <code>agent_config.WORKSPACE_DIR</code> outside agent source folder</td>
+            <td><code>AGENTCFG-028</code>–<code>031</code></td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Module Architecture & Quality Matrix -->
-    <h2 class="section-title">Module Architecture &amp; Quality Matrix</h2>
+    <!-- Agent Core Architecture & Quality Matrix -->
+    <h2 class="section-title">Agent Core Architecture &amp; Quality Matrix (435 Tests)</h2>
     <div class="table-container">
       <table>
         <thead>
@@ -684,7 +692,7 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>CLI_agent.py</code></td>
+            <td><code>agent/CLI_agent.py</code></td>
             <td>Agent CLI orchestrator &amp; REPL loop</td>
             <td>Human confirmation / System prompt</td>
             <td>Single-threaded loop</td>
@@ -692,7 +700,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>agent_config.py</code></td>
+            <td><code>agent/agent_config.py</code></td>
             <td>Central configuration &amp; env parsing</td>
             <td>Type-safe defaults &amp; error fallback</td>
             <td>Immutable constants</td>
@@ -700,7 +708,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>agent_mode.py</code></td>
+            <td><code>agent/agent_mode.py</code></td>
             <td>Single global AUTO_MODE switch</td>
             <td>Checked inside confirm()</td>
             <td>Global variable (non-TLS)</td>
@@ -708,7 +716,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>auto_runner.py</code></td>
+            <td><code>agent/auto_runner.py</code></td>
             <td>Plan generation &amp; auto execution</td>
             <td>Plan review + System prompt context</td>
             <td>Scoped AUTO_MODE flag</td>
@@ -716,7 +724,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>chat_logger.py</code></td>
+            <td><code>agent/chat_logger.py</code></td>
             <td>Structured JSONL audit logging</td>
             <td>Secret redaction &amp; rotation</td>
             <td>Thread lock protected</td>
@@ -724,7 +732,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>confirm.py</code></td>
+            <td><code>agent/confirm.py</code></td>
             <td>Human confirmation gate</td>
             <td>ANSI sanitization &amp; timed reader queue</td>
             <td>Thread-safe non-blocking I/O</td>
@@ -732,7 +740,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>fs_tools.py</code></td>
+            <td><code>agent/fs_tools.py</code></td>
             <td>Sandboxed filesystem CRUD tools</td>
             <td>resolve_path + Win reserved + Symlink check</td>
             <td>Stateless I/O</td>
@@ -740,7 +748,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>human_tools.py</code></td>
+            <td><code>agent/human_tools.py</code></td>
             <td>Conversational HITL clarification</td>
             <td>Option validation &amp; confirm() delegation</td>
             <td>Blocking stdin</td>
@@ -748,7 +756,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>log_config.py</code></td>
+            <td><code>agent/log_config.py</code></td>
             <td>Logging configuration switches</td>
             <td>Env var overrides</td>
             <td>Immutable constants</td>
@@ -756,7 +764,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>config_reload.py</code></td>
+            <td><code>agent/config_reload.py</code></td>
             <td>Hot-reload coordinator for live settings</td>
             <td>In-place module reload &amp; sys.modules lookup</td>
             <td>Safe single-threaded reload</td>
@@ -764,7 +772,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>memory.py</code></td>
+            <td><code>agent/memory.py</code></td>
             <td>Cross-session durable memory</td>
             <td>Atomic replace, thread lock, score search &amp; deduplication</td>
             <td>Thread lock + Atomic rename</td>
@@ -772,7 +780,7 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>shared.py</code></td>
+            <td><code>agent/shared.py</code></td>
             <td>ReAct loop, Ollama wrapper &amp; timeout</td>
             <td>N-gram cycle detection &amp; token accumulator</td>
             <td>ThreadPoolExecutor per tool</td>
@@ -780,11 +788,94 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
-            <td><code>shell_tools.py</code></td>
+            <td><code>agent/shell_tools.py</code></td>
             <td>Allowlisted terminal execution</td>
             <td>Compound operator gate &amp; killpg</td>
             <td>Process group scoping</td>
             <td>48 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Backend Service Quality Matrix -->
+    <h2 class="section-title">Backend Service Architecture &amp; Quality Matrix (70 Tests)</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Primary Responsibility</th>
+            <th>Safety &amp; Isolation Gate</th>
+            <th>Concurrency Safety</th>
+            <th>Test Count</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>BE/app/core/approval_bridge.py</code></td>
+            <td>Async approval &amp; human bridge</td>
+            <td>ID mismatch rejection &amp; timeout handling</td>
+            <td>Multi-threaded event queue</td>
+            <td>7 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/api/chat.py</code></td>
+            <td>Streaming chat &amp; history API</td>
+            <td><code>_turn_lock</code> active-turn concurrency limit</td>
+            <td>Async lock + SSE disconnect</td>
+            <td>14 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/api/config.py</code></td>
+            <td>Config editor &amp; directory picker</td>
+            <td>Comment-preserving diff &amp; restart gating</td>
+            <td>Live hot-reloading</td>
+            <td>21 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/api/health.py</code></td>
+            <td>Service health monitoring</td>
+            <td>Liveness probing</td>
+            <td>Stateless ASGI</td>
+            <td>2 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/api/memory.py</code></td>
+            <td>Read-only memory inspector</td>
+            <td>Non-modifying memory viewer</td>
+            <td>Thread-safe read fallback</td>
+            <td>4 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/api/models.py</code></td>
+            <td>Model catalog &amp; spec inspection</td>
+            <td>Local &amp; cloud model segregation</td>
+            <td>Non-blocking HTTP catalog</td>
+            <td>12 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/api/shutdown.py</code></td>
+            <td>Graceful process termination</td>
+            <td>Process signal dispatch</td>
+            <td>Single-process <code>SIGTERM</code></td>
+            <td>2 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
+            <td><code>BE/app/api/workspace.py</code></td>
+            <td>Sandboxed file preview &amp; raw view</td>
+            <td>Enforces <code>fs_tools.resolve_path()</code></td>
+            <td>Read-only sandboxed I/O</td>
+            <td>8 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
         </tbody>

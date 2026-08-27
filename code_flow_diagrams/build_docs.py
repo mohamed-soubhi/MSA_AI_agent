@@ -2,7 +2,7 @@
 """
 Generator script to build the complete Project Code Flow & Architecture Visualizer.
 Generates:
-  - 11 Standalone interactive SVG flow diagrams
+  - 12 Standalone interactive SVG flow diagrams
   - Comprehensive modern CSS stylesheet
   - Interactive JavaScript controller (zoom/pan, search, simulator, file tree)
   - Full-featured index.html dashboard

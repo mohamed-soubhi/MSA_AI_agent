@@ -171,3 +171,45 @@ def test_config_page_is_served():
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Agent Configuration" in response.text
+
+
+# -- GET /api/config/browse (directory picker for the "Browse" button) ----
+
+
+def test_browse_lists_subdirectories(tmp_path):
+    (tmp_path / "alpha").mkdir()
+    (tmp_path / "beta").mkdir()
+    (tmp_path / "a_file.txt").write_text("x", encoding="utf-8")
+
+    data = client().get("/api/config/browse", params={"path": str(tmp_path)}).json()
+
+    assert data["path"] == str(tmp_path.resolve())
+    assert data["parent"] == str(tmp_path.resolve().parent)
+    names = [e["name"] for e in data["entries"]]
+    assert names == ["alpha", "beta"]  # sorted, dirs only -- no a_file.txt
+
+
+def test_browse_entry_paths_are_absolute_children(tmp_path):
+    (tmp_path / "child").mkdir()
+    data = client().get("/api/config/browse", params={"path": str(tmp_path)}).json()
+    assert data["entries"][0]["path"] == str((tmp_path / "child").resolve())
+
+
+def test_browse_blank_path_defaults_to_home():
+    data = client().get("/api/config/browse", params={"path": ""}).json()
+    from pathlib import Path
+
+    assert data["path"] == str(Path.home().resolve())
+
+
+def test_browse_rejects_non_directory(tmp_path):
+    a_file = tmp_path / "f.txt"
+    a_file.write_text("x", encoding="utf-8")
+    res = client().get("/api/config/browse", params={"path": str(a_file)})
+    assert res.status_code == 400
+    assert "Not a directory" in res.json()["detail"]
+
+
+def test_browse_rejects_missing_path(tmp_path):
+    res = client().get("/api/config/browse", params={"path": str(tmp_path / "nope")})
+    assert res.status_code == 400

@@ -50,10 +50,9 @@ cannot be bypassed by the model skipping this tool.
 
 ## Wiring
 
-`07_filesystem_tools.py` offers `ask_human` and `ask_human_choice` to
-the agent (not `approve_action` — the banner text explicitly notes it
-would just duplicate the same `confirm()` prompt the real gate already
-provides).
+`agent/CLI_agent.py` and `BE/app/core/tool_bridge.py` offer `ask_human` and
+`ask_human_choice` to the agent (not `approve_action` — the prompt explicitly notes
+it would just duplicate the same `confirm()` prompt the real gate already provides).
 
 ## Test coverage (`tests/test_human_tools.py`)
 

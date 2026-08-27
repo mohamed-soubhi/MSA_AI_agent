@@ -300,6 +300,10 @@ let unlocked = false;
 // beyond just avoiding no-op writes.
 const initialValues = {};
 
+// Directory-valued fields that get a "Browse" button + folder-picker
+// dropdown (server-side listing via GET /api/config/browse).
+const DIR_BROWSE_KEYS = ["WORKSPACE_DIR", "LOG_DIR"];
+
 function setUpLockGate() {
   const code = String(Math.floor(10000 + Math.random() * 90000));
   document.getElementById("lock-code").textContent = code;
@@ -454,6 +458,19 @@ function renderField(f) {
     row.appendChild(loadBtn);
     row.appendChild(panel);
     loadBtn.addEventListener("click", () => toggleModelDropdown(input, loadBtn, panel));
+    wrap.appendChild(row);
+  } else if (DIR_BROWSE_KEYS.includes(f.key)) {
+    const row = document.createElement("div");
+    row.className = "model-row";
+    row.appendChild(input);
+    const browseBtn = document.createElement("button");
+    browseBtn.type = "button";
+    browseBtn.className = "load-btn";
+    browseBtn.innerHTML = `Browse <span class="chevron">▾</span>`;
+    const panel = modelPanel();
+    row.appendChild(browseBtn);
+    row.appendChild(panel);
+    browseBtn.addEventListener("click", () => toggleDirDropdown(input, browseBtn, panel));
     wrap.appendChild(row);
   } else {
     wrap.appendChild(input);
@@ -649,6 +666,92 @@ function renderModelGroup(panel, title, models, input, isCloudCatalog) {
       input.value = (isCloudCatalog && !m.name.includes(":")) ? `${m.name}:cloud` : m.name;
       closeModelDropdown(panel, panel.closest(".model-row").querySelector(".load-btn"));
     });
+    panel.appendChild(item);
+  }
+}
+
+// -- Directory picker (Browse button on DIR_BROWSE_KEYS fields) --------
+// Reuses the model dropdown's panel styling + open/close/outside-click
+// machinery (openModelDropdowns et al.); only the content differs.
+
+function toggleDirDropdown(input, button, panel) {
+  if (panel.classList.contains("open")) {
+    closeModelDropdown(panel, button);
+    return;
+  }
+  for (const other of [...openModelDropdowns]) {
+    closeModelDropdown(other, other.closest(".model-row").querySelector(".load-btn"));
+  }
+  openModelDropdown(panel, button);
+  loadDir(panel, input, input.value.trim());  // "" => server starts at home
+}
+
+async function loadDir(panel, input, path) {
+  panel.innerHTML = "";
+  panel.appendChild(errorEl("Loading…"));
+  try {
+    const res = await fetch("/api/config/browse?path=" + encodeURIComponent(path || ""));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Browse failed");
+    renderDir(panel, input, data);
+  } catch (err) {
+    panel.innerHTML = "";
+    panel.appendChild(errorEl("Error: " + err.message));
+  }
+}
+
+function renderDir(panel, input, data) {
+  panel.innerHTML = "";
+
+  const head = document.createElement("div");
+  head.className = "model-group-title";
+  head.style.display = "flex";
+  head.style.alignItems = "center";
+  head.style.gap = "8px";
+  head.style.justifyContent = "space-between";
+  head.style.textTransform = "none";
+
+  const pathLabel = document.createElement("span");
+  pathLabel.className = "name";
+  pathLabel.style.overflow = "hidden";
+  pathLabel.style.textOverflow = "ellipsis";
+  pathLabel.style.whiteSpace = "nowrap";
+  pathLabel.textContent = data.path;
+
+  const pickBtn = document.createElement("button");
+  pickBtn.type = "button";
+  pickBtn.textContent = "Select this folder";
+  pickBtn.style.padding = "2px 10px";
+  pickBtn.style.fontSize = "0.7rem";
+  pickBtn.style.whiteSpace = "nowrap";
+  pickBtn.addEventListener("click", () => {
+    input.value = data.path;
+    closeModelDropdown(panel, panel.closest(".model-row").querySelector(".load-btn"));
+  });
+
+  head.appendChild(pathLabel);
+  head.appendChild(pickBtn);
+  panel.appendChild(head);
+
+  if (data.parent) {
+    const up = document.createElement("div");
+    up.className = "model-item";
+    up.innerHTML = `<span class="name">⬆ ..</span>`;
+    up.addEventListener("click", () => loadDir(panel, input, data.parent));
+    panel.appendChild(up);
+  }
+
+  if (!data.entries.length) {
+    panel.appendChild(errorEl("No sub-folders here."));
+  }
+  for (const entry of data.entries) {
+    const item = document.createElement("div");
+    item.className = "model-item";
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = entry.name;
+    item.appendChild(name);
+    item.addEventListener("click", () => loadDir(panel, input, entry.path));
     panel.appendChild(item);
   }
 }

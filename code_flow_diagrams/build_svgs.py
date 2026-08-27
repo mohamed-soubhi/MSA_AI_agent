@@ -1155,7 +1155,7 @@ def write_svgs():
     <text class="ns" x="35" y="382">│   ├── app/static/    # chat.html, config.html</text>
     <text class="ns" x="35" y="400">│   └── nginx/         # nginx.conf reverse proxy</text>
     <text class="ns" x="25" y="424" fill="#fbbf24">├── workspace/       # Sandbox (BASE_DIR)</text>
-    <text class="ns" x="25" y="444" fill="#f43f5e">├── tests/           # Pytest Suite (500 tests: 435 agent + 65 BE)</text>
+    <text class="ns" x="25" y="444" fill="#f43f5e">├── tests/           # Pytest Suite (505 tests: 435 agent + 70 BE)</text>
     <text class="ns" x="25" y="464" fill="#94a3b8">├── logs/            # JSONL Session Logs</text>
     <text class="ns" x="25" y="484" fill="#94a3b8">├── doc/             # Documentation &amp; Audits</text>
     <text class="ns" x="25" y="504" fill="#38bdf8">└── memory.json      # Persistent Memory</text>

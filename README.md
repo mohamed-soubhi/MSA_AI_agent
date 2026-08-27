@@ -61,6 +61,6 @@ Project/
 
 ## Reports
 
-- [doc/test_report.md](doc/test_report.md) — test pass/fail report (435 tests in agent suite, 500 tests across full project, 100% pass rate).
+- [doc/test_report.md](doc/test_report.md) — test pass/fail report (435 tests in agent suite, 505 tests across full project, 100% pass rate).
 - [doc/code_review_report.md](doc/code_review_report.md) /
   [.html](doc/code_review_report.html) — code review & defect assessment.

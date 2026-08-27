@@ -15,7 +15,7 @@ BE/
 │   ├── main.py           — FastAPI app factory (create_app()) + module-level `app`
 │   ├── api/
 │   │   ├── health.py      — GET /health
-│   │   ├── config.py      — GET/POST /api/config (interactive config editor's API)
+│   │   ├── config.py      — GET/POST /api/config, GET /api/config/browse (interactive config editor & directory browser)
 │   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
 │   │   ├── chat.py        — GET/POST /api/chat/* (tool-calling chat, incl. GET /history, see "Chat page" below)
 │   │   ├── memory.py      — GET /api/memory (read-only view of memory.json for config UI)
@@ -304,6 +304,14 @@ The config page also displays a live, read-only **Memory** section at the bottom
 - Fails safely if `memory.json` is missing or corrupt (returning an empty list and 0 tokens
   without raising an error).
 
+### Directory Picker (`GET /api/config/browse`)
+
+The config page provides a directory browser for path fields (`WORKSPACE_DIR`, `LOG_DIR`, `MEMORY_FILE`):
+- Fetches from `GET /api/config/browse?path=...`, returning immediate subdirectories and parent path.
+- Blank `path` parameter defaults to the user's home directory (`Path.home()`).
+- Deliberately not sandboxed, as configuring the sandbox root or log directory requires selecting paths anywhere on the host machine.
+- Fails safely on non-existent paths or non-directories (returns HTTP 400 with descriptive error detail).
+
 See [agent_config.md](agent_config.md) for the full settings reference.
 
 ## Running it
@@ -337,8 +345,9 @@ config change.
 ## Tests
 
 ```bash
-cd BE
-pytest tests/ -v
+uv run --group dev --directory BE pytest tests/ -v
+# or from project root:
+uv run --group dev pytest BE/tests -v
 ```
 
 `app.main.create_app()` is a factory (not a shared module-level

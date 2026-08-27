@@ -6,7 +6,9 @@ current-value readers, and the .env-writing logic -- this module is
 just the thin HTTP wrapper around it.
 """
 
-from fastapi import APIRouter
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.core import config_schema
@@ -51,6 +53,58 @@ class SaveConfigResponse(BaseModel):
 def get_config() -> ConfigResponse:
     """Every editable field, with its current effective value."""
     return ConfigResponse(fields=config_schema.get_form_schema())
+
+
+class BrowseEntry(BaseModel):
+    name: str
+    path: str
+
+
+class BrowseResponse(BaseModel):
+    path: str            # absolute, resolved path currently being listed
+    parent: str | None   # its parent, or None at a filesystem root
+    entries: list[BrowseEntry]  # immediate sub-directories only
+
+
+@router.get("/browse", response_model=BrowseResponse)
+def browse_dirs(path: str = "") -> BrowseResponse:
+    """List the sub-directories of `path`, for the config page's "Browse"
+    button on directory fields (WORKSPACE_DIR, LOG_DIR).
+
+    Deliberately NOT sandboxed: the whole point is to pick a directory
+    anywhere on this machine (WORKSPACE_DIR *is* the agent sandbox root),
+    and the same page already lets you type any path straight into
+    agent/.env. This endpoint is read-only, returns directory names
+    only -- never file contents -- and the BE service is meant to run
+    bound to localhost.
+
+    Empty/blank `path` starts at the user's home directory.
+    """
+    target = Path(path).expanduser() if path.strip() else Path.home()
+    try:
+        target = target.resolve()
+    except OSError as exc:
+        raise HTTPException(status_code=400, detail=f"Bad path: {exc}")
+
+    if not target.is_dir():
+        raise HTTPException(status_code=400, detail=f"Not a directory: {target}")
+
+    try:
+        subdirs = sorted(
+            (p for p in target.iterdir() if p.is_dir()),
+            key=lambda p: p.name.lower(),
+        )
+    except PermissionError:
+        raise HTTPException(status_code=403, detail=f"Permission denied: {target}")
+    except OSError as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot list {target}: {exc}")
+
+    parent = None if target.parent == target else str(target.parent)
+    return BrowseResponse(
+        path=str(target),
+        parent=parent,
+        entries=[BrowseEntry(name=p.name, path=str(p)) for p in subdirs],
+    )
 
 
 @router.post("", response_model=SaveConfigResponse)

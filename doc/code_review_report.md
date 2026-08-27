@@ -4,7 +4,7 @@
 **Date:** 2026-08-27  
 **Status:** Active Defects Remediated & Dropped from Backlog  
 **HTML Version:** [code_review_report.html](code_review_report.html)  
-**Test Suite:** 500 Passed / 0 Failed (100% across core agent & backend)  
+**Test Suite:** 505 Passed / 0 Failed (100% across core agent & backend)  
 
 ---
 
@@ -19,7 +19,7 @@ The active defect backlog currently contains **0 open defects**, and the one pre
 | **Active / Open Defects** | **0** | Clean active backlog |
 | **Remediated & Dropped Issues** | **10** | Resolved in code and verified by test suite |
 | **Documented Design Tradeoffs** | **0** | ARCH-01 (formerly accepted) is now fixed |
-| **Test Suite Pass Rate** | **100% (500/500)** | Zero failing tests across 20 test modules (435 agent + 65 BE) |
+| **Test Suite Pass Rate** | **100% (505/505)** | Zero failing tests across 20 test modules (435 agent + 70 BE) |
 | **Modules Audited** | **13 Source Modules** | ~3,700 LoC core + ~6,000 LoC tests/docs |
 
 ---
@@ -58,18 +58,33 @@ The following 9 issues have been remediated in code and dropped from the active 
 
 ## Module Architecture & Quality Matrix
 
+### Agent Core Modules (435 Tests)
+
 | Module | Primary Responsibility | Safety & Isolation Gate | Concurrency Safety | Test Count | Status |
 |---|---|---|---|---|---|
-| `CLI_agent.py` | Agent CLI orchestrator & REPL loop | Human confirmation / System prompt | Single-threaded loop | 24 tests | **Robust** |
-| `agent_config.py` | Central configuration & env parsing | Type-safe defaults & error fallback | Immutable constants | 45 tests | **Robust** |
-| `agent_mode.py` | Single global AUTO_MODE switch | Checked inside confirm() | Global variable (non-TLS) | Integrated | **Robust** |
-| `auto_runner.py` | Plan generation & auto execution | Plan review + System prompt context | Scoped AUTO_MODE flag | 14 tests | **Robust** |
-| `chat_logger.py` | Structured JSONL audit logging | Secret redaction & rotation | Thread lock protected | 44 tests | **Robust** |
-| `confirm.py` | Human confirmation gate | ANSI sanitization & timed reader queue | Thread-safe non-blocking I/O | 43 tests | **Robust** |
-| `fs_tools.py` | Sandboxed filesystem CRUD tools | resolve_path + Win reserved + Symlink check | Stateless I/O | 49 tests | **Robust** |
-| `human_tools.py` | Conversational HITL clarification | Option validation & confirm() delegation | Blocking stdin | 20 tests | **Robust** |
-| `log_config.py` | Logging configuration switches | Env var overrides | Immutable constants | 25 tests | **Robust** |
-| `config_reload.py` | Hot-reload coordinator for live settings | In-place module reload & sys.modules lookup | Safe single-threaded reload | 11 tests | **Robust** |
-| `memory.py` | Cross-session durable memory | Atomic replace, score search & deduplication | Thread lock + Atomic rename | 43 tests | **Robust** |
-| `shared.py` | ReAct loop, Ollama wrapper & timeout | N-gram cycle detection & token accumulator | ThreadPoolExecutor per tool | 69 tests | **Robust** |
-| `shell_tools.py` | Allowlisted terminal execution | Compound operator gate & killpg | Process group scoping | 48 tests | **Robust** |
+| [`agent/CLI_agent.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/CLI_agent.py) | Agent CLI orchestrator & REPL loop | Human confirmation / System prompt | Single-threaded loop | 24 tests | **Robust** |
+| [`agent/agent_config.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/agent_config.py) | Central configuration & env parsing | Type-safe defaults & error fallback | Immutable constants | 45 tests | **Robust** |
+| [`agent/agent_mode.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/agent_mode.py) | Single global AUTO_MODE switch | Checked inside confirm() | Global variable (non-TLS) | Integrated | **Robust** |
+| [`agent/auto_runner.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/auto_runner.py) | Plan generation & auto execution | Plan review + System prompt context | Scoped AUTO_MODE flag | 14 tests | **Robust** |
+| [`agent/chat_logger.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/chat_logger.py) | Structured JSONL audit logging | Secret redaction & rotation | Thread lock protected | 44 tests | **Robust** |
+| [`agent/confirm.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/confirm.py) | Human confirmation gate | ANSI sanitization & timed reader queue | Thread-safe non-blocking I/O | 43 tests | **Robust** |
+| [`agent/fs_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/fs_tools.py) | Sandboxed filesystem CRUD tools | resolve_path + Win reserved + Symlink check | Stateless I/O | 49 tests | **Robust** |
+| [`agent/human_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/human_tools.py) | Conversational HITL clarification | Option validation & confirm() delegation | Blocking stdin | 20 tests | **Robust** |
+| [`agent/log_config.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/log_config.py) | Logging configuration switches | Env var overrides | Immutable constants | 25 tests | **Robust** |
+| [`agent/config_reload.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/config_reload.py) | Hot-reload coordinator for live settings | In-place module reload & sys.modules lookup | Safe single-threaded reload | 11 tests | **Robust** |
+| [`agent/memory.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/memory.py) | Cross-session durable memory | Atomic replace, score search & deduplication | Thread lock + Atomic rename | 43 tests | **Robust** |
+| [`agent/shared.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/shared.py) | ReAct loop, Ollama wrapper & timeout | N-gram cycle detection & token accumulator | ThreadPoolExecutor per tool | 69 tests | **Robust** |
+| [`agent/shell_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/shell_tools.py) | Allowlisted terminal execution | Compound operator gate & killpg | Process group scoping | 48 tests | **Robust** |
+
+### Backend Service Modules (70 Tests)
+
+| Module | Primary Responsibility | Safety & Isolation Gate | Concurrency Safety | Test Count | Status |
+|---|---|---|---|---|---|
+| [`BE/app/core/approval_bridge.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/core/approval_bridge.py) | Async approval & human bridge | ID mismatch rejection & timeout handling | Multi-threaded event queue | 7 tests | **Robust** |
+| [`BE/app/api/chat.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/chat.py) | Streaming chat & history API | `_turn_lock` active-turn concurrency limit | Async lock + SSE disconnect | 14 tests | **Robust** |
+| [`BE/app/api/config.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/config.py) | Config editor & directory picker | Comment-preserving diff & restart gating | Live hot-reloading | 21 tests | **Robust** |
+| [`BE/app/api/health.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/health.py) | Service health monitoring | Liveness probing | Stateless ASGI | 2 tests | **Robust** |
+| [`BE/app/api/memory.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/memory.py) | Read-only memory inspector | Non-modifying memory viewer | Thread-safe read fallback | 4 tests | **Robust** |
+| [`BE/app/api/models.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/models.py) | Model catalog & spec inspection | Local & cloud model segregation | Non-blocking HTTP catalog | 12 tests | **Robust** |
+| [`BE/app/api/shutdown.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/shutdown.py) | Graceful process termination | Process signal dispatch | Single-process `SIGTERM` | 2 tests | **Robust** |
+| [`BE/app/api/workspace.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/workspace.py) | Sandboxed file preview & raw view | Enforces `fs_tools.resolve_path()` | Read-only sandboxed I/O | 8 tests | **Robust** |
