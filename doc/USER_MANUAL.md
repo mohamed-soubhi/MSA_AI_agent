@@ -10,9 +10,10 @@ covers *how to use the thing*, not how it's built.
 A sandboxed CLI coding agent (`agent/CLI_agent.py`) built on Ollama
 tool-calling: it can list/read/write files, run terminal commands, and
 ask you clarifying questions — all confined to a dedicated `workspace/`
-folder it can never escape. A FastAPI backend (`BE/`) is scaffolded
-alongside it (currently just a health check + a config editor; the
-chat API itself isn't wired up yet).
+folder it can never escape. A FastAPI backend (`BE/`) sits alongside
+it: a health check, an interactive config editor, and a full
+tool-calling chat page over the same agent and the same 9 tools,
+approved over HTTP instead of a terminal.
 
 ## 2. First-time setup
 
@@ -110,19 +111,24 @@ running). See [BE.md](BE.md).
 ## 5. Chatting with the model
 
 Open **`http://localhost:8000/chat`**. Type a message, hit Enter (or
-click Send) — the reply streams in token-by-token. Uses whatever model
-`WORKSHOP_MODEL` is currently set to (config editor, "Chat / Ollama"
-section).
+click Send) — the reply streams in as it's generated. Uses whatever
+model `WORKSHOP_MODEL` is currently set to (config editor, "Chat /
+Ollama" section).
 
-**No file/shell tools here** — this is plain conversation with the
-model, not the full agent loop. The CLI (`python3 agent/CLI_agent.py`)
-is still where tool-calling (reading/writing files, running commands)
-happens; the chat page doesn't have that wired in yet.
+**Same file/shell tools as the CLI** — this runs the full tool-calling
+loop (`shared.run_agent()`), the same 9 tools `CLI_agent.py` wires up
+(list/read/write files, run commands, ask you questions), the same
+sandbox. The right-hand **Activity** panel shows every tool call/result
+live as the turn runs. When a tool needs your approval or is asking you
+something (`ask_human`/`ask_human_choice`), a modal opens on top of the
+chat with Approve/Deny or the question — it doesn't interleave into the
+transcript. An **Auto-approve** checkbox next to the input will approve
+pending requests for you after a countdown instead of waiting on a
+click.
 
-The right-hand panel is a placeholder for now — reserved for content
-tied to the conversation, not built yet. **New chat** clears history;
-history otherwise survives a page refresh (held in the BE process's
-memory) but resets if the BE service restarts.
+**New chat** clears history; history otherwise survives a page refresh
+(`GET /api/chat/history` repaints it, held in the BE process's memory)
+but resets if the BE service restarts.
 
 ## 6. Editing configuration (the config editor)
 
