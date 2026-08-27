@@ -71,6 +71,7 @@ All files below live in `agent/` (e.g. `agent/agent_config.py`).
 | `memory.py` | Persistent JSON memory across sessions: `remember_fact`/`recall_memory` (model tools) + `save_session_summary`/`load_token_usage`/`save_token_usage` (host-called at session start/end) | [memory.md](memory.md) |
 | `chat_logger.py` | Structured JSONL session logging (`ChatLogger`, `NullChatLogger`, `get_logger`) | [chat_logger.md](chat_logger.md) |
 | `log_config.py` | Env-var-overridable logging configuration | [log_config.md](log_config.md) |
+| `config_reload.py` | Hot-reloads configuration into all loaded modules on Save without restarting | [config_reload.md](config_reload.md) |
 | `CLI_agent.py` | The CLI entry point: files + terminal + human-in-the-loop + auto/step mode, all in one agent | [CLI_agent.md](CLI_agent.md) |
 
 > `07_filesystem_tools.py` and `08_terminal_tools.py` (and their docs)
@@ -146,9 +147,9 @@ and `input()`/`confirm()` prompts are mocked in the test suite.
 ## Test IDs
 
 Every test carries a `@pytest.mark.tid("PREFIX-NNN")` marker, sequential
-per file (e.g. `FSTOOLS-014`, `CONFIRM-007`), registered in `pytest.ini`.
+per file (e.g. `FSTOOLS-014`, `CONFIRM-007`, `CFGRELOAD-001`), registered in `pytest.ini`.
 Prefixes: `CONFIRM`, `FSTOOLS`, `LOGCFG`, `CHATLOG`, `SHARED`, `HUMAN`,
-`SHELL`, `FULLAGENT`, `AUTORUN`, `AGENTCFG`, `MEMORY`. Filter by id or module the
+`SHELL`, `FULLAGENT`, `AUTORUN`, `AGENTCFG`, `MEMORY`, `CFGRELOAD`. Filter by id or module the
 normal pytest way:
 
 ```bash
@@ -162,7 +163,7 @@ python3 -m pytest tests/test_fs_tools.py -v
 python3 tests/generate_report.py
 ```
 
-- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 413 tests, 100% pass rate.
+- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 421 tests, 100% pass rate (473 tests across full suite).
 - **Code Review & Defect Assessment Report (HTML)**: [`code_review_report.html`](code_review_report.html) — interactive audit dashboard.
 - **Code Review & Defect Assessment Report (Markdown)**: [`code_review_report.md`](code_review_report.md) — comprehensive static analysis and defect assessment.
 

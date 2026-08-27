@@ -476,11 +476,11 @@
         </div>
       </div>
       <div class="meta-bar">
-        <div class="meta-item"><strong>Date:</strong> 2026-08-17</div>
+        <div class="meta-item"><strong>Date:</strong> 2026-08-27</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
         <div class="meta-item"><strong>Audit State:</strong> Active Defects Remediated &amp; Dropped</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 413 Passed / 0 Failed (100%)</div>
-        <div class="meta-item"><strong>Architecture Scope:</strong> 1 Documented Design Tradeoff</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 473 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Architecture Scope:</strong> 13 Audited Modules</div>
       </div>
     </div>
   </header>
@@ -496,18 +496,18 @@
       </div>
       <div class="metric-card">
         <span class="metric-label">Remediated &amp; Dropped</span>
-        <span class="metric-value val-info" id="metricDropped">9</span>
+        <span class="metric-value val-info" id="metricDropped">10</span>
         <span class="metric-desc">Hardened with test coverage</span>
       </div>
       <div class="metric-card">
         <span class="metric-label">Documented Design Tradeoffs</span>
-        <span class="metric-value val-purple" id="metricTradeoffs">1</span>
-        <span class="metric-desc">Single-tenant CLI simplicity</span>
+        <span class="metric-value val-purple" id="metricTradeoffs">0</span>
+        <span class="metric-desc">All ARCH issues resolved</span>
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">413/413</span>
-        <span class="metric-desc">100% pass across 11 test modules</span>
+        <span class="metric-value val-success">473/473</span>
+        <span class="metric-desc">100% pass across 17 test modules</span>
       </div>
     </div>
 
@@ -756,6 +756,14 @@
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
+            <td><code>config_reload.py</code></td>
+            <td>Hot-reload coordinator for live settings</td>
+            <td>In-place module reload &amp; sys.modules lookup</td>
+            <td>Safe single-threaded reload</td>
+            <td>8 tests</td>
+            <td><span class="status-pill solved">ROBUST</span></td>
+          </tr>
+          <tr>
             <td><code>memory.py</code></td>
             <td>Cross-session durable memory</td>
             <td>Atomic replace, thread lock, score search &amp; deduplication</td>
@@ -787,7 +795,7 @@
 
   <footer>
     <div class="container">
-      <p>AI Agent Framework Code Review Report &bull; Generated 2026-08-17 &bull; Active Backlog Clean</p>
+      <p>AI Agent Framework Code Review Report &bull; Generated 2026-08-27 &bull; Active Backlog Clean</p>
     </div>
   </footer>
 
