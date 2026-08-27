@@ -63,6 +63,22 @@ function initPanZoom() {
     const targetElement = viewport.querySelector('svg, object, img');
     if (!targetElement) return;
 
+    // "Open in new tab" -- generic across every diagram, reading
+    // whichever attribute actually holds the file's own URL rather
+    // than hardcoding a per-diagram link in index.html.
+    const svgUrl = targetElement.getAttribute('data') || targetElement.getAttribute('src');
+    const toolbar = container.querySelector('.diagram-toolbar');
+    if (svgUrl && toolbar && !toolbar.querySelector('.btn-open-tab')) {
+      const openBtn = document.createElement('a');
+      openBtn.className = 'diagram-btn btn-open-tab';
+      openBtn.href = svgUrl;
+      openBtn.target = '_blank';
+      openBtn.rel = 'noopener noreferrer';
+      openBtn.title = 'Open in new tab';
+      openBtn.textContent = '⇱';
+      toolbar.appendChild(openBtn);
+    }
+
     let scale = 1;
     let pointX = 0;
     let pointY = 0;
