@@ -61,3 +61,37 @@ def test_nested_path_reads_from_subdirectory(tmp_path, monkeypatch):
     response = client().get("/api/workspace/file", params={"path": "plots/chart.html"})
     assert response.status_code == 200
     assert response.json()["content"] == "<div>chart</div>"
+
+
+# --------------------------------------------------------------------------
+# GET /api/workspace/file-raw -- same sandbox, served as a real HTML
+# document (Content-Type: text/html) for the Preview <iframe> to
+# navigate to directly, instead of JSON-wrapped for srcdoc injection.
+# --------------------------------------------------------------------------
+
+def test_raw_existing_file_returns_content_as_html_document(tmp_path, monkeypatch):
+    monkeypatch.setattr(fs_tools, "BASE_DIR", tmp_path)
+    (tmp_path / "report.html").write_text(
+        "<h1>Report</h1><script>console.log('plot')</script>", encoding="utf-8"
+    )
+
+    response = client().get("/api/workspace/file-raw", params={"path": "report.html"})
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert response.text == "<h1>Report</h1><script>console.log('plot')</script>"
+
+
+def test_raw_missing_file_returns_200_with_friendly_message(tmp_path, monkeypatch):
+    monkeypatch.setattr(fs_tools, "BASE_DIR", tmp_path)
+
+    response = client().get("/api/workspace/file-raw", params={"path": "missing.html"})
+    assert response.status_code == 200
+    assert "No such file" in response.text
+
+
+def test_raw_sandbox_escape_attempt_returns_400(tmp_path, monkeypatch):
+    monkeypatch.setattr(fs_tools, "BASE_DIR", tmp_path)
+
+    response = client().get("/api/workspace/file-raw", params={"path": "../outside.html"})
+    assert response.status_code == 400
+    assert "outside the working directory" in response.json()["detail"]

@@ -129,10 +129,27 @@ over Server-Sent Events, streaming every step back as it happens.
   since the report is just as often produced by `run_command` (a
   Python one-liner calling `fig.write_html(...)`) as by the agent's own
   `write_file`, and the model usually just mentions the path as plain
-  text rather than proper markdown link syntax. Loads the file via
-  `GET /api/workspace/file?path=...` (`app/api/workspace.py`, reusing
-  `fs_tools.read_file()`'s own sandbox enforcement -- no new way to
-  reach outside `workspace/`) into a sandboxed `<iframe srcdoc="...">`.
+  text rather than proper markdown link syntax. The iframe navigates
+  (`src=`) directly to `GET /api/workspace/file-raw?path=...`
+  (`app/api/workspace.py`, reusing `fs_tools.read_file()`'s own sandbox
+  enforcement -- no new way to reach outside `workspace/`), which
+  serves the file's raw content as `Content-Type: text/html` --
+  switched from an earlier `srcdoc` + JSON-fetch approach because a
+  full interactive Plotly report (embedded/CDN `plotly.js`, expecting
+  normal document semantics) wouldn't render under `srcdoc`'s
+  opaque/null iframe origin. **Security note**: the `<iframe>` now
+  carries `sandbox="allow-scripts allow-same-origin"` — that
+  combination is normally avoided for untrusted content, since
+  `allow-same-origin` gives the framed document the SAME real origin
+  as the rest of this app (no CORS boundary), so script inside it can
+  reach `window.parent`, cookies, and every other same-origin
+  `/api/*` endpoint with ambient credentials. It's scoped to files
+  that already passed `resolve_path()`'s sandbox check, but that file
+  content is ultimately model-written (`write_file`/`run_command`
+  output) — content an adversarial prompt injection could influence.
+  `GET /api/workspace/file` (JSON-wrapped, no navigation) still exists
+  unchanged for any other consumer that wants the raw text without
+  this origin tradeoff.
   Switching tabs doesn't tear down the other one -- Activity keeps
   logging live tool calls underneath while Preview is showing. The most
   recently seen path also gets mirrored onto a persistent **View**
