@@ -54,19 +54,18 @@ def get_workspace_file_raw(path: str) -> Response:
     directly (<iframe src="...">) instead of JSON-fetching the content
     and injecting it via srcdoc.
 
-    Why this exists on top of GET /file: srcdoc gives the iframe an
-    opaque/null origin (sandbox="allow-scripts" alone, no
-    allow-same-origin -- adding that to a srcdoc frame doesn't grant a
-    real origin the way navigating to an actual URL does). A Plotly
-    report is a full interactive page -- its embedded/CDN-loaded
-    plotly.js expects normal same-origin document semantics. Reported
-    symptom: Plotly HTML wouldn't render via the old srcdoc path.
-    Navigating the iframe to this endpoint gives it BE's own real
-    origin, which chat.html now pairs with
-    sandbox="allow-scripts allow-same-origin" -- safe here specifically
-    because the served content already passed the same sandbox
-    resolve_path() check as everything else, not arbitrary third-party
-    content.
+    Why this exists on top of GET /file: srcdoc's base URL is
+    about:srcdoc, which broke relative-asset resolution some Plotly
+    exports depend on (a report referencing its own bundled JS/CSS by
+    relative path). Navigating the iframe to a real URL like this one
+    fixes that. Its sandbox stays opaque/null origin either way --
+    chat.html's <iframe> is sandbox="allow-scripts" WITHOUT
+    allow-same-origin, deliberately: this content is model-written
+    (write_file/run_command output), and allow-same-origin would grant
+    it BE's own real origin -- ambient-credentialed access to
+    window.parent and every other /api/* endpoint, not just the
+    sandboxed workspace/ read this route itself already enforces via
+    resolve_path().
     """
     try:
         content = read_file(path)
