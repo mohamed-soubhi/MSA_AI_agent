@@ -19,7 +19,7 @@ of these itself.
 | `CHAT_RETRY_BACKOFF_SECONDS` | `2` | Linear backoff multiplier between retries (`backoff * attempt`). |
 | `MAX_ITERATIONS` | `40` | Hard cap on ReAct rounds in `run_agent()`. |
 | `MAX_WALL_SECONDS` | `600` | Hard ceiling on total `run_agent()` run time. |
-| `TOOL_TIMEOUT_SECONDS` | `30` | No single tool call may block longer than this. |
+| `TOOL_TIMEOUT_SECONDS` | `30` | No single tool call may block longer than this -- except `CONFIRM_GATED_TOOLS` (below), which get this much ACTUAL work time on top of a full `CONFIRM_TIMEOUT_SECONDS` to get approved first. |
 | `MAX_REPEAT_CALLS` | `3` | Same `(tool, args)` this many times in a row → treated as a stuck loop, abort. |
 | `MAX_OBSERVATION_CHARS` | `4000` | Cap on what a tool result adds back into the message history. |
 
@@ -134,12 +134,36 @@ data the model can see and correct.
 Truncates tool output beyond `MAX_OBSERVATION_CHARS` before it re-enters
 the message history, appending `"…[truncated, {N} chars total]"`.
 
+### `_effective_tool_timeout(tool_name: str)`
+
+The timeout budget `_run_tool_with_timeout` gets called with. Plain
+`TOOL_TIMEOUT_SECONDS` for most tools; for `CONFIRM_GATED_TOOLS`
+(`write_file`, `create_directory`, `run_command`, `ask_human`,
+`ask_human_choice`, `approve_action` -- anything whose implementation
+calls or routes through `confirm()`), `TOOL_TIMEOUT_SECONDS` of ACTUAL
+work time on top of a full `CONFIRM_TIMEOUT_SECONDS` to get approved
+first. `None` (confirm timeout disabled) propagates through as `None`
+(wait indefinitely), not `TOOL_TIMEOUT_SECONDS + None`.
+
+**Bug this fixes** (found via log analysis, 2026-08-17; the original
+fix only addressed the secondary orphaned-stdin-thread symptom -- see
+`confirm.py`'s own comment): before this, EVERY tool got a flat
+`TOOL_TIMEOUT_SECONDS` (default 30s) covering the ENTIRE call,
+including confirm()'s wait for a human/approval-bridge answer. A human
+who took any real time to decide -- or the BE chat page's own
+Auto-approve countdown, itself often configured close to 30s -- could
+get the tool call abandoned before confirm() even returned, regardless
+of confirm()'s own much longer `CONFIRM_TIMEOUT_SECONDS` (default
+120s). Approval-wait time and execution time are different concerns
+and shouldn't compete for the same clock.
+
 ### `_run_tool_with_timeout(func, arguments, timeout_seconds)`
 
 Runs one tool call in a `ThreadPoolExecutor` with a hard wall-clock
 timeout. Raises `TimeoutError("tool exceeded {N}s timeout and was
 abandoned")` if exceeded; propagates any other exception the tool
-raises.
+raises. `timeout_seconds` is `_effective_tool_timeout(tool_name)`, not
+a bare `TOOL_TIMEOUT_SECONDS`, at the one call site in `run_agent()`.
 
 ### `_validate_arguments(func, arguments: dict) -> None`
 

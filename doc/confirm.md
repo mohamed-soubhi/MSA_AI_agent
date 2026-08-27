@@ -94,9 +94,17 @@ logic (see [agent_mode.md](agent_mode.md)).
   correctly from **any** calling thread and needs no POSIX-only signal
   at all — the timeout now works identically on Windows.
 - **Orphaned-reader stdin race — fixed (found via log analysis,
-  2026-08-17)**: `shared._run_tool_with_timeout` wraps every tool call
-  in its own `TOOL_TIMEOUT_SECONDS` (default 30s), independent of
-  `confirm()`'s own `CONFIRM_TIMEOUT_SECONDS` (default 120s). If a human
+  2026-08-17)**: `shared._run_tool_with_timeout` used to wrap every
+  tool call in its own flat `TOOL_TIMEOUT_SECONDS` (default 30s),
+  independent of `confirm()`'s own `CONFIRM_TIMEOUT_SECONDS` (default
+  120s) -- **this root timing overlap is now also fixed**, see
+  `shared.CONFIRM_GATED_TOOLS`/`_effective_tool_timeout()`: those tools
+  get `TOOL_TIMEOUT_SECONDS` of real work time ON TOP OF a full
+  `CONFIRM_TIMEOUT_SECONDS` to get approved first, instead of the two
+  competing for one shared clock. Kept below as the historical
+  reproduction and the reader-thread-lock fix that's still needed
+  regardless (a human/process can still exceed even the combined
+  budget, and orphaned readers are still possible). If a human
   was still deciding on a `confirm()` prompt when the *tool-level*
   timeout fired first, the tool call was "abandoned" — but the
   `confirm()` prompt's background `input()` reader thread did **not**

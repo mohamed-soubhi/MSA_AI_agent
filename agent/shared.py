@@ -31,10 +31,34 @@ from agent_config import (
     DEFAULT_MODEL, CHAT_TIMEOUT_SECONDS, CHAT_MAX_RETRIES, CHAT_RETRY_BACKOFF_SECONDS,
     CHAT_STREAM_IDLE_TIMEOUT_SECONDS,
     MAX_ITERATIONS, MAX_WALL_SECONDS, TOOL_TIMEOUT_SECONDS, MAX_REPEAT_CALLS,
-    MAX_OBSERVATION_CHARS,
+    MAX_OBSERVATION_CHARS, CONFIRM_TIMEOUT_SECONDS,
 )
 
 logger = logging.getLogger("agent.core")
+
+# Tools whose implementation calls confirm() (fs_tools.write_file/
+# create_directory, shell_tools.run_command) or routes through it
+# (human_tools.ask_human/ask_human_choice/approve_action). Named here
+# by string rather than introspecting the function, since that's the
+# same `tool_name` already available at every call site below.
+#
+# BUG this fixes (found via log analysis, 2026-08-17 -- see
+# confirm.py's own comment for the secondary orphaned-stdin-thread
+# symptom this caused): _run_tool_with_timeout wraps the WHOLE tool
+# call, including confirm()'s wait for a human/approval-bridge answer,
+# in one TOOL_TIMEOUT_SECONDS budget (default 30s) -- so a human who
+# takes any real time to decide (or the BE's own Auto-approve
+# countdown, itself often configured to ~30s) can get the tool call
+# abandoned before confirm() even returns, regardless of
+# confirm()'s OWN much longer CONFIRM_TIMEOUT_SECONDS (default 120s).
+# Approval-wait time and execution time are different concerns and
+# shouldn't compete for the same clock -- these tools get
+# TOOL_TIMEOUT_SECONDS of ACTUAL work time on top of a full
+# CONFIRM_TIMEOUT_SECONDS to get approved first.
+CONFIRM_GATED_TOOLS = frozenset({
+    "write_file", "create_directory", "run_command",
+    "ask_human", "ask_human_choice", "approve_action",
+})
 
 
 # All "how long / how many / which model" settings now live in
@@ -300,6 +324,20 @@ def _sanitize_for_model(text):
     return text
 
 
+def _effective_tool_timeout(tool_name: str):
+    """TOOL_TIMEOUT_SECONDS for most tools; for CONFIRM_GATED_TOOLS, that
+    much ACTUAL work time on top of a full CONFIRM_TIMEOUT_SECONDS to
+    get approved first (None propagates through untouched -- an
+    explicitly disabled confirm timeout means "wait as long as it
+    takes", not "add None seconds"). See CONFIRM_GATED_TOOLS above for
+    why this split exists."""
+    if tool_name not in CONFIRM_GATED_TOOLS:
+        return TOOL_TIMEOUT_SECONDS
+    if CONFIRM_TIMEOUT_SECONDS is None:
+        return None
+    return TOOL_TIMEOUT_SECONDS + CONFIRM_TIMEOUT_SECONDS
+
+
 def _run_tool_with_timeout(func, arguments, timeout_seconds):
     """Run one tool call with a hard wall-clock timeout, so a hung tool
     (network call, blocked subprocess) can never stall the agent loop."""
@@ -472,7 +510,9 @@ def run_agent(agent, messages, tools, tool_map, verbose=True,
                 chat_logger.tool_result(tool_name, result, tool_start, error=True)
             else:
                 try:
-                    raw_result = _run_tool_with_timeout(func, arguments, TOOL_TIMEOUT_SECONDS)
+                    raw_result = _run_tool_with_timeout(
+                        func, arguments, _effective_tool_timeout(tool_name)
+                    )
                     result = _sanitize_for_model(str(raw_result))
                     chat_logger.tool_result(tool_name, result, tool_start, error=False)
                 except TimeoutError as e:

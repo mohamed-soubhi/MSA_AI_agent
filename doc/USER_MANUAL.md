@@ -231,11 +231,14 @@ the only thing that needs to be committed for reproducibility.
   program not in `SHELL_ALLOWED`. Add it via the config editor if it's
   actually safe to allow, or just answer the confirm prompt as usual
   if it's a one-off.
-- **Agent seems to hang after a confirm prompt** — check
-  `TOOL_TIMEOUT_SECONDS` (default 30s) vs `CONFIRM_TIMEOUT_SECONDS`
-  (default 120s); a slow answer to a confirm prompt can get the whole
-  tool call abandoned before you finish typing. Both are editable in
-  the config editor.
+- **"Error: tool exceeded Ns timeout and was abandoned" right after
+  approving (or auto-approving)** — confirm-gated tools
+  (`write_file`/`create_directory`/`run_command`/`ask_human*`/
+  `approve_action`) get `TOOL_TIMEOUT_SECONDS` of actual work time on
+  top of a full `CONFIRM_TIMEOUT_SECONDS` to get approved, so this
+  should be rare now. If it still happens, the command itself is
+  genuinely taking longer than `TOOL_TIMEOUT_SECONDS` (default 30s) —
+  raise it in the config editor (applies immediately, no restart).
 - **Config editor shows old values after saving** — that's expected;
   it shows what's *currently loaded in the running process*, not the
   file. Restart the relevant service and reload the page.
