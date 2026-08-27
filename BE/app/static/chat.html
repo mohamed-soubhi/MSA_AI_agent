@@ -200,6 +200,44 @@
     padding: 6px 10px;
     font-size: 0.8125rem;
   }
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    padding: 22px 26px;
+    max-width: 560px;
+    width: 100%;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+  .modal-box .kind {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+  }
+  .modal-box pre {
+    margin: 0 0 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+    font-family: ui-monospace, monospace;
+    font-size: 0.875rem;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
 </style>
 </head>
 <body>
@@ -216,7 +254,7 @@
       <div class="empty-state" id="empty-state">
         Ask anything. The agent can list/read/write files, run terminal
         commands, and ask you clarifying questions — writes and commands
-        need your approval first (shown on the right).
+        need your approval first (shown as a popup).
       </div>
     </div>
     <form id="composer">
@@ -233,10 +271,14 @@
     <div class="activity" id="activity">
       <div class="placeholder" id="activity-placeholder">
         Tool calls and their results show up here. Approvals and
-        questions from the agent appear directly in the chat.
+        questions from the agent appear as a popup, out of the chat's way.
       </div>
     </div>
   </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
 </div>
 
 <script>
@@ -248,6 +290,8 @@ const sendBtn = document.getElementById("send-btn");
 const newChatBtn = document.getElementById("new-chat-btn");
 const activityEl = document.getElementById("activity");
 const activityPlaceholder = document.getElementById("activity-placeholder");
+const modalOverlay = document.getElementById("modal-overlay");
+const modalBox = document.getElementById("modal-box");
 const autoApproveToggle = document.getElementById("auto-approve-toggle");
 const autoApproveText = document.getElementById("auto-approve-text");
 
@@ -308,24 +352,32 @@ async function respond(requestId, body) {
   });
 }
 
-function addInlineCard(kind, className) {
-  emptyState.style.display = "none";
-  const row = document.createElement("div");
-  row.className = "bubble-row";
-  const item = document.createElement("div");
-  item.className = `bubble activity-item ${className || ""}`;
+// Approvals/questions used to render as inline cards in the chat
+// transcript (addInlineCard -> messagesEl) -- interleaved with the
+// actual conversation bubbles, visually competing with them ("output
+// is overwritten with the approvals"). They now open in a modal
+// instead: only one turn (and therefore one pending approval/question)
+// can ever be in flight at a time in this app's design, so there's no
+// stacking/queueing to handle, and a modal can't be missed or scrolled
+// past the way an inline card could.
+function openModal(kind, className) {
+  modalBox.innerHTML = "";
+  modalBox.className = `modal-box activity-item ${className || ""}`;
   const kindEl = document.createElement("div");
   kindEl.className = "kind";
   kindEl.textContent = kind;
-  item.appendChild(kindEl);
-  row.appendChild(item);
-  messagesEl.appendChild(row);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-  return item;
+  modalBox.appendChild(kindEl);
+  modalOverlay.classList.add("open");
+  return modalBox;
+}
+
+function closeModal() {
+  modalOverlay.classList.remove("open");
+  modalBox.innerHTML = "";
 }
 
 function addApprovalRequest(event) {
-  const item = addInlineCard("Approval needed", "pending-request");
+  const item = openModal("Approval needed", "pending-request");
   addPre(item, event.action);
   const actions = document.createElement("div");
   actions.className = "activity-actions";
@@ -342,8 +394,10 @@ function addApprovalRequest(event) {
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     approveBtn.disabled = true;
     denyBtn.disabled = true;
-    item.classList.remove("pending-request");
-    item.classList.add("answered");
+    closeModal();
+    const logItem = addActivity("Approval needed", approved ? "answered" : "error");
+    addPre(logItem, event.action);
+    addPre(logItem, approved ? "-> Approved" : "-> Denied");
     await respond(event.request_id, { approved });
   };
   approveBtn.addEventListener("click", () => settle(true));
@@ -379,15 +433,18 @@ function addApprovalRequest(event) {
 }
 
 function addHumanRequest(event) {
-  const item = addInlineCard(event.kind === "choice" ? "Question (choose)" : "Question", "pending-request");
+  const kind = event.kind === "choice" ? "Question (choose)" : "Question";
+  const item = openModal(kind, "pending-request");
   addPre(item, event.question);
   const actions = document.createElement("div");
   actions.className = "activity-actions";
 
   const settle = async (answer) => {
     Array.from(actions.querySelectorAll("button, input")).forEach((el) => (el.disabled = true));
-    item.classList.remove("pending-request");
-    item.classList.add("answered");
+    closeModal();
+    const logItem = addActivity(kind, "answered");
+    addPre(logItem, event.question);
+    addPre(logItem, `-> ${answer}`);
     await respond(event.request_id, { answer });
   };
 
@@ -490,13 +547,15 @@ async function sendMessage(event) {
             addApprovalRequest(payload);
             break;
           case "approval_timeout":
-            addInlineCard("Approval timed out", "error");
+            closeModal();
+            addActivity("Approval timed out", "error");
             break;
           case "human_request":
             addHumanRequest(payload);
             break;
           case "human_timeout":
-            addInlineCard("Question timed out", "error");
+            closeModal();
+            addActivity("Question timed out", "error");
             break;
           case "final":
             assistantBubble.classList.remove("pending");
@@ -530,6 +589,7 @@ async function newChat() {
   emptyState.style.display = "block";
   activityEl.querySelectorAll(".activity-item").forEach((el) => el.remove());
   activityPlaceholder.style.display = "block";
+  closeModal();
 }
 
 input.addEventListener("input", () => {
