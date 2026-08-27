@@ -25,6 +25,7 @@ memory.MEMORY_PATH, since token usage now also accumulates into
 memory.json.
 """
 
+import asyncio
 import json
 import threading
 import time
@@ -219,6 +220,46 @@ def test_second_stream_while_one_active_gets_409(reset_chat_state):
     if turn is not None:
         turn.submit_answer(turn._pending_request_id, True)
     t.join(timeout=5)
+
+
+# --------------------------------------------------------------------------
+# Client disconnect mid-stream
+# --------------------------------------------------------------------------
+
+def test_stream_generator_clears_turn_on_client_disconnect(reset_chat_state):
+    """event_generator() polls turn.events.get(timeout=1.0) instead of
+    blocking forever so it can notice a dropped connection between
+    events -- called directly here (bypassing TestClient, which
+    buffers the whole SSE body and can't simulate a disconnect
+    mid-stream) with a fake Request whose is_disconnected() always
+    returns True."""
+    reset_chat_state._rounds = [
+        tool_call_round("write_file", {"path": "out.txt", "content": "hi"}),
+        final_round("done"),
+    ]
+
+    class AlwaysDisconnected:
+        async def is_disconnected(self):
+            return True
+
+    chat_request = chat_api.ChatRequest(message="hello")
+    response = chat_api.stream_chat(chat_request, AlwaysDisconnected())
+    turn = chat_api._current_turn
+    assert turn is not None
+
+    async def drain():
+        return [chunk async for chunk in response.body_iterator]
+
+    asyncio.run(drain())
+
+    assert chat_api._current_turn is None
+    assert turn.cancelled is True
+
+    # unblock the abandoned background thread (still waiting on the
+    # approval nobody answered) so it doesn't leak past the test
+    if turn._pending_request_id is not None:
+        turn.submit_answer(turn._pending_request_id, True)
+    turn._thread.join(timeout=5)
 
 
 # --------------------------------------------------------------------------

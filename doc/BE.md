@@ -86,6 +86,14 @@ over Server-Sent Events, streaming every step back as it happens.
   Cleared by `POST /api/chat/reset` ("New chat" button, which also
   cancels any in-flight turn) or a BE restart — nothing persists to
   disk beyond the JSONL log and `memory.json`'s token counter.
+- **Client disconnect mid-stream also clears the turn.** `event_generator()`
+  polls `turn.events.get(timeout=1.0)` instead of blocking forever, checking
+  `Request.is_disconnected()` between polls. If the browser navigates away or
+  drops the connection while the background `ConversationTurn` is itself
+  stuck waiting on a `confirm()`/`ask_human()` answer nobody will ever send,
+  the turn is marked cancelled and `_current_turn` cleared immediately —
+  same as the reset-triggered cancellation path — instead of wedging every
+  future `POST /api/chat/stream` behind a `409` until a full BE restart.
 - **SSE protocol**: each event is `data: <json>\n\n` with a `type`
   field — `thought` (model text for the round), `tool_call`/
   `tool_result`, `approval_request`/`approval_timeout`, `human_request`

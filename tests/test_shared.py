@@ -16,8 +16,10 @@ import pytest
 import shared
 from chat_logger import NullChatLogger
 from shared import (
+    CONFIRM_GATED_TOOLS,
     OllamaAgent,
     _call_signature,
+    _effective_tool_timeout,
     _parse_arguments,
     _run_tool_with_timeout,
     _sanitize_for_model,
@@ -164,6 +166,32 @@ class TestRunToolWithTimeout:
 
         with pytest.raises(KeyError):
             _run_tool_with_timeout(raises, {}, timeout_seconds=5)
+
+
+# --------------------------------------------------------------------------
+# _effective_tool_timeout
+# --------------------------------------------------------------------------
+
+class TestEffectiveToolTimeout:
+    @pytest.mark.tid("SHARED-062")
+    def test_non_gated_tool_gets_plain_tool_timeout(self, monkeypatch):
+        monkeypatch.setattr(shared, "TOOL_TIMEOUT_SECONDS", 30)
+        monkeypatch.setattr(shared, "CONFIRM_TIMEOUT_SECONDS", 120)
+        assert "list_directory" not in CONFIRM_GATED_TOOLS
+        assert _effective_tool_timeout("list_directory") == 30
+
+    @pytest.mark.tid("SHARED-063")
+    def test_gated_tool_gets_tool_timeout_plus_confirm_timeout(self, monkeypatch):
+        monkeypatch.setattr(shared, "TOOL_TIMEOUT_SECONDS", 30)
+        monkeypatch.setattr(shared, "CONFIRM_TIMEOUT_SECONDS", 120)
+        for tool_name in CONFIRM_GATED_TOOLS:
+            assert _effective_tool_timeout(tool_name) == 150
+
+    @pytest.mark.tid("SHARED-064")
+    def test_gated_tool_with_confirm_timeout_disabled_propagates_none(self, monkeypatch):
+        monkeypatch.setattr(shared, "TOOL_TIMEOUT_SECONDS", 30)
+        monkeypatch.setattr(shared, "CONFIRM_TIMEOUT_SECONDS", None)
+        assert _effective_tool_timeout("run_command") is None
 
 
 # --------------------------------------------------------------------------
