@@ -435,7 +435,12 @@ def run_agent(agent, messages, tools, tool_map, verbose=True,
             logger.warning("agent_run_stopped id=%s reason=wall_timeout elapsed=%.1fs",
                             run_id, elapsed)
             chat_logger.error("wall_timeout", elapsed_seconds=round(elapsed, 1))
-            return "(stopped: exceeded maximum run time)"
+            return (
+                f"(stopped: exceeded maximum run time -- MAX_WALL_SECONDS="
+                f"{max_wall_seconds}s, ran for {elapsed:.1f}s. Raise "
+                f"MAX_WALL_SECONDS in the config editor, or enable "
+                f"UNLIMITED_MODE for no cap at all.)"
+            )
 
         # agent.chat() (OllamaAgent.chat above) already retries, times
         # out, and raises a friendly RuntimeError internally — this
@@ -505,7 +510,11 @@ def run_agent(agent, messages, tools, tool_map, verbose=True,
                     logger.warning("agent_run_stopped id=%s reason=stuck_loop tool=%s",
                                    run_id, tool_name)
                     chat_logger.error("stuck_loop", tool=tool_name)
-                    return f"(stopped: '{tool_name}' is part of a repeating tool-call pattern — agent appears stuck)"
+                    return (
+                        f"(stopped: '{tool_name}' called {repeat_count} times with the "
+                        f"same/repeating pattern -- MAX_REPEAT_CALLS={MAX_REPEAT_CALLS}, "
+                        f"agent appears stuck)"
+                    )
             except ValueError as e:
                 result = f"Error: {e}"
                 chat_logger.tool_result(tool_name, result, tool_start, error=True)
@@ -541,4 +550,8 @@ def run_agent(agent, messages, tools, tool_map, verbose=True,
 
     logger.warning("agent_run_stopped id=%s reason=max_iterations", run_id)
     chat_logger.loop_limit_hit(max_iterations)
-    return "(stopped: too many tool rounds)"
+    return (
+        f"(stopped: exceeded maximum tool rounds -- MAX_ITERATIONS="
+        f"{max_iterations}. Raise it in the config editor, or enable "
+        f"UNLIMITED_MODE for no cap at all.)"
+    )

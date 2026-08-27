@@ -686,7 +686,8 @@ class TestRunAgent:
             agent, [], tools=[echo], tool_map={"echo": echo}, verbose=False,
             max_iterations=3, chat_logger=NullChatLogger(),
         )
-        assert "too many tool rounds" in result
+        assert "exceeded maximum tool rounds" in result
+        assert "MAX_ITERATIONS=3" in result
 
     @pytest.mark.tid("SHARED-037")
     def test_wall_timeout_stops_run(self):
@@ -715,7 +716,7 @@ class TestRunAgent:
             return text
 
         # Six rounds total, past a max_iterations=3 cap that would
-        # normally stop this at round 3 with "too many tool rounds".
+        # normally stop this at round 3 with "exceeded maximum tool rounds".
         responses = [
             make_response(tool_calls=[{"name": "echo", "arguments": {"text": str(i)}}])
             for i in range(5)

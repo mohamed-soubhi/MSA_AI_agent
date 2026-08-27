@@ -470,6 +470,20 @@ function defaultEl(f, input) {
     });
     d.appendChild(btn);
   }
+  // WORKSPACE_DIR/MEMORY_FILE/LOG_DIR auto-resolve correctly per-OS
+  // ONLY when unset -- an override baked in from one OS (e.g. WSL's
+  // /mnt/c/...) breaks the other OS reading the same .env file.
+  // "Use default" above would just bake in THIS OS's resolved value
+  // as a new override -- still wrong for the other OS. Only clearing
+  // the override entirely (submitting "", which _write_env_file()
+  // treats as "remove this line") fixes it for both.
+  if (["WORKSPACE_DIR", "MEMORY_FILE", "LOG_DIR"].includes(f.key)) {
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.textContent = "Clear override (auto-resolve per OS)";
+    clearBtn.addEventListener("click", () => { input.value = ""; });
+    d.appendChild(clearBtn);
+  }
   return d;
 }
 

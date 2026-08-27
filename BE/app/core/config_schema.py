@@ -373,6 +373,16 @@ def _write_env_file(path: Path, updates: dict[str, str]) -> None:
     """Merge `updates` into the KEY=value lines of `path`, preserving
     every other existing line (comments, blank lines, unrelated keys)
     untouched. New keys not already present are appended at the end.
+
+    An empty submitted value REMOVES that key's line instead of writing
+    KEY="" -- every setting here falls back to its own code default
+    when the key is absent (os.getenv(KEY, default) / pydantic-settings'
+    field default), so "clear the override" and "delete the line" are
+    the same outcome. This matters most for WORKSPACE_DIR/MEMORY_FILE/
+    LOG_DIR: those auto-resolve correctly per-OS ONLY when unset --
+    writing KEY="" would still count as "set" to os.getenv() (Path("")
+    resolves to the current directory, not the intended default), so
+    an explicit empty value must remove the line, not just blank it.
     """
     existing_lines: list[str] = []
     if path.exists():
@@ -385,10 +395,14 @@ def _write_env_file(path: Path, updates: dict[str, str]) -> None:
         if stripped and not stripped.startswith("#") and "=" in stripped:
             key = stripped.split("=", 1)[0].strip()
             if key in remaining:
-                new_lines.append(f"{key}={_quote_env_value(remaining.pop(key))}")
+                value = remaining.pop(key)
+                if value == "":
+                    continue  # drop the line entirely -- key becomes unset
+                new_lines.append(f"{key}={_quote_env_value(value)}")
                 continue
         new_lines.append(line)
 
+    remaining = {k: v for k, v in remaining.items() if v != ""}
     if remaining:
         if new_lines and new_lines[-1].strip():
             new_lines.append("")
