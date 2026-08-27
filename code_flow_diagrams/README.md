@@ -6,7 +6,7 @@ An interactive HTML + SVG architectural dashboard and code flow visualizer for t
 
 - **🏛️ High-Level System Topology (SVG)**: Complete 30,000-ft diagram showing dual entry points (CLI & Web), core ReAct loop, 4-layer security gates, sandboxed workspace, and persistence stores.
 - **📁 Directory & Module Reference**: Interactive visual file tree and complete module matrix detailing roles, responsibilities, line counts, and security invariants.
-- **🔀 9 Interactive Flow Graphs (SVG)**:
+- **🔀 10 Interactive Flow Graphs (SVG)**:
   1. `cli_execution_flow.svg` — REPL loop, exit handling, and token accounting in `finally`.
   2. `auto_vs_step_mode.svg` — Granular step-by-step confirmation vs. upfront plan approval with 30-tool cap.
   3. `backend_sse_approval_flow.svg` — FastAPI HTTP threads, background `ConversationTurn` daemon worker, SSE event stream, and HTTP response unblocking.
@@ -16,6 +16,7 @@ An interactive HTML + SVG architectural dashboard and code flow visualizer for t
   7. `confirm_gate_concurrency.svg` — Fail-closed approval gate, TTY checks, non-blocking `_stdin_lock`, background daemon reader thread, and orphan lock retention.
   8. `memory_atomic_persistence.svg` — Atomic JSON swap (`os.replace`), `.corrupt.bak` recovery, 40-message windowed summarization, and cumulative token tracking.
   9. `config_drift_safe_engine.svg` — Drift-safe default values extraction via isolated subprocess and comment-preserving `.env` file updates.
+  10. `config_hot_reload.svg` — Save → `config_reload.reload_all()` → `importlib.reload()` + `setattr` propagation into every by-value consumer (agent-side and BE-side), the `BE_HOST`/`PORT`/`CORS` restart exception, and `UNLIMITED_MODE` reusing the same mechanism.
 - **📞 Calls & Sequence Maps**: Detailed inter-module call hierarchy, method signatures, parameter types, return values, and failure paths.
 - **⚡ Interactive Code Flow Simulator**: Step-by-step interactive simulator stepping through 4 real-world execution scenarios.
 - **🔒 Security & Defense-in-Depth**: Deep-dive analysis of the 10 structural security and robustness decisions across the codebase.
@@ -45,7 +46,7 @@ code_flow_diagrams/
 ├── README.md                      — This index and guide
 ├── build_svgs.py                  — Generator for standalone SVG diagrams
 ├── build_site.py                  — Generator for HTML, CSS, JS, and documentation
-└── svg/                           — 11 standalone, scalable SVG diagram files
+└── svg/                           — 12 standalone, scalable SVG diagram files
     ├── system_architecture.svg
     ├── cli_execution_flow.svg
     ├── auto_vs_step_mode.svg
@@ -56,5 +57,6 @@ code_flow_diagrams/
     ├── confirm_gate_concurrency.svg
     ├── memory_atomic_persistence.svg
     ├── config_drift_safe_engine.svg
+    ├── config_hot_reload.svg
     └── module_dependencies.svg
 ```
