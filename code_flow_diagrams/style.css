@@ -2,52 +2,68 @@
    Project Code Flow & Architecture Visualizer - Modern Dark/Light Theme
    ========================================================================== */
 
+/* Tokens match https://mohamed-soubhi.github.io/'s "Cyber Matrix"
+   (dark) / "Clean Slate" (light) themes exactly -- variable NAMES here
+   are this file's own (every existing var(--accent-blue) etc. usage
+   below needs zero changes), variable VALUES are the portfolio's. */
 :root {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #111827;
-  --bg-card: #1f2937;
-  --bg-card-hover: #283548;
-  --bg-sidebar: #0f172a;
-  --border-color: #374151;
-  --border-glow: rgba(59, 130, 246, 0.4);
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  
-  --accent-blue: #3b82f6;
-  --accent-cyan: #06b6d4;
-  --accent-green: #10b981;
+  --bg-primary: #0a0e14;
+  --bg-secondary: #111822;
+  --bg-card: #121a24;
+  --bg-card-hover: #1c2a3b;
+  --bg-sidebar: #0a0e14;
+  --border-color: #1e293b;
+  --border-glow: rgba(16, 185, 129, 0.35);
+  --text-primary: #f0fdf4;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --accent-blue: #10b981;
+  --accent-cyan: #38bdf8;
+  --accent-green: #00ff88;
   --accent-emerald: #059669;
-  --accent-purple: #8b5cf6;
+  --accent-purple: #a855f7;
   --accent-amber: #f59e0b;
   --accent-rose: #f43f5e;
   --accent-teal: #14b8a6;
-  
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.25);
-  
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px rgba(0, 255, 136, 0.15);
+
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --font-heading: 'Bebas Neue', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 [data-theme="light"] {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
-  --bg-card: #f1f5f9;
+  --bg-card: #ffffff;
   --bg-card-hover: #e2e8f0;
   --bg-sidebar: #f8fafc;
   --border-color: #cbd5e1;
-  --border-glow: rgba(59, 130, 246, 0.2);
+  --border-glow: rgba(5, 150, 105, 0.25);
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.15);
+  --text-muted: #64748b;
+
+  --accent-blue: #059669;
+  --accent-cyan: #0284c7;
+  --accent-green: #047857;
+  --accent-emerald: #059669;
+  --accent-purple: #7e22ce;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+  --accent-teal: #0f766e;
+
+  --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 16px 32px rgba(15, 23, 42, 0.12);
+  --shadow-glow: 0 0 20px rgba(5, 150, 105, 0.1);
 }
 
 * {
@@ -57,7 +73,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
@@ -292,8 +308,11 @@ body {
 }
 
 .section-title {
-  font-size: 26px;
-  font-weight: 800;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--text-primary);
   margin-bottom: 6px;
   display: flex;

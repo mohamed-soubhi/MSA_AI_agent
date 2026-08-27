@@ -11,43 +11,50 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" id="hljs-dark" disabled />
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* ---- GitHub-flavored color scheme ---- */
+  /* Tokens match https://mohamed-soubhi.github.io/'s "Clean Slate"
+     (light, default here) / "Cyber Matrix" (dark) themes exactly --
+     variable NAMES here are this file's own, VALUES are the
+     portfolio's. hljs's own GitHub syntax-highlighting CSS (loaded
+     above) is a separate, external stylesheet -- left as-is. */
   :root {
-    --bg: #f6f8fa;            /* outer page background */
+    --bg: #f8fafc;             /* outer page background */
     --panel: #ffffff;          /* document card */
-    --text: #1f2328;           /* primary text / headings */
-    --muted: #656d76;          /* secondary text, blockquote */
-    --border: #d0d7de;         /* dividers, table borders, h1/h2 underline */
-    --accent: #0969da;         /* links, primary buttons */
-    --accent-soft: #ddf4ff;     /* hover/focus accents */
-    --code-inline: #eff1f3;    /* inline code background */
-    --code-block: #f6f8fa;     /* fenced code block background */
-    --table-th: #f6f8fa;       /* table header background */
-    --quote-border: #d0d7de;   /* blockquote left bar */
-    --danger: #cf222e;
-    --success: #1a7f37;
-    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.06);
+    --text: #0f172a;           /* primary text / headings */
+    --muted: #475569;          /* secondary text, blockquote */
+    --border: #cbd5e1;         /* dividers, table borders, h1/h2 underline */
+    --accent: #059669;         /* links, primary buttons */
+    --accent-soft: rgba(5, 150, 105, 0.1);  /* hover/focus accents */
+    --code-inline: #f1f5f9;    /* inline code background */
+    --code-block: #f8fafc;     /* fenced code block background */
+    --table-th: #f8fafc;       /* table header background */
+    --quote-border: #cbd5e1;   /* blockquote left bar */
+    --danger: #e11d48;
+    --success: #047857;
+    --shadow: 0 2px 6px rgba(15, 23, 42, 0.05), 0 8px 20px rgba(15, 23, 42, 0.08);
     --radius: 12px;
     --content-width: 820px;
-    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --font-sans: 'Inter', system-ui, -apple-system, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   }
   [data-theme="dark"] {
-    --bg: #0d1117;
-    --panel: #151b23;
-    --text: #e6edf3;
-    --muted: #9198a1;
-    --border: #3d444d;
-    --accent: #4493f8;
-    --accent-soft: #1f6feb22;
-    --code-inline: #21262d;
-    --code-block: #151b23;
-    --table-th: #151b23;
-    --quote-border: #3d444d;
-    --danger: #f85149;
-    --success: #3fb950;
-    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 30px rgba(0,0,0,.4);
+    --bg: #0a0e14;
+    --panel: #121a24;
+    --text: #f0fdf4;
+    --muted: #94a3b8;
+    --border: #1e293b;
+    --accent: #10b981;
+    --accent-soft: rgba(16, 185, 129, 0.15);
+    --code-inline: #172230;
+    --code-block: #121a24;
+    --table-th: #121a24;
+    --quote-border: #1e293b;
+    --danger: #f43f5e;
+    --success: #00ff88;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 
   * { box-sizing: border-box; }

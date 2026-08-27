@@ -4,18 +4,30 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Agent Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Design tokens match https://mohamed-soubhi.github.io/'s "Cyber
+     Matrix" dark theme exactly (same hex values, same font stack) --
+     variable NAMES here are this file's own (kept so every existing
+     rule below needs zero changes), variable VALUES are the
+     portfolio's. */
   :root {
-    --bg: #0f172a;
-    --card: #1e293b;
-    --border: #334155;
-    --text: #f8fafc;
+    --bg: #0a0e14;
+    --card: #121a24;
+    --border: #1e293b;
+    --text: #f0fdf4;
     --text-dim: #94a3b8;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
+    --accent: #10b981;
+    --accent-hover: #059669;
+    --accent-neon: #00ff88;
     --err: #f43f5e;
-    --bubble-user: #3b82f6;
-    --bubble-assistant: #1e293b;
+    --bubble-user: #10b981;
+    --bubble-assistant: #121a24;
+    --font-heading: 'Bebas Neue', sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -23,7 +35,11 @@
     height: 100%;
     background: var(--bg);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--font-body);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16, 185, 129, 0.08), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 90% 80%, rgba(56, 189, 248, 0.04), transparent 60%);
+    background-attachment: fixed;
   }
   .layout {
     display: flex;
@@ -51,7 +67,7 @@
     align-items: center;
     justify-content: space-between;
   }
-  header h1 { font-size: 1.125rem; margin: 0; }
+  header h1 { font-family: var(--font-heading); font-size: 1.5rem; letter-spacing: 0.03em; text-transform: uppercase; margin: 0; }
   header a { color: var(--text-dim); font-size: 0.8125rem; text-decoration: none; margin-right: 12px; }
   header a:hover { color: var(--text); }
   #new-chat-btn {
@@ -239,7 +255,7 @@
     font-size: 0.875em;
   }
   .bubble pre code { background: none; padding: 0; }
-  .bubble a { color: #93c5fd; }
+  .bubble a { color: #38bdf8; }
   .bubble ul { margin: 6px 0; padding-left: 22px; }
   .side-pane .placeholder {
     border: 1px dashed var(--border);
@@ -261,10 +277,11 @@
   }
   .activity-item .kind {
     color: var(--accent);
+    font-family: var(--font-mono);
     font-weight: 600;
     font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
     margin-bottom: 4px;
   }
   .activity-item pre {
@@ -321,6 +338,7 @@
   }
   .modal-box .kind {
     color: var(--accent);
+    font-family: var(--font-mono);
     font-weight: 700;
     font-size: 0.8125rem;
     text-transform: uppercase;

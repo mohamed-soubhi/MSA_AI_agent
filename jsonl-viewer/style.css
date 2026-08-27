@@ -1,31 +1,41 @@
+/* Tokens match https://mohamed-soubhi.github.io/'s "Cyber Matrix" dark
+   theme exactly -- variable NAMES here are this file's own, VALUES
+   are the portfolio's. */
 :root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --panel-2: #1f2430;
-  --border: #2a3140;
-  --text: #e6e9ef;
-  --muted: #8b93a7;
-  --accent: #5b9dff;
-  --accent-2: #7ee787;
-  --error: #ff6b6b;
-  --key: #79c0ff;
+  --bg: #0a0e14;
+  --panel: #121a24;
+  --panel-2: #172230;
+  --border: #1e293b;
+  --text: #f0fdf4;
+  --muted: #94a3b8;
+  --accent: #10b981;
+  --accent-2: #00ff88;
+  --error: #f43f5e;
+  --key: #38bdf8;
   --string: #a5d6ff;
-  --number: #f0883e;
-  --bool: #d2a8ff;
-  --null: #8b93a7;
+  --number: #f59e0b;
+  --bool: #a855f7;
+  --null: #64748b;
+  --font-heading: 'Bebas Neue', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16, 185, 129, 0.08), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(56, 189, 248, 0.04), transparent 60%);
+  background-attachment: fixed;
 }
 
 header {
@@ -35,9 +45,11 @@ header {
 
 header h1 {
   margin: 0 0 8px;
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .subtitle { color: var(--muted); margin: 0; font-size: 0.95rem; }
