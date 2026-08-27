@@ -123,7 +123,7 @@ experience, shared by every tool in the project, in BOTH modes.
 ## Running the agent
 
 ```bash
-python3 agent/CLI_agent.py
+uv run agent/CLI_agent.py   # or: ./run_cli_agent.sh (Linux/WSL) / run_cli_agent.bat (Windows)
 ```
 
 Run from the project root, or from anywhere — `agent_config.WORKSPACE_DIR`
@@ -133,8 +133,9 @@ layout" above), so launch location doesn't affect where the sandbox is.
 ## Running the tests
 
 ```bash
-python3 -m pytest tests/ -v
-python3 -m pytest tests/ --cov=agent --cov-report=term-missing   # with coverage
+uv run pytest tests/ -v                                        # agent suite (435 tests)
+uv run --directory BE pytest tests/ -v                          # BE suite (70 tests)
+uv run pytest tests/ --cov=agent --cov-report=term-missing      # with coverage
 ```
 
 Run from the project root. `tests/conftest.py` adds `agent/` to
@@ -164,7 +165,7 @@ python3 -m pytest tests/test_fs_tools.py -v
 python3 tests/generate_report.py
 ```
 
-- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 435 tests, 100% pass rate (505 tests across full suite: 435 agent + 70 BE).
+- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 435 tests, 100% pass rate (510 tests across full suite: 435 agent + 75 BE).
 - **Code Review & Defect Assessment Report (HTML)**: [`code_review_report.html`](code_review_report.html) — interactive audit dashboard.
 - **Code Review & Defect Assessment Report (Markdown)**: [`code_review_report.md`](code_review_report.md) — comprehensive static analysis and defect assessment.
 

@@ -111,8 +111,8 @@ recurse). Read-only — no confirmation required.
 
 ## Test coverage (`tests/test_fs_tools.py`)
 
-All tests run against an isolated `tmp_path` monkeypatched onto
-`fs_tools.BASE_DIR`, with `confirm()` stubbed to auto-approve/deny.
+49 tests (`FS-001` .. `FS-035`). All tests run against an isolated `tmp_path`
+monkeypatched onto `fs_tools.BASE_DIR`, with `confirm()` stubbed to auto-approve/deny.
 
 - **`resolve_path`**: simple/nested/`"."` paths, non-string/empty input,
   control characters, `..` traversal (shallow and deep), absolute paths,

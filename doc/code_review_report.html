@@ -479,7 +479,7 @@
         <div class="meta-item"><strong>Date:</strong> 2026-08-27</div>
         <div class="meta-item"><strong>Target:</strong> Build-AI-Agents Project</div>
         <div class="meta-item"><strong>Audit State:</strong> Active Defects Remediated &amp; Dropped</div>
-        <div class="meta-item"><strong>Test Suite:</strong> 505 Passed / 0 Failed (100%)</div>
+        <div class="meta-item"><strong>Test Suite:</strong> 510 Passed / 0 Failed (100%)</div>
         <div class="meta-item"><strong>Architecture Scope:</strong> 13 Audited Modules</div>
       </div>
     </div>
@@ -506,8 +506,8 @@
       </div>
       <div class="metric-card">
         <span class="metric-label">Test Suite Health</span>
-        <span class="metric-value val-success">505/505</span>
-        <span class="metric-desc">100% pass across 20 test modules (435 agent + 70 BE)</span>
+        <span class="metric-value val-success">510/510</span>
+        <span class="metric-desc">100% pass across 20 test modules (435 agent + 75 BE)</span>
       </div>
     </div>
 
@@ -800,7 +800,7 @@
     </div>
 
     <!-- Backend Service Quality Matrix -->
-    <h2 class="section-title">Backend Service Architecture &amp; Quality Matrix (70 Tests)</h2>
+    <h2 class="section-title">Backend Service Architecture &amp; Quality Matrix (75 Tests)</h2>
     <div class="table-container">
       <table>
         <thead>
@@ -866,16 +866,16 @@
             <td><code>BE/app/api/shutdown.py</code></td>
             <td>Graceful process termination</td>
             <td>Process signal dispatch</td>
-            <td>Single-process <code>SIGTERM</code></td>
-            <td>2 tests</td>
+            <td>Process group <code>SIGTERM</code></td>
+            <td>4 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
           <tr>
             <td><code>BE/app/api/workspace.py</code></td>
-            <td>Sandboxed file preview &amp; raw view</td>
+            <td>Sandboxed file preview &amp; OS file manager open</td>
             <td>Enforces <code>fs_tools.resolve_path()</code></td>
             <td>Read-only sandboxed I/O</td>
-            <td>8 tests</td>
+            <td>11 tests</td>
             <td><span class="status-pill solved">ROBUST</span></td>
           </tr>
         </tbody>

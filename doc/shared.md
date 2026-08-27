@@ -272,8 +272,7 @@ no extra cap beyond `max_iterations`.
 
 ## Test coverage (`tests/test_shared.py`)
 
-All network calls are mocked (`FakeClient`, `FakeAgent`) — no live
-Ollama server needed.
+69 tests (`SHARED-001` .. `SHARED-071`), all network calls mocked (`FakeClient`, `FakeAgent`) — no live Ollama server needed.
 
 - `section`: normal title, empty title.
 - `_call_signature`: identical inputs match, key order doesn't matter,
@@ -284,30 +283,35 @@ Ollama server needed.
   dict.
 - `_sanitize_for_model`: short text untouched, long text truncated with
   marker, exact-boundary length untouched.
+- `_effective_tool_timeout`: non-gated tools get plain `TOOL_TIMEOUT_SECONDS`,
+  gated tools get `TOOL_TIMEOUT_SECONDS + CONFIRM_TIMEOUT_SECONDS`,
+  disabled confirm timeout propagates `None`, and `UNLIMITED_MODE` returns
+  `None` regardless of tool (`SHARED-062`–`064`, `SHARED-067`).
 - `_run_tool_with_timeout`: normal return, timeout on a hanging
   function, exception propagation.
 - `_validate_arguments`: matching arguments pass silently; a missing
   required parameter, an unknown/extra parameter, and a typo'd
   parameter name all raise `ValueError` naming the function, expected
-  parameters, and what was actually given.
+  parameters, and what was actually given (`SHARED-043`–`049`).
 - `OllamaAgent.chat`: first-try success, retry-then-succeed, all
-  retries exhausted → friendly `RuntimeError`, default model resolution.
+  retries exhausted → friendly `RuntimeError`, default model resolution,
+  `UNLIMITED_MODE` chat timeout bypass (`SHARED-020`–`023`, `SHARED-069`).
 - `OllamaAgent.total_tokens`: starts at `0`; accumulates
   `prompt_eval_count + eval_count` on success; accumulates across
   multiple `chat()` calls (not overwritten); missing fields count as
   `0` rather than crashing; **not** incremented when a call ultimately
   fails after retries.
 - `OllamaAgent.chat_stream`: chunk yielding, friendly `RuntimeError` on
-  failure.
+  failure, idle timeout, final done chunk stats extraction, and `UNLIMITED_MODE`
+  idle timeout bypass (`SHARED-058`–`061`, `SHARED-068`).
 - `run_agent`: final answer (with and without `None` content), a
   successful tool call followed by a final answer, unknown tool,
   tool exception, tool timeout (via patched `TOOL_TIMEOUT_SECONDS`),
   malformed arguments, a tool call with arguments that don't bind to
   the tool's real signature (fed back as a `ValueError` tool-result,
-  never reaching the function), stuck-loop detection, `agent.chat()`
-  failure,
-  `max_iterations` exhaustion (both the trivial single-round case and a
-  multi-round case with varying tool arguments), wall-clock timeout,
+  never reaching the function), stuck-loop detection (periods 1..3), `agent.chat()`
+  failure, `max_iterations` exhaustion, wall-clock timeout,
+  `UNLIMITED_MODE` wall timeout bypass and infinite iteration generator (`SHARED-070`–`071`),
   default `NullChatLogger` when none is passed, a custom logger
   actually receiving `model_call_start`/`model_response` calls, and
   `max_tool_calls`: stopping exactly at the cap, the capped call itself

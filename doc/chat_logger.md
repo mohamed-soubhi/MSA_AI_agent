@@ -111,6 +111,8 @@ The only entry point call sites should use.
 
 ## Test coverage (`tests/test_chat_logger.py`)
 
+44 tests (`CHATLOG-001` .. `CHATLOG-032`), covering:
+
 - `_truncate`: short/long/`None`-limit strings, non-string passthrough,
   recursion into dicts and lists.
 - `_extract_model_timing`: present fields, missing fields omitted,

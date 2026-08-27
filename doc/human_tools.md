@@ -56,6 +56,8 @@ it would just duplicate the same `confirm()` prompt the real gate already provid
 
 ## Test coverage (`tests/test_human_tools.py`)
 
+20 tests (`HUMAN-001` .. `HUMAN-014`), covering:
+
 - **`ask_human`**: stripped response, empty response → ask-again
   message, whitespace-only response treated as empty, question text is
   printed.

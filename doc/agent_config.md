@@ -25,10 +25,10 @@ var still wins over the file either way). Missing file → no-op, same
 as before this existed.
 
 This is what lets the interactive config editor (`BE/`'s `GET /config`
-page, see [BE.md](BE.md#config-editor-get-config)) actually take
-effect: it writes to this exact `agent/.env` file, and the **next**
-agent restart picks the changes up automatically. Not live-reloaded —
-`load_dotenv()` only runs once, at import time.
+page, see [BE.md](BE.md#config-editor-get-config)) take effect: it writes to
+this exact `agent/.env` file. In the running BE process, `config_reload.reload_all()`
+applies changes live into memory immediately (see [config_reload.md](config_reload.md));
+a separate CLI process picks up the changes on its next launch.
 
 ## `PROJECT_ROOT` (module constant, not env-overridable)
 

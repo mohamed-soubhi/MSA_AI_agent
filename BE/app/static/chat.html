@@ -70,7 +70,7 @@
   header h1 { font-family: var(--font-heading); font-size: 1.5rem; letter-spacing: 0.03em; text-transform: uppercase; margin: 0; }
   header a { color: var(--text-dim); font-size: 0.8125rem; text-decoration: none; margin-right: 12px; }
   header a:hover { color: var(--text); }
-  #new-chat-btn {
+  #new-chat-btn, #open-workspace-btn {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-dim);
@@ -79,7 +79,26 @@
     font-size: 0.8125rem;
     cursor: pointer;
   }
-  #new-chat-btn:hover { background: var(--border); color: var(--text); }
+  #new-chat-btn:hover, #open-workspace-btn:hover { background: var(--border); color: var(--text); }
+  #open-workspace-btn:disabled { opacity: 0.5; cursor: progress; }
+  /* Drag handle between the chat pane and the side (Activity/Preview)
+     pane -- see the splitter drag logic near the end of the script.
+     A wide invisible ::before makes it easy to grab without a fat
+     visible bar. */
+  .splitter {
+    flex: 0 0 5px;
+    align-self: stretch;
+    background: var(--border);
+    cursor: col-resize;
+    position: relative;
+    z-index: 5;
+  }
+  .splitter::before {
+    content: "";
+    position: absolute;
+    inset: 0 -5px;
+  }
+  .splitter:hover, .splitter.dragging { background: var(--accent); }
   #auto-approve-label {
     display: inline-flex;
     align-items: center;
@@ -363,7 +382,8 @@
     <header>
       <h1>Agent Chat</h1>
       <div>
-        <a href="/config">Config</a>
+        <a href="/config" target="_blank" rel="noopener">Config</a>
+        <button id="open-workspace-btn" type="button" title="Open the agent's workspace folder in your file manager">Open workspace</button>
         <button id="new-chat-btn" type="button">New chat</button>
       </div>
     </header>
@@ -383,6 +403,7 @@
       <button type="submit" id="send-btn">Send</button>
     </form>
   </div>
+  <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
   <div class="side-pane">
     <div class="pane-tabs">
       <button type="button" id="tab-activity" class="active">Activity</button>
@@ -1017,6 +1038,88 @@ input.addEventListener("keydown", (event) => {
 
 form.addEventListener("submit", sendMessage);
 newChatBtn.addEventListener("click", newChat);
+
+// -- "Open workspace" button ------------------------------------------
+// Asks the BE to open the agent's workspace folder (fs_tools.BASE_DIR)
+// in the OS file manager -- Windows Explorer when the BE runs on
+// Windows or under WSL (see POST /api/workspace/open).
+const openWorkspaceBtn = document.getElementById("open-workspace-btn");
+openWorkspaceBtn.addEventListener("click", async () => {
+  openWorkspaceBtn.disabled = true;
+  try {
+    const res = await fetch("/api/workspace/open", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  } catch (err) {
+    alert("Could not open the workspace folder: " + err.message);
+  } finally {
+    openWorkspaceBtn.disabled = false;
+  }
+});
+
+// -- Draggable chat | side-pane splitter ----------------------------
+// Sets an explicit pixel flex-basis on .chat-pane and lets .side-pane
+// take the rest; the panes' own min-width rules still cap the drag on
+// both ends. Width persists per browser in localStorage.
+(function setUpSplitter() {
+  const layout = document.querySelector(".layout");
+  const chatPane = document.querySelector(".chat-pane");
+  const sidePane = document.querySelector(".side-pane");
+  const splitter = document.getElementById("splitter");
+  const MIN_CHAT = 320;
+  const MIN_SIDE = 300;
+
+  function applyChatWidth(px) {
+    const handle = splitter.offsetWidth || 5;
+    const max = layout.clientWidth - MIN_SIDE - handle;
+    const w = Math.max(MIN_CHAT, Math.min(px, max));
+    chatPane.style.flex = "0 0 " + w + "px";
+    sidePane.style.flex = "1 1 0";
+    return w;
+  }
+
+  try {
+    const saved = parseInt(localStorage.getItem("chatPaneWidthPx"), 10);
+    if (saved > 0) applyChatWidth(saved);
+  } catch (_) { /* no localStorage -- keep the CSS default split */ }
+
+  let dragging = false;
+
+  splitter.addEventListener("mousedown", (event) => {
+    dragging = true;
+    splitter.classList.add("dragging");
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+    // The preview <iframe> would otherwise swallow mousemove while the
+    // pointer passes over it mid-drag.
+    if (previewFrame) previewFrame.style.pointerEvents = "none";
+    event.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (event) => {
+    if (!dragging) return;
+    applyChatWidth(event.clientX - layout.getBoundingClientRect().left);
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!dragging) return;
+    dragging = false;
+    splitter.classList.remove("dragging");
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+    if (previewFrame) previewFrame.style.pointerEvents = "";
+    try {
+      const px = parseInt(chatPane.style.flex.split(" ").pop(), 10);
+      if (px > 0) localStorage.setItem("chatPaneWidthPx", String(px));
+    } catch (_) { /* ignore */ }
+  });
+
+  // Keep the split valid when the window shrinks below the saved width.
+  window.addEventListener("resize", () => {
+    if (chatPane.style.flex) applyChatWidth(chatPane.getBoundingClientRect().width);
+  });
+})();
+
 loadHistory();
 loadAutoApproveSeconds();
 </script>

@@ -38,7 +38,7 @@ logic (see [agent_mode.md](agent_mode.md)).
 | Name | Type | Description |
 |---|---|---|
 | `action` | `str` | Human-readable description of the proposed action. Sanitized before display/logging. |
-| `timeout_seconds` | `int \| None` | Deny and move on if unanswered in time. `None` disables the timeout (SIGALRM-based; POSIX only). Default `agent_config.CONFIRM_TIMEOUT_SECONDS` (`120`), env `CONFIRM_TIMEOUT_SECONDS` (literal `"none"` disables it). |
+| `timeout_seconds` | `int \| None` | Deny and move on if unanswered in time. `None` disables the timeout (runs until answered). Default `agent_config.CONFIRM_TIMEOUT_SECONDS` (`120`), env `CONFIRM_TIMEOUT_SECONDS` (literal `"none"` disables it). |
 | `force_ask` | `bool` | If `True`, always prompt even when `agent_mode.AUTO_MODE` is on. Callers use this for anything that must never be silently approved by a pre-approved plan — e.g. `shell_tools.run_command`'s blocklist hits, and `auto_runner.py`'s own "approve the plan" question. Default `False`. |
 
 ### Internal helpers

@@ -4,7 +4,7 @@
 **Date:** 2026-08-27  
 **Status:** Active Defects Remediated & Dropped from Backlog  
 **HTML Version:** [code_review_report.html](code_review_report.html)  
-**Test Suite:** 505 Passed / 0 Failed (100% across core agent & backend)  
+**Test Suite:** 510 Passed / 0 Failed (100% across core agent & backend)  
 
 ---
 
@@ -19,7 +19,7 @@ The active defect backlog currently contains **0 open defects**, and the one pre
 | **Active / Open Defects** | **0** | Clean active backlog |
 | **Remediated & Dropped Issues** | **10** | Resolved in code and verified by test suite |
 | **Documented Design Tradeoffs** | **0** | ARCH-01 (formerly accepted) is now fixed |
-| **Test Suite Pass Rate** | **100% (505/505)** | Zero failing tests across 20 test modules (435 agent + 70 BE) |
+| **Test Suite Pass Rate** | **100% (510/510)** | Zero failing tests across 20 test modules (435 agent + 75 BE) |
 | **Modules Audited** | **13 Source Modules** | ~3,700 LoC core + ~6,000 LoC tests/docs |
 
 ---
@@ -76,7 +76,7 @@ The following 9 issues have been remediated in code and dropped from the active 
 | [`agent/shared.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/shared.py) | ReAct loop, Ollama wrapper & timeout | N-gram cycle detection & token accumulator | ThreadPoolExecutor per tool | 69 tests | **Robust** |
 | [`agent/shell_tools.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/agent/shell_tools.py) | Allowlisted terminal execution | Compound operator gate & killpg | Process group scoping | 48 tests | **Robust** |
 
-### Backend Service Modules (70 Tests)
+### Backend Service Modules (75 Tests)
 
 | Module | Primary Responsibility | Safety & Isolation Gate | Concurrency Safety | Test Count | Status |
 |---|---|---|---|---|---|
@@ -86,5 +86,5 @@ The following 9 issues have been remediated in code and dropped from the active 
 | [`BE/app/api/health.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/health.py) | Service health monitoring | Liveness probing | Stateless ASGI | 2 tests | **Robust** |
 | [`BE/app/api/memory.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/memory.py) | Read-only memory inspector | Non-modifying memory viewer | Thread-safe read fallback | 4 tests | **Robust** |
 | [`BE/app/api/models.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/models.py) | Model catalog & spec inspection | Local & cloud model segregation | Non-blocking HTTP catalog | 12 tests | **Robust** |
-| [`BE/app/api/shutdown.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/shutdown.py) | Graceful process termination | Process signal dispatch | Single-process `SIGTERM` | 2 tests | **Robust** |
-| [`BE/app/api/workspace.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/workspace.py) | Sandboxed file preview & raw view | Enforces `fs_tools.resolve_path()` | Read-only sandboxed I/O | 8 tests | **Robust** |
+| [`BE/app/api/shutdown.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/shutdown.py) | Graceful process termination | Process signal dispatch | Process group `SIGTERM` | 4 tests | **Robust** |
+| [`BE/app/api/workspace.py`](file:///mnt/c/MSA/build-ai-agents-from-scratch/Project/BE/app/api/workspace.py) | Sandboxed file preview & OS file manager open | Enforces `fs_tools.resolve_path()` | Read-only sandboxed I/O | 11 tests | **Robust** |

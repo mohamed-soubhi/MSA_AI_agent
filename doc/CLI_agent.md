@@ -126,12 +126,11 @@ path over a display feature.
 
 ## Test coverage (`tests/test_CLI_agent_main.py`)
 
-Module loaded via a normal `import CLI_agent`, reloaded fresh with
-`importlib.reload()` per test (for the same test-to-test isolation the
-old digit-prefixed loader gave). `OllamaAgent`, `get_logger`,
-`run_agent`, and `input()` are all mocked — no live Ollama server or
-real terminal
-needed.
+24 tests (`FULLAGENT-001` .. `FULLAGENT-020`). Module loaded via a normal
+`import CLI_agent`, reloaded fresh with `importlib.reload()` per test (for
+the same test-to-test isolation the old digit-prefixed loader gave).
+`OllamaAgent`, `get_logger`, `run_agent`, and `input()` are all mocked — no live
+Ollama server or real terminal needed.
 
 - `"exit"` and all case-insensitive synonyms end the session cleanly
   without calling `run_agent`.

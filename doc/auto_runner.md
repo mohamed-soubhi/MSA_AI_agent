@@ -80,7 +80,7 @@ final answer string — same shape `run_agent()` would return.
 
 ## Test coverage (`tests/test_auto_runner.py`)
 
-`OllamaAgent`/`agent.chat`, `confirm()`, `fs_tools.resolve_path`, and
+14 tests. `OllamaAgent`/`agent.chat`, `confirm()`, `fs_tools.resolve_path`, and
 `shared.run_agent` are all mocked — no live model, filesystem writes,
 or terminal prompts.
 

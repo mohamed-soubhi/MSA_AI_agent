@@ -19,7 +19,7 @@ BE/
 │   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
 │   │   ├── chat.py        — GET/POST /api/chat/* (tool-calling chat, incl. GET /history, see "Chat page" below)
 │   │   ├── memory.py      — GET /api/memory (read-only view of memory.json for config UI)
-│   │   ├── workspace.py   — GET /api/workspace/file(-raw) (sandboxed file preview for chat's Preview tab)
+│   │   ├── workspace.py   — GET /api/workspace/file(-raw) (sandboxed file preview), POST /api/workspace/open (open folder in OS file manager)
 │   │   └── shutdown.py    — POST /api/shutdown (config page's Close button -- SIGTERM to this process)
 │   ├── core/
 │   │   ├── config.py           — Settings (pydantic-settings), BE_-prefixed env vars
@@ -30,7 +30,7 @@ BE/
 │   │                              thread, routes confirm()/ask_human() over SSE + HTTP
 │   └── static/
 │       ├── config.html    — the editor page itself (served at GET /config, with unlock gate & memory view)
-│       └── chat.html      — the chat page itself (served at GET /chat)
+│       └── chat.html      — the chat page itself (served at GET /chat, with Preview tab, splitter & Open workspace)
 ├── tests/
 │   ├── conftest.py           — adds BE/ and agent/ to sys.path
 │   ├── test_health.py
@@ -38,8 +38,8 @@ BE/
 │   ├── test_models.py
 │   ├── test_chat.py
 │   ├── test_memory_api.py    — read-only memory API tests
-│   ├── test_shutdown.py      — POST /api/shutdown (os.kill mocked, never sends a real signal)
-│   ├── test_workspace.py     — GET /api/workspace/file (Preview tab backend)
+│   ├── test_shutdown.py      — POST /api/shutdown (process group SIGTERM tests)
+│   ├── test_workspace.py     — GET /api/workspace/file(-raw) & POST /api/workspace/open (11 tests)
 │   └── test_approval_bridge.py  — direct unit tests of ConversationTurn's approval/human handoff
 ├── nginx/
 │   └── nginx.conf          — reverse proxy: Nginx :80 → Uvicorn 127.0.0.1:8000
@@ -156,6 +156,11 @@ over Server-Sent Events, streaming every step back as it happens.
   (`registerReportPath()`, called from every place an inline View
   button is created) -- a fixed shortcut to the last report without
   scrolling back through the transcript to find its own button.
+- **"Open workspace" button & Draggable Splitter** — An **"Open workspace"** button in
+  the header triggers `POST /api/workspace/open`, launching the host OS file manager
+  (Windows Explorer under Windows/WSL, `xdg-open` on Linux, `open` on macOS) rooted
+  directly at `fs_tools.BASE_DIR`. A draggable splitter between the chat pane and side
+  panel allows resizing with widths persisted across sessions in `localStorage`.
 - **Logged through the agent's own `chat_logger.py`** — same JSONL
   format, same `logs/` directory as the CLI agent, including every
   `tool_call`/`tool_result` and `prompt_eval_count`/`eval_count`/

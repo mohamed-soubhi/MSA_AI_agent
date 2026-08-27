@@ -9,6 +9,8 @@ rejection, BASE_DIR containment) every agent tool already goes through,
 rather than re-implementing path safety a second time here.
 """
 
+import platform
+import subprocess
 import sys
 from pathlib import Path
 
@@ -22,6 +24,7 @@ AGENT_DIR = BE_DIR.parent / "agent"
 if str(AGENT_DIR) not in sys.path:
     sys.path.insert(0, str(AGENT_DIR))
 
+import fs_tools  # noqa: E402
 from fs_tools import read_file  # noqa: E402
 
 router = APIRouter(prefix="/api/workspace", tags=["workspace"])
@@ -30,6 +33,42 @@ router = APIRouter(prefix="/api/workspace", tags=["workspace"])
 class WorkspaceFileResponse(BaseModel):
     path: str
     content: str
+
+
+class WorkspaceOpenResponse(BaseModel):
+    path: str      # the workspace directory that was opened (fs_tools.BASE_DIR)
+    opened: bool
+
+
+def _running_under_wsl() -> bool:
+    """True when this Linux process is actually WSL -- so "open the
+    folder" should reach Windows Explorer, not a Linux file manager
+    that isn't there."""
+    if sys.platform != "linux":
+        return False
+    try:
+        return "microsoft" in Path("/proc/sys/kernel/osrelease").read_text().lower()
+    except OSError:
+        return "microsoft" in platform.uname().release.lower()
+
+
+def _open_in_file_manager(target: Path) -> None:
+    """Launch the OS file manager on `target`. Fire-and-forget (Popen,
+    no wait): explorer.exe in particular returns a non-zero exit code
+    even on success, and we only care that the launch itself worked."""
+    if sys.platform.startswith("win"):
+        subprocess.Popen(["explorer", str(target)])
+    elif _running_under_wsl():
+        # Translate the Linux path to its \\wsl.localhost\... (or drive)
+        # form so Windows Explorer can actually resolve it.
+        win_path = subprocess.check_output(
+            ["wslpath", "-w", str(target)], text=True
+        ).strip()
+        subprocess.Popen(["explorer.exe", win_path])
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(target)])
+    else:
+        subprocess.Popen(["xdg-open", str(target)])
 
 
 @router.get("/file", response_model=WorkspaceFileResponse)
@@ -45,6 +84,24 @@ def get_workspace_file(path: str) -> WorkspaceFileResponse:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return WorkspaceFileResponse(path=path, content=content)
+
+
+@router.post("/open", response_model=WorkspaceOpenResponse)
+def open_workspace() -> WorkspaceOpenResponse:
+    """Open the agent's workspace directory (fs_tools.BASE_DIR --
+    agent_config.WORKSPACE_DIR) in the OS file manager. Under WSL this
+    opens Windows Explorer via explorer.exe on the translated path.
+
+    No path input: the target is the one fixed sandbox root, and the
+    BE service is meant to run bound to localhost."""
+    target = fs_tools.BASE_DIR
+    try:
+        _open_in_file_manager(target)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise HTTPException(
+            status_code=500, detail=f"Could not open {target}: {exc}"
+        )
+    return WorkspaceOpenResponse(path=str(target), opened=True)
 
 
 @router.get("/file-raw")

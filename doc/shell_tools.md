@@ -156,9 +156,9 @@ stderr:
 
 ## Test coverage (`tests/test_shell_tools.py`)
 
-`subprocess.Popen` and `confirm()` are fully mocked (via a `FakePopen`
-test double driven by `.communicate()`) — no real commands or OS
-process groups are ever touched.
+48 tests (`SHELL-001` .. `SHELL-034`). `subprocess.Popen` and `confirm()` are
+fully mocked (via a `FakePopen` test double driven by `.communicate()`) — no
+real commands or OS process groups are ever touched.
 
 - Empty/whitespace-only command, unparseable (unbalanced quotes) input.
 - Allowlist: rejected program, path-prefix stripping
