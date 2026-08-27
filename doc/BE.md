@@ -17,7 +17,7 @@ BE/
 │   │   ├── health.py      — GET /health
 │   │   ├── config.py      — GET/POST /api/config (interactive config editor's API)
 │   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
-│   │   ├── chat.py        — GET/POST /api/chat/* (tool-calling chat, see "Chat page" below)
+│   │   ├── chat.py        — GET/POST /api/chat/* (tool-calling chat, incl. GET /history, see "Chat page" below)
 │   │   └── memory.py      — GET /api/memory (read-only view of memory.json for config UI)
 │   ├── core/
 │   │   ├── config.py           — Settings (pydantic-settings), BE_-prefixed env vars
@@ -99,6 +99,11 @@ over Server-Sent Events, streaming every step back as it happens.
   plain `EventSource` (GET-only, and this needs to POST the message
   body) — `chat.html` reads the streaming response body manually via
   `fetch()` + `ReadableStream`.
+- **`GET /api/chat/history`** returns the durable transcript — user/
+  assistant turns only (system prompt and tool messages excluded,
+  since live tool activity is what the SSE stream itself carries as
+  `thought`/`tool_call`/`tool_result` events). Used by `chat.html` to
+  repaint the conversation on page reload.
 - **Logged through the agent's own `chat_logger.py`** — same JSONL
   format, same `logs/` directory as the CLI agent, including every
   `tool_call`/`tool_result` and `prompt_eval_count`/`eval_count`/

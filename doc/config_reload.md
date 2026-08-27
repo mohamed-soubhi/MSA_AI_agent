@@ -48,6 +48,7 @@ copies.
 | 4. Derived Path & Singleton Refresh                                           |
 |    - fs_tools.BASE_DIR = agent_config.WORKSPACE_DIR.resolve()                 |
 |    - shell_tools.BASE_DIR = fs_tools.BASE_DIR                                 |
+|    - app.core.tool_bridge.BASE_DIR = fs_tools.BASE_DIR                        |
 |    - memory.MEMORY_PATH = Path(agent_config.MEMORY_FILE)                      |
 |    - app.core.agent_bridge._agent = None (invalidates cached LLM singleton)   |
 +-------------------------------------------------------------------------------+
@@ -81,3 +82,4 @@ Every reload pathway is verified through unit tests:
 - `CFGRELOAD-007`: Safe handling when consumer modules are not in `sys.modules`
 - `CFGRELOAD-008`: Backend consumer module propagation (`app.api.memory`, `app.core.approval_bridge`, `app.core.agent_bridge`)
 - `CFGRELOAD-009`: Live propagation into `app.api.chat` (`CHAT_SYSTEM_PROMPT`) ensuring `reset_chat()` seeds fresh prompts
+- `CFGRELOAD-010`: Derived `app.core.tool_bridge.BASE_DIR` synchronization

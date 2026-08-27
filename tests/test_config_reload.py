@@ -216,3 +216,22 @@ def test_reload_propagates_chat_api_system_prompt_live(tmp_path, monkeypatch):
     config_reload.reload_all()
 
     assert dummy_chat.CHAT_SYSTEM_PROMPT == "Fresh live system prompt"
+
+
+@pytest.mark.tid("CFGRELOAD-010")
+def test_reload_recomputes_tool_bridge_base_dir(tmp_path, monkeypatch):
+    """app.core.tool_bridge.BASE_DIR mirrors fs_tools.BASE_DIR after reload."""
+    custom_ws = tmp_path / "custom_workspace"
+    custom_ws.mkdir()
+    env_file = tmp_path / ".env"
+    env_file.write_text(f"WORKSPACE_DIR={custom_ws}\n", encoding="utf-8")
+    monkeypatch.setattr(config_reload, "_AGENT_DIR", tmp_path)
+
+    import types
+    dummy_tool_bridge = types.ModuleType("app.core.tool_bridge")
+    dummy_tool_bridge.BASE_DIR = None
+    monkeypatch.setitem(sys.modules, "app.core.tool_bridge", dummy_tool_bridge)
+
+    config_reload.reload_all()
+
+    assert dummy_tool_bridge.BASE_DIR == custom_ws.resolve()

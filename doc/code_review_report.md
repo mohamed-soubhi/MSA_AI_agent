@@ -4,7 +4,7 @@
 **Date:** 2026-08-27  
 **Status:** Active Defects Remediated & Dropped from Backlog  
 **HTML Version:** [code_review_report.html](code_review_report.html)  
-**Test Suite:** 474 Passed / 0 Failed (100% across core agent & backend)  
+**Test Suite:** 475 Passed / 0 Failed (100% across core agent & backend)  
 
 ---
 
@@ -19,7 +19,7 @@ The active defect backlog currently contains **0 open defects**, and the one pre
 | **Active / Open Defects** | **0** | Clean active backlog |
 | **Remediated & Dropped Issues** | **10** | Resolved in code and verified by test suite |
 | **Documented Design Tradeoffs** | **0** | ARCH-01 (formerly accepted) is now fixed |
-| **Test Suite Pass Rate** | **100% (474/474)** | Zero failing tests across 17 test modules (422 agent + 52 BE) |
+| **Test Suite Pass Rate** | **100% (475/475)** | Zero failing tests across 17 test modules (423 agent + 52 BE) |
 | **Modules Audited** | **13 Source Modules** | ~3,700 LoC core + ~6,000 LoC tests/docs |
 
 ---
@@ -69,7 +69,7 @@ The following 9 issues have been remediated in code and dropped from the active 
 | `fs_tools.py` | Sandboxed filesystem CRUD tools | resolve_path + Win reserved + Symlink check | Stateless I/O | 49 tests | **Robust** |
 | `human_tools.py` | Conversational HITL clarification | Option validation & confirm() delegation | Blocking stdin | 20 tests | **Robust** |
 | `log_config.py` | Logging configuration switches | Env var overrides | Immutable constants | 25 tests | **Robust** |
-| `config_reload.py` | Hot-reload coordinator for live settings | In-place module reload & sys.modules lookup | Safe single-threaded reload | 9 tests | **Robust** |
+| `config_reload.py` | Hot-reload coordinator for live settings | In-place module reload & sys.modules lookup | Safe single-threaded reload | 10 tests | **Robust** |
 | `memory.py` | Cross-session durable memory | Atomic replace, score search & deduplication | Thread lock + Atomic rename | 43 tests | **Robust** |
 | `shared.py` | ReAct loop, Ollama wrapper & timeout | N-gram cycle detection & token accumulator | ThreadPoolExecutor per tool | 61 tests | **Robust** |
 | `shell_tools.py` | Allowlisted terminal execution | Compound operator gate & killpg | Process group scoping | 47 tests | **Robust** |
