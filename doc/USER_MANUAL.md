@@ -165,6 +165,11 @@ default** underneath, with a one-click "Use default" button.
 - **Deliberate Unlock Gate**: Editing is locked by default to prevent
   stray clicks. A random 5-digit verification code appears in the top
   banner; typing the code enables editing and activates the **Save** button.
+- **Close button**: saves any pending edits, then shuts down the BE
+  service (same graceful shutdown as `Ctrl+C` in its terminal) — asks
+  for confirmation first, but is **not** behind the unlock gate above,
+  so anyone who can load `/config` can use it. Restart with
+  `run_be.sh`/`run_be.bat` to use `/chat` or `/config` again.
 - **Read-Only Memory Inspector**: Below the config form, a live **Memory**
   section displays existing entries in `memory.json` (facts and session summaries)
   and cumulative all-time token usage.

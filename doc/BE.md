@@ -19,7 +19,8 @@ BE/
 │   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
 │   │   ├── chat.py        — GET/POST /api/chat/* (tool-calling chat, incl. GET /history, see "Chat page" below)
 │   │   ├── memory.py      — GET /api/memory (read-only view of memory.json for config UI)
-│   │   └── workspace.py   — GET /api/workspace/file (sandboxed file preview for chat's Preview tab)
+│   │   ├── workspace.py   — GET /api/workspace/file(-raw) (sandboxed file preview for chat's Preview tab)
+│   │   └── shutdown.py    — POST /api/shutdown (config page's Close button -- SIGTERM to this process)
 │   ├── core/
 │   │   ├── config.py           — Settings (pydantic-settings), BE_-prefixed env vars
 │   │   ├── config_schema.py    — field list + .env read/write + default-value resolver
@@ -37,6 +38,7 @@ BE/
 │   ├── test_models.py
 │   ├── test_chat.py
 │   ├── test_memory_api.py    — read-only memory API tests
+│   ├── test_shutdown.py      — POST /api/shutdown (os.kill mocked, never sends a real signal)
 │   ├── test_workspace.py     — GET /api/workspace/file (Preview tab backend)
 │   └── test_approval_bridge.py  — direct unit tests of ConversationTurn's approval/human handoff
 ├── nginx/
@@ -227,6 +229,19 @@ Nginx, `http://<host>/config`) while the BE service is running.
   reload only reaches modules already imported inside the BE process.
   A `CLI_agent.py` session in progress is unaffected; start a new one
   to pick up a saved change.
+- **Close button** — saves any pending edits (if editing is unlocked),
+  then `POST /api/shutdown` (`app/api/shutdown.py`) sends `SIGTERM` to
+  the BE process's own PID: the exact same signal `Ctrl+C`/`kill`
+  sends, so it runs the normal graceful-shutdown path (closes out any
+  open chat JSONL log with `session_end(reason="server_shutdown")`,
+  same as any other shutdown). A browser `confirm()` is the only guard
+  — **not gated by the unlock code** the way Save is, so with the
+  default `BE_HOST=0.0.0.0` binding anyone who can reach `/config` on
+  the network can shut the service down without ever unlocking
+  editing. `run_be.sh`/`.bat` always launch with `--reload` (a
+  reloader-supervisor + worker process pair) — this stops the worker;
+  the supervisor/`uv run` wrapper lingers (serving nothing) until its
+  own terminal is closed.
 - Values are double-quoted and escaped on write, so `SYSTEM_PROMPT`'s
   embedded newlines round-trip correctly through `python-dotenv` on
   the next load.
