@@ -125,13 +125,32 @@ Nginx, `http://<host>/config`) while the BE service is running.
   `log_config.py`) go to `agent/.env`; `BE_`-prefixed settings go to
   `BE/.env`. Existing lines (comments, unrelated keys) are preserved —
   only the submitted keys are added or updated in place.
-- **Not live** — saving does **not** restart or hot-reload anything.
-  Both the agent and this BE process read their `.env` file exactly
-  once, at startup (`agent_config.py`/`log_config.py` call
-  `load_dotenv()` on import; BE's `Settings` reads `env_file` the same
-  way). A saved change takes effect the **next time each process is
-  restarted** — this is deliberate, not a bug: exactly what was asked
-  for ("saved in .env that can be loaded when restart").
+- **Live, except three settings**: `save_config()` calls
+  `config_reload.reload_all()` (agent settings) and
+  `get_settings.cache_clear()` (BE settings) right after writing the
+  `.env` files, so the change applies to THIS running BE process
+  immediately. `BE_HOST`/`BE_PORT`/`BE_CORS_ORIGINS` are the exception
+  — bound to the process at startup (socket already listening, CORS
+  middleware already installed into the ASGI app), so those three
+  still need a real restart no matter what.
+- **Why agent settings needed their own reload module**
+  (`agent/config_reload.py`): nearly every consumer did
+  `from agent_config import X`, copying the *value* into its own
+  namespace at import time — reassigning `agent_config.X` later never
+  reaches that copy. `reload_all()` reloads `agent_config`/`log_config`
+  in place via `importlib.reload()`, then explicitly pushes each
+  recomputed value into every already-imported module that copied it
+  (`shared`, `shell_tools`, `fs_tools`, `confirm`, `memory`, and this
+  BE's own `agent_bridge`/`approval_bridge`/`tool_bridge`/`api/memory`),
+  looked up through `sys.modules` — never a fresh import, so it can't
+  create circular-import ordering issues. `OllamaAgent.model` is an
+  instance attribute set once at construction, not a module-level
+  name, so a model change instead drops `agent_bridge`'s cached
+  singleton — the next chat request builds a fresh one.
+- **The standalone CLI agent is a separate OS process** — this
+  reload only reaches modules already imported inside the BE process.
+  A `CLI_agent.py` session in progress is unaffected; start a new one
+  to pick up a saved change.
 - Values are double-quoted and escaped on write, so `SYSTEM_PROMPT`'s
   embedded newlines round-trip correctly through `python-dotenv` on
   the next load.

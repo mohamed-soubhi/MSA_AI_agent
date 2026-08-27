@@ -150,12 +150,18 @@ Ollama installation and lists every model it knows about — split into
 quantization) and **Cloud** (resolved via ollama.com). Click one to
 fill the field. Edit what you want, click **Save**.
 
-**Important**: saving does **not** apply changes to an already-running
-agent or BE process. Both only read their settings once, at startup.
-After saving:
-1. Stop the agent (if running) and restart it (`python3
-   agent/CLI_agent.py` again) — it'll pick up everything you changed.
-2. If you changed a `BE_*` setting, restart the BE service too.
+**Save applies immediately to the running BE process** — the web chat
+page and any settings it reads pick up the new value on your very next
+message, no restart needed. Three exceptions still need a BE restart:
+`BE_HOST`, `BE_PORT`, `BE_CORS_ORIGINS` — these are bound to the
+process at startup (the socket is already listening, CORS middleware
+already installed), so no amount of hot-reloading can change them
+mid-flight.
+
+**The standalone CLI agent (`uv run agent/CLI_agent.py`) is a separate
+OS process** — Save only reaches whatever's running inside the BE
+service. A CLI session already in progress keeps whatever settings it
+started with; start a new CLI session to pick up what you just saved.
 
 Under the hood, this writes to two files — `agent/.env` for agent
 settings, `BE/.env` for BE settings — using the exact same env-var

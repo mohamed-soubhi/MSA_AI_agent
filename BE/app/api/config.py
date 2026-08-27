@@ -10,8 +10,18 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.core import config_schema
+from app.core.config import get_settings
+
+import config_reload  # noqa: E402 -- agent/ added to sys.path by config_schema
 
 router = APIRouter(prefix="/api/config", tags=["config"])
+
+# Bound to the process at startup (socket already listening, CORS
+# middleware already installed into the ASGI app) -- these three
+# genuinely cannot take effect without restarting the BE service, no
+# matter what. Everything else (agent settings + all other BE_*
+# settings) applies immediately on Save.
+_RESTART_REQUIRED_KEYS = {"BE_HOST", "BE_PORT", "BE_CORS_ORIGINS"}
 
 
 class ConfigField(BaseModel):
@@ -45,18 +55,31 @@ def get_config() -> ConfigResponse:
 
 @router.post("", response_model=SaveConfigResponse)
 def save_config(request: SaveConfigRequest) -> SaveConfigResponse:
-    """Write submitted values to agent/.env and/or BE/.env.
+    """Write submitted values to agent/.env and/or BE/.env, then apply
+    them live in this running process -- see config_reload.py for why
+    agent settings need active propagation (most were copied by value
+    into their consumer modules at import time) and get_settings's
+    lru_cache for why BE settings don't (every BE module already reads
+    settings via a fresh get_settings() call).
 
-    Does NOT restart or hot-reload anything -- both the agent and this
-    BE process only read their .env file once, at startup. Changes take
-    effect the next time each process is restarted.
+    BE_HOST/BE_PORT/BE_CORS_ORIGINS are the one exception: the socket
+    is already listening and the CORS middleware already installed by
+    the time Save runs, so those three still need a real restart.
     """
     saved = config_schema.save_values(request.values)
     total = len(saved["agent"]) + len(saved["be"])
-    return SaveConfigResponse(
-        saved=saved,
-        message=(
-            f"Saved {total} setting(s). Restart the agent and/or BE "
-            "service for changes to take effect."
-        ),
-    )
+
+    if saved["agent"]:
+        config_reload.reload_all()
+    if saved["be"]:
+        get_settings.cache_clear()
+
+    restart_needed = sorted(_RESTART_REQUIRED_KEYS & set(saved["be"]))
+    message = f"Saved and applied {total} setting(s) immediately."
+    if restart_needed:
+        message += (
+            f" Restart the BE service for: {', '.join(restart_needed)} "
+            "(bound to the process at startup)."
+        )
+
+    return SaveConfigResponse(saved=saved, message=message)
