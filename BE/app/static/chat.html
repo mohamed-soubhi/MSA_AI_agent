@@ -381,7 +381,7 @@
     </div>
     <div class="pane-view" id="pane-preview">
       <div id="preview-path"></div>
-      <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
+      <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin"></iframe>
       <div class="placeholder" id="preview-placeholder">
         Click "View" on an HTML file the agent wrote to preview it here.
       </div>
@@ -651,24 +651,31 @@ const previewPlaceholder = document.getElementById("preview-placeholder");
 // Global on purpose -- called from renderMarkdown()'s inline onclick
 // (the "View" button text is generated as an HTML string, not a real
 // DOM node with an addEventListener at creation time).
-async function previewFile(path) {
+function previewFile(path) {
   switchTab("preview");
   previewPath.textContent = path;
   previewPlaceholder.textContent = "Loading…";
   previewPlaceholder.style.display = "block";
   previewFrame.style.display = "none";
-  try {
-    const res = await fetch(`/api/workspace/file?path=${encodeURIComponent(path)}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Could not load file");
+  // Navigate the iframe to a real URL instead of fetching the content
+  // and injecting it via srcdoc -- srcdoc gives the frame an opaque/
+  // null origin that a full interactive page (e.g. a Plotly report,
+  // which may load or rely on normal same-origin document behavior)
+  // can misbehave under. A real src= navigation gives it BE's own
+  // origin, paired with sandbox="allow-scripts allow-same-origin" on
+  // the <iframe> itself -- safe here because the served content
+  // already passed the same sandboxed resolve_path() check as
+  // everything else, not arbitrary third-party content.
+  previewFrame.onload = () => {
     previewPlaceholder.style.display = "none";
     previewFrame.style.display = "block";
-    previewFrame.srcdoc = data.content;
-  } catch (err) {
+  };
+  previewFrame.onerror = () => {
     previewFrame.style.display = "none";
     previewPlaceholder.style.display = "block";
-    previewPlaceholder.textContent = "Error: " + err.message;
-  }
+    previewPlaceholder.textContent = "Error: could not load file";
+  };
+  previewFrame.src = `/api/workspace/file-raw?path=${encodeURIComponent(path)}`;
 }
 
 async function respond(requestId, body) {

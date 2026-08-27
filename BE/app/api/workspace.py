@@ -1,9 +1,7 @@
-"""GET /api/workspace/file -- read-only preview of a file the agent
-wrote inside its own sandbox (workspace/), for the chat page's Preview
-tab (see app/static/chat.html). Data-analysis output is typically an
-HTML report/plot the agent wrote with write_file -- this lets the chat
-page load that file's content into a sandboxed <iframe srcdoc="...">
-without a raw file:// link or a second unsandboxed static-file route.
+"""GET /api/workspace/file(-raw) -- read-only preview of a file the
+agent wrote inside its own sandbox (workspace/), for the chat page's
+Preview tab (see app/static/chat.html). Data-analysis output is
+typically an HTML report/plot the agent wrote with write_file.
 
 Deliberately reuses fs_tools.read_file()/resolve_path() -- the SAME
 sandbox enforcement (control-char checks, ".." rejection, symlink
@@ -15,6 +13,7 @@ import sys
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 BE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -46,3 +45,31 @@ def get_workspace_file(path: str) -> WorkspaceFileResponse:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return WorkspaceFileResponse(path=path, content=content)
+
+
+@router.get("/file-raw")
+def get_workspace_file_raw(path: str) -> Response:
+    """Same file, same sandbox, but served as a real HTML document
+    (Content-Type: text/html) for the Preview iframe to navigate to
+    directly (<iframe src="...">) instead of JSON-fetching the content
+    and injecting it via srcdoc.
+
+    Why this exists on top of GET /file: srcdoc gives the iframe an
+    opaque/null origin (sandbox="allow-scripts" alone, no
+    allow-same-origin -- adding that to a srcdoc frame doesn't grant a
+    real origin the way navigating to an actual URL does). A Plotly
+    report is a full interactive page -- its embedded/CDN-loaded
+    plotly.js expects normal same-origin document semantics. Reported
+    symptom: Plotly HTML wouldn't render via the old srcdoc path.
+    Navigating the iframe to this endpoint gives it BE's own real
+    origin, which chat.html now pairs with
+    sandbox="allow-scripts allow-same-origin" -- safe here specifically
+    because the served content already passed the same sandbox
+    resolve_path() check as everything else, not arbitrary third-party
+    content.
+    """
+    try:
+        content = read_file(path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return Response(content=content, media_type="text/html")
