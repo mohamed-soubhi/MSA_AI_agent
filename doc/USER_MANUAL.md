@@ -37,7 +37,7 @@ That's it — no `pip install`, no manually activating a venv.
 `run_be.sh`/`.bat` and `run_cli_agent.sh`/`.bat` all invoke `uv run`
 internally, which resolves `.venv` automatically (creating it on first
 use if `uv sync` wasn't run explicitly). See
-[§10 "Working with uv"](#10-working-with-uv-dependency-management)
+[§9 "Working with uv"](#9-working-with-uv-dependency-management)
 below for adding dependencies, offline use, CI, and other cases.
 
 You also need [Ollama](https://ollama.com) installed and running
@@ -190,7 +190,11 @@ Next to the Model field, a **"Load models"** button queries your local
 Ollama installation and lists every model it knows about — split into
 **Local** (already pulled, with real specs: size, parameter count,
 quantization) and **Cloud** (resolved via ollama.com). Click one to
-fill the field. Edit what you want, click **Save**.
+fill the field.
+
+Next to directory fields (`WORKSPACE_DIR`, `LOG_DIR`), a **"Browse"** button
+opens an interactive folder picker dropdown backed by `GET /api/config/browse`,
+allowing single-click folder selection from the local host filesystem. Edit what you want, click **Save**.
 
 **Save applies immediately to the running BE process** — the web chat
 page and any settings it reads pick up the new value on your very next
@@ -237,7 +241,7 @@ generation commands.
 | Recover from a stuck/looping agent | It self-detects (`MAX_REPEAT_CALLS`, cycle detection) and stops on its own — see [shared.md](shared.md) |
 | See what happened in a past session | `logs/*.jsonl` (one file per session by default) — see [chat_logger.md](chat_logger.md) |
 
-## 10. Working with uv (dependency management)
+## 9. Working with uv (dependency management)
 
 Everything below runs from the project root, where `pyproject.toml` +
 `uv.lock` live. `uv.lock` is committed — it pins every dependency
@@ -267,7 +271,7 @@ whatever else is installed system-wide.
 machine-local, reproducible, and safe to delete any time. `uv.lock` is
 the only thing that needs to be committed for reproducibility.
 
-## 11. Troubleshooting
+## 10. Troubleshooting
 
 - **"Blocked: 'X' is not in the allowlist"** — the agent tried to run a
   program not in `SHELL_ALLOWED`. Add it via the config editor if it's

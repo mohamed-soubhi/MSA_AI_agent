@@ -239,6 +239,12 @@
                 <td>Spawns isolated subprocess stripping env vars to re-import defaults directly from source code.</td>
               </tr>
               <tr>
+                <td><code>BE/app/api/config.py</code></td>
+                <td>Config editor API &amp; host filesystem directory browser.</td>
+                <td><code>get_config()</code>, <code>save_config()</code>, <code>browse_dirs()</code></td>
+                <td>Comment-preserving diff updates to <code>.env</code>; directory listing for <code>WORKSPACE_DIR</code>/<code>LOG_DIR</code>; triggers <code>config_reload.reload_all()</code>.</td>
+              </tr>
+              <tr>
                 <td><code>BE/app/api/chat.py</code></td>
                 <td>FastAPI chat endpoints: streaming SSE, approval responder, and history reset. Chat page renders answers with a hand-written markdown-to-safe-HTML converter; approvals/questions open in a modal instead of interleaving into the transcript; a two-tab Activity/Preview side panel shows live tool calls or a sandboxed preview of an HTML report the agent wrote.</td>
                 <td><code>stream_chat()</code>, <code>respond_to_turn()</code>, <code>reset_chat()</code>, <code>get_history()</code></td>

@@ -1150,7 +1150,7 @@ def write_svgs():
     <text class="ns" x="35" y="286">│   └── agent_config.py# Central settings &amp; env</text>
     <text class="ns" x="25" y="310" fill="#a78bfa">├── BE/              # Backend Service</text>
     <text class="ns" x="35" y="328">│   ├── app/main.py    # FastAPI application</text>
-    <text class="ns" x="35" y="346">│   ├── app/api/       # chat, config, models, health</text>
+    <text class="ns" x="35" y="346">│   ├── app/api/       # chat, config, models, health, memory, ws, shutdown</text>
     <text class="ns" x="35" y="364">│   ├── app/core/      # approval, agent, tool bridges</text>
     <text class="ns" x="35" y="382">│   ├── app/static/    # chat.html, config.html</text>
     <text class="ns" x="35" y="400">│   └── nginx/         # nginx.conf reverse proxy</text>
