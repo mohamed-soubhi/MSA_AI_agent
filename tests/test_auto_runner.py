@@ -164,6 +164,26 @@ class TestRunWithAutoMode:
         assert seen_auto_mode_during_call["max_tool_calls"] == MAX_AUTO_TOOL_CALLS
         assert len(seen_auto_mode_during_call["messages"]) == 3
 
+    @pytest.mark.tid("AUTORUN-019")
+    def test_unlimited_mode_passes_none_max_tool_calls(self, monkeypatch, tmp_path):
+        import fs_tools
+        monkeypatch.setattr(fs_tools, "resolve_path", lambda path: tmp_path / path)
+        monkeypatch.setattr(ar_mod, "confirm", lambda action, **kwargs: True)
+        monkeypatch.setattr(ar_mod, "UNLIMITED_MODE", True)
+
+        seen = {}
+
+        def fake_run_agent(agent, messages, tools, tool_map, chat_logger=None, max_tool_calls=None):
+            seen["max_tool_calls"] = max_tool_calls
+            return "Executed successfully."
+
+        monkeypatch.setattr(ar_mod, "run_agent", fake_run_agent)
+
+        agent = FakeAgent(plan_content="1. Do it.")
+        run_with_auto_mode(agent, "do something", tools=["t"], tool_map={"t": lambda: None})
+
+        assert seen["max_tool_calls"] is None
+
     @pytest.mark.tid("AUTORUN-010")
     def test_auto_mode_reset_to_false_after_successful_run(self, monkeypatch, tmp_path):
         import fs_tools

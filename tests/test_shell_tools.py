@@ -312,6 +312,14 @@ class TestExecution:
         run_command("python3 slow_script.py")
         assert killpg_calls == [(fake.pid, st_mod.signal.SIGKILL)]
 
+    @pytest.mark.tid("SHELL-034")
+    def test_unlimited_mode_passes_none_timeout_to_communicate(self, monkeypatch, always_confirm):
+        monkeypatch.setattr(st_mod, "UNLIMITED_MODE", True)
+        popen, fake = fake_popen_factory(stdout="hi")
+        monkeypatch.setattr(st_mod.subprocess, "Popen", popen)
+        run_command("echo hi")
+        assert fake.communicate_calls == [None]
+
     @pytest.mark.tid("SHELL-033")
     def test_killpg_failure_does_not_crash(self, monkeypatch, always_confirm):
         """If the process already exited between timeout and killpg

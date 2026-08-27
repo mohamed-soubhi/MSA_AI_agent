@@ -7,6 +7,7 @@ import sys
 import dotenv
 from dotenv.main import load_dotenv as real_load_dotenv
 import agent_config
+import auto_runner
 import config_reload
 import fs_tools
 import shell_tools
@@ -35,6 +36,10 @@ def isolate_config_and_dotenv(monkeypatch):
     orig_mem_entries = memory.MEMORY_MAX_ENTRIES
     orig_tool_timeout = shared.TOOL_TIMEOUT_SECONDS
     orig_obs_chars = shared.MAX_OBSERVATION_CHARS
+    orig_confirm_unlimited = confirm.UNLIMITED_MODE
+    orig_shared_unlimited = shared.UNLIMITED_MODE
+    orig_shell_unlimited = shell_tools.UNLIMITED_MODE
+    orig_auto_unlimited = auto_runner.UNLIMITED_MODE
 
     yield
 
@@ -53,6 +58,10 @@ def isolate_config_and_dotenv(monkeypatch):
     memory.MEMORY_MAX_ENTRIES = orig_mem_entries
     shared.TOOL_TIMEOUT_SECONDS = orig_tool_timeout
     shared.MAX_OBSERVATION_CHARS = orig_obs_chars
+    confirm.UNLIMITED_MODE = orig_confirm_unlimited
+    shared.UNLIMITED_MODE = orig_shared_unlimited
+    shell_tools.UNLIMITED_MODE = orig_shell_unlimited
+    auto_runner.UNLIMITED_MODE = orig_auto_unlimited
 
 
 @pytest.mark.tid("CFGRELOAD-001")
@@ -235,3 +244,22 @@ def test_reload_recomputes_tool_bridge_base_dir(tmp_path, monkeypatch):
     config_reload.reload_all()
 
     assert dummy_tool_bridge.BASE_DIR == custom_ws.resolve()
+
+
+@pytest.mark.tid("CFGRELOAD-011")
+def test_reload_propagates_unlimited_mode_to_every_gated_module(tmp_path, monkeypatch):
+    """UNLIMITED_MODE is read as a bare global by shared/confirm/
+    shell_tools/auto_runner (see agent_config.py's own comment) --
+    reload_all() must push a flipped value into every one of them, not
+    just agent_config itself."""
+    env_file = tmp_path / ".env"
+    env_file.write_text("UNLIMITED_MODE=true\n", encoding="utf-8")
+    monkeypatch.setattr(config_reload, "_AGENT_DIR", tmp_path)
+
+    config_reload.reload_all()
+
+    assert agent_config.UNLIMITED_MODE is True
+    assert shared.UNLIMITED_MODE is True
+    assert confirm.UNLIMITED_MODE is True
+    assert shell_tools.UNLIMITED_MODE is True
+    assert auto_runner.UNLIMITED_MODE is True

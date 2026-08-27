@@ -53,6 +53,29 @@ source).
 | `_env_set(name, default)` | Comma-separated env value → a `set` of trimmed, non-empty items; missing → `default`. |
 | `_env_list(name, default)` | Same as `_env_set` but returns a `list` (order preserved); missing → `default`. |
 
+## Unlimited mode
+
+| Constant | Env var | Default |
+|---|---|---|
+| `UNLIMITED_MODE` | `UNLIMITED_MODE` | `False` |
+
+One switch that removes every time/trial cap listed below at once —
+`CHAT_TIMEOUT_SECONDS`, `CHAT_STREAM_IDLE_TIMEOUT_SECONDS`,
+`MAX_ITERATIONS`, `MAX_WALL_SECONDS`, `TOOL_TIMEOUT_SECONDS`,
+`CONFIRM_TIMEOUT_SECONDS`, `SHELL_TIMEOUT_SECONDS`,
+`MAX_AUTO_TOOL_CALLS` — for legitimately long-running work (a big
+data-analysis/training pipeline) that the usual defaults would cut off
+mid-run, e.g. `MAX_WALL_SECONDS`'s default 600s firing on real work,
+not a hang. Each site (`shared.py`, `confirm.py`, `shell_tools.py`,
+`auto_runner.py`) checks this global directly, not via that cap's own
+value, so flipping it always means "wait/run as long as it takes"
+regardless of what number the cap happens to be set to. Deliberately
+does **not** disable `MAX_REPEAT_CALLS` (`shared.py`'s stuck-loop
+detector) — the same tool call repeating with zero progress is a
+malfunction, never legitimate work, so it still stops the run even
+under unlimited mode. Hot-reloadable via `config_reload.py` like every
+other setting here — see [config_reload.md](config_reload.md).
+
 ## Settings by module
 
 ### Ollama / chat (`shared.py` — `OllamaAgent`)

@@ -193,6 +193,14 @@ class TestEffectiveToolTimeout:
         monkeypatch.setattr(shared, "CONFIRM_TIMEOUT_SECONDS", None)
         assert _effective_tool_timeout("run_command") is None
 
+    @pytest.mark.tid("SHARED-067")
+    def test_unlimited_mode_returns_none_regardless_of_tool_or_confirm_timeout(self, monkeypatch):
+        monkeypatch.setattr(shared, "TOOL_TIMEOUT_SECONDS", 30)
+        monkeypatch.setattr(shared, "CONFIRM_TIMEOUT_SECONDS", 120)
+        monkeypatch.setattr(shared, "UNLIMITED_MODE", True)
+        assert _effective_tool_timeout("list_directory") is None
+        assert _effective_tool_timeout("run_command") is None
+
 
 # --------------------------------------------------------------------------
 # OllamaAgent.chat
@@ -287,6 +295,21 @@ class TestOllamaAgentChat:
         assert result is response
         assert agent.client.calls == 2
 
+    @pytest.mark.tid("SHARED-069")
+    def test_unlimited_mode_bypasses_chat_timeout(self, monkeypatch):
+        monkeypatch.setattr(shared, "CHAT_TIMEOUT_SECONDS", 0.05)
+        monkeypatch.setattr(shared, "UNLIMITED_MODE", True)
+
+        class SlowClient:
+            def chat(self, model, messages, tools=None, stream=False):
+                time.sleep(0.15)  # longer than the 0.05s chat timeout above
+                return SimpleNamespace(message=SimpleNamespace(content="ok", tool_calls=None))
+
+        agent = OllamaAgent(model="test-model")
+        agent.client = SlowClient()
+        result = agent.chat([{"role": "user", "content": "hi"}])
+        assert result.message.content == "ok"
+
     @pytest.mark.tid("SHARED-022")
     def test_raises_friendly_runtime_error_after_all_retries_fail(self, monkeypatch):
         monkeypatch.setattr(shared, "CHAT_RETRY_BACKOFF_SECONDS", 0)
@@ -371,6 +394,34 @@ class TestOllamaAgentChatStream:
         agent.client = BoomClient()
         with pytest.raises(RuntimeError, match="Could not reach Ollama model 'test-model'"):
             list(agent.chat_stream([{"role": "user", "content": "hi"}]))
+
+    @pytest.mark.tid("SHARED-068")
+    def test_unlimited_mode_bypasses_stream_idle_timeout(self, monkeypatch):
+        import shared as shared_module
+        monkeypatch.setattr(shared_module, "CHAT_STREAM_IDLE_TIMEOUT_SECONDS", 0.05)
+        monkeypatch.setattr(shared_module, "UNLIMITED_MODE", True)
+
+        class SlowThenYieldsStream:
+            def __init__(self):
+                self._done = False
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                if self._done:
+                    raise StopIteration
+                self._done = True
+                time.sleep(0.15)  # longer than the 0.05s idle timeout above
+                return SimpleNamespace(message=SimpleNamespace(content="ok"))
+
+        class SlowClient:
+            def chat(self, **kwargs):
+                return SlowThenYieldsStream()
+
+        agent = OllamaAgent(model="test-model")
+        agent.client = SlowClient()
+        assert list(agent.chat_stream([{"role": "user", "content": "hi"}])) == ["ok"]
 
     @pytest.mark.tid("SHARED-061")
     def test_stall_raises_runtime_error_after_idle_timeout(self, monkeypatch):
@@ -644,6 +695,37 @@ class TestRunAgent:
             agent, [], tools=[], tool_map={}, verbose=False, max_wall_seconds=-1,
         )
         assert "exceeded maximum run time" in result
+
+    @pytest.mark.tid("SHARED-070")
+    def test_unlimited_mode_skips_wall_timeout(self, monkeypatch):
+        import shared as shared_module
+        monkeypatch.setattr(shared_module, "UNLIMITED_MODE", True)
+        agent = FakeAgent([make_response(content="done")])
+        result = run_agent(
+            agent, [], tools=[], tool_map={}, verbose=False, max_wall_seconds=-1,
+        )
+        assert result == "done"
+
+    @pytest.mark.tid("SHARED-071")
+    def test_unlimited_mode_ignores_max_iterations_cap(self, monkeypatch):
+        import shared as shared_module
+        monkeypatch.setattr(shared_module, "UNLIMITED_MODE", True)
+
+        def echo(text):
+            return text
+
+        # Six rounds total, past a max_iterations=3 cap that would
+        # normally stop this at round 3 with "too many tool rounds".
+        responses = [
+            make_response(tool_calls=[{"name": "echo", "arguments": {"text": str(i)}}])
+            for i in range(5)
+        ] + [make_response(content="finally done")]
+        agent = FakeAgent(responses)
+        result = run_agent(
+            agent, [], tools=[echo], tool_map={"echo": echo}, verbose=False,
+            max_iterations=3, chat_logger=NullChatLogger(),
+        )
+        assert result == "finally done"
 
     @pytest.mark.tid("SHARED-038")
     def test_defaults_to_null_chat_logger_when_none_passed(self):

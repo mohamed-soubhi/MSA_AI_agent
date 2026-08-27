@@ -388,3 +388,20 @@ class TestConfirmBackend:
         monkeypatch.setattr("builtins.input", lambda prompt: "y")
         assert confirm("run command", timeout_seconds=None) is True
 
+    @pytest.mark.tid("CONFIRM-043")
+    def test_unlimited_mode_overrides_explicit_timeout_to_none(self, monkeypatch):
+        monkeypatch.setattr(confirm_mod, "UNLIMITED_MODE", True)
+        calls = []
+
+        def mock_backend(action, timeout):
+            calls.append((action, timeout))
+            return True
+
+        confirm_mod.set_confirm_backend(mock_backend)
+        try:
+            res = confirm("restart database", timeout_seconds=45)
+            assert res is True
+            assert calls[0] == ("restart database", None)
+        finally:
+            confirm_mod.clear_confirm_backend()
+
