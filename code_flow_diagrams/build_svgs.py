@@ -696,7 +696,7 @@ def write_svgs():
   <g transform="translate(380, 160)">
     <rect class="box" width="340" height="60" fill="#1e293b" stroke="#14b8a6"/>
     <text class="nt" x="15" y="22">1. Control Character &amp; Null Byte Check</text>
-    <text class="ns" x="15" y="40">Rejects ord(ch) &lt; 0x20 or ch == 0x7f (prevents \x00 smuggling)</text>
+    <text class="ns" x="15" y="40">Rejects ord(ch) &lt; 0x20 or ch == 0x7f (prevents NUL smuggling)</text>
   </g>
   <path d="M 550 130 L 550 160" class="wt" marker-end="url(#ar6)"/>
 
@@ -1094,7 +1094,8 @@ def write_svgs():
     <text class="ns" x="15" y="180">3. Escapes Multi-Line Values:</text>
     <text class="ns" x="25" y="200">• Double-quotes &amp; escapes SYSTEM_PROMPT newlines</text>
     <text class="ns" x="25" y="218">• Round-trips cleanly through python-dotenv on next boot</text>
-    <text class="ns" x="15" y="245">4. Safe Lifecycle: Takes effect on next process restart</text>
+    <text class="ns" x="15" y="245">4. Live: config_reload.reload_all() applies immediately (see next diagram) --</text>
+    <text class="ns" x="25" y="263">only BE_HOST/PORT/CORS_ORIGINS still need a restart</text>
   </g>
 
   <!-- Models Dropdown API -->
@@ -1197,7 +1198,94 @@ def write_svgs():
 </svg>"""
     (SVG_DIR / "module_dependencies.svg").write_text(svg11, encoding="utf-8")
 
-    print(f"Generated 11 standalone SVGs in {SVG_DIR}")
+    svg12 = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 900" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg12" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#451a03"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+    <marker id="ar12" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 8 5 L 0 9 z" fill="#f59e0b"/></marker>
+  </defs>
+  <style>
+    .t { font-family: system-ui, sans-serif; font-weight: 800; font-size: 20px; fill: #f8fafc; }
+    .st { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+    .nt { font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; fill: #ffffff; }
+    .ns { font-family: system-ui, sans-serif; font-size: 11px; fill: #cbd5e1; }
+    .box { rx: 8; ry: 8; stroke-width: 1.5; }
+    .wa { stroke: #f59e0b; stroke-width: 2.5; fill: none; }
+  </style>
+
+  <rect width="1150" height="900" rx="16" fill="url(#bg12)" stroke="#b45309" stroke-width="2"/>
+  <g transform="translate(40, 24)">
+    <text class="t" x="0" y="24">CONFIG HOT-RELOAD PROPAGATION (agent/config_reload.py)</text>
+    <text class="st" x="0" y="44">Save Applies Immediately -- No Restart Required, Except Three Process-Startup-Bound BE Settings</text>
+  </g>
+
+  <g transform="translate(60, 80)">
+    <rect class="box" width="1030" height="70" fill="#78350f" stroke="#f59e0b"/>
+    <text class="nt" x="15" y="26">1. POST /api/config -- config_schema.save_values(request.values)</text>
+    <text class="ns" x="15" y="48">Writes ONLY changed keys to agent/.env and/or BE/.env. An empty value REMOVES that key's line (falls back to code default) instead of writing KEY="".</text>
+  </g>
+  <path d="M 575 150 L 575 180" class="wa" marker-end="url(#ar12)"/>
+
+  <g transform="translate(60, 180)">
+    <rect class="box" width="1030" height="90" fill="#1e293b" stroke="#38bdf8"/>
+    <text class="nt" x="15" y="26">2. If agent keys changed: config_reload.reload_all()</text>
+    <text class="ns" x="15" y="48">load_dotenv(agent/.env, override=True) -- authoritative over whatever this process already loaded --</text>
+    <text class="ns" x="15" y="66">then importlib.reload(agent_config), importlib.reload(log_config): re-executes both modules IN PLACE (same object identity).</text>
+    <text class="ns" x="15" y="84">If BE keys changed: get_settings.cache_clear() -- every BE module already reads via a fresh get_settings() call, so this alone is the whole fix.</text>
+  </g>
+  <path d="M 575 270 L 575 300" class="wa" marker-end="url(#ar12)"/>
+
+  <g transform="translate(60, 300)">
+    <rect class="box" width="500" height="230" fill="#1e293b" stroke="#a78bfa"/>
+    <text class="nt" x="15" y="24">3. Push into every consumer that copied a value by name</text>
+    <text class="ns" x="15" y="46">`from agent_config import X` COPIES the value at import time --</text>
+    <text class="ns" x="15" y="64">reassigning agent_config.X later never reaches that copy.</text>
+    <text class="ns" x="15" y="88">setattr() on each already-imported module (sys.modules lookup,</text>
+    <text class="ns" x="15" y="106">never a fresh import -- avoids circular-import ordering):</text>
+    <text class="ns" x="25" y="128">shared, shell_tools (aliased names), confirm,</text>
+    <text class="ns" x="25" y="146">auto_runner, fs_tools, memory</text>
+    <text class="ns" x="15" y="172">Derived values recomputed from their source, not read</text>
+    <text class="ns" x="15" y="190">from agent_config directly: fs_tools.BASE_DIR = WORKSPACE_DIR.resolve(),</text>
+    <text class="ns" x="15" y="208">shell_tools.BASE_DIR, memory.MEMORY_PATH = Path(MEMORY_FILE)</text>
+  </g>
+
+  <g transform="translate(590, 300)">
+    <rect class="box" width="500" height="230" fill="#1e293b" stroke="#34d399"/>
+    <text class="nt" x="15" y="24">4. Same idea, one hop further: BE-side modules</text>
+    <text class="ns" x="15" y="46">app.api.memory (MEMORY_FILE), app.core.approval_bridge</text>
+    <text class="ns" x="15" y="64">(CONFIRM_TIMEOUT_SECONDS), app.core.agent_bridge AND</text>
+    <text class="ns" x="15" y="82">app.api.chat -- chat.py copied agent_bridge's OWN copy of</text>
+    <text class="ns" x="15" y="100">CHAT_SYSTEM_PROMPT again at ITS import time; missing this one</text>
+    <text class="ns" x="15" y="118">meant Save updated the schema's answer but not what "New chat"</text>
+    <text class="ns" x="15" y="136">actually seeded _messages with.</text>
+    <text class="ns" x="15" y="162">OllamaAgent.model is an instance attribute set once at</text>
+    <text class="ns" x="15" y="180">construction, not a module-level name -- a model change instead</text>
+    <text class="ns" x="15" y="198">drops agent_bridge's cached singleton so the next chat request</text>
+    <text class="ns" x="15" y="216">builds a fresh one.</text>
+  </g>
+  <path d="M 575 530 L 575 560" class="wa" marker-end="url(#ar12)"/>
+
+  <g transform="translate(60, 560)">
+    <rect class="box" width="1030" height="70" fill="#3f0f0f" stroke="#f43f5e"/>
+    <text class="nt" x="15" y="26">Exception: BE_HOST / BE_PORT / BE_CORS_ORIGINS still need a real restart</text>
+    <text class="ns" x="15" y="48">Bound to the process at startup -- the socket is already listening and CORS middleware already installed into the ASGI app by the time Save runs.</text>
+  </g>
+
+  <g transform="translate(60, 650)">
+    <rect class="box" width="1030" height="200" fill="#1e293b" stroke="#fbbf24"/>
+    <text class="nt" x="15" y="24">UNLIMITED_MODE -- same reload mechanism, one setting, many call sites</text>
+    <text class="ns" x="15" y="46">Checked directly as a global at each site (not via that cap's own value), so flipping it always means "wait/run as long as it takes":</text>
+    <text class="ns" x="25" y="68">shared.py -- run_agent()'s wall-clock check skipped; round loop uses itertools.count() instead of range(max_iterations)</text>
+    <text class="ns" x="25" y="86">(checked as a body-level global on purpose -- max_iterations is a default-argument value, frozen at def time, so a reload can't change it retroactively)</text>
+    <text class="ns" x="25" y="104">_effective_tool_timeout() returns None; CHAT_TIMEOUT_SECONDS / CHAT_STREAM_IDLE_TIMEOUT_SECONDS waits become unbounded</text>
+    <text class="ns" x="25" y="122">shell_tools.py -- run_command's subprocess timeout removed</text>
+    <text class="ns" x="25" y="140">confirm.py -- confirm() forces timeout_seconds=None regardless of the default or any explicit caller value</text>
+    <text class="ns" x="25" y="158">auto_runner.py -- auto-mode's max_tool_calls becomes None (run_agent's own "no extra cap" sentinel)</text>
+    <text class="ns" x="15" y="182">Deliberately does NOT touch MAX_REPEAT_CALLS (stuck-loop detection) -- a malfunction, never legitimate work.</text>
+  </g>
+</svg>"""
+    (SVG_DIR / "config_hot_reload.svg").write_text(svg12, encoding="utf-8")
+
+    print(f"Generated 12 standalone SVGs in {SVG_DIR}")
 
 if __name__ == "__main__":
     write_svgs()

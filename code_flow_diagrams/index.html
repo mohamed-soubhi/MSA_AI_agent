@@ -42,6 +42,7 @@
       <a class="nav-item" data-tab="flow-confirm">🛡️ Human Confirmation Gate</a>
       <a class="nav-item" data-tab="flow-memory">🧠 Persistent Memory Engine</a>
       <a class="nav-item" data-tab="flow-config">⚙️ Config & Subprocess Engine</a>
+      <a class="nav-item" data-tab="flow-hotreload">🔥 Config Hot-Reload & Unlimited Mode</a>
 
       <div class="nav-section-title">Technical Reference</div>
       <a class="nav-item" data-tab="calls">📞 Calls & Sequence Maps</a>
@@ -236,9 +237,27 @@
               </tr>
               <tr>
                 <td><code>BE/app/api/chat.py</code></td>
-                <td>FastAPI chat endpoints: streaming SSE, approval responder, and history reset.</td>
+                <td>FastAPI chat endpoints: streaming SSE, approval responder, and history reset. Chat page renders answers with a hand-written markdown-to-safe-HTML converter; approvals/questions open in a modal instead of interleaving into the transcript; a two-tab Activity/Preview side panel shows live tool calls or a sandboxed preview of an HTML report the agent wrote.</td>
                 <td><code>stream_chat()</code>, <code>respond_to_turn()</code>, <code>reset_chat()</code>, <code>get_history()</code></td>
-                <td><code>_turn_lock</code> prevents concurrent runs (409 Conflict); accumulates token usage to <code>memory.json</code>.</td>
+                <td><code>_turn_lock</code> prevents concurrent runs (409 Conflict); <code>event_generator()</code> polls with client-disconnect detection instead of blocking forever, so an abandoned browser tab can't wedge every future request behind a 409; accumulates token usage to <code>memory.json</code>.</td>
+              </tr>
+              <tr>
+                <td><code>BE/app/api/workspace.py</code></td>
+                <td>Read-only preview of a file the agent wrote inside its own sandbox, for the chat page's Preview tab.</td>
+                <td><code>get_workspace_file()</code> (<code>GET /api/workspace/file?path=...</code>)</td>
+                <td>Reuses <code>fs_tools.read_file()</code>/<code>resolve_path()</code> -- the same sandbox enforcement every agent tool goes through, not reimplemented.</td>
+              </tr>
+              <tr>
+                <td><code>agent/config_reload.py</code></td>
+                <td>Hot-reloads <code>agent_config.py</code>/<code>log_config.py</code> after the config editor saves -- no restart required.</td>
+                <td><code>reload_all()</code></td>
+                <td><code>importlib.reload()</code> in place, then <code>setattr()</code> pushes each value into every already-imported module that copied it by name (<code>from agent_config import X</code> copies the value, not a live reference). Also backs <code>UNLIMITED_MODE</code>, which removes every time/trial cap the same way.</td>
+              </tr>
+              <tr>
+                <td><code>pyproject.toml</code> / <code>uv.lock</code></td>
+                <td>Single <a href="https://docs.astral.sh/uv/">uv</a> project root for agent + BE, one reproducible dependency set.</td>
+                <td><code>uv sync</code>, <code>uv run</code></td>
+                <td>Per-OS venv dirs (<code>.venv-linux</code>/<code>.venv-windows</code>) -- a venv's binaries can't be shared between WSL and native Windows even when both see the same repo path.</td>
               </tr>
             </tbody>
           </table>
@@ -467,6 +486,27 @@
         </div>
         <div class="svg-viewport">
           <object type="image/svg+xml" data="svg/config_drift_safe_engine.svg" style="width:100%; height:100%; pointer-events:none;"></object>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: HOT-RELOAD & UNLIMITED MODE ================= -->
+    <section id="flow-hotreload" class="tab-content searchable">
+      <div class="section-header">
+        <h1 class="section-title">🔥 Config Hot-Reload &amp; Unlimited Mode</h1>
+        <p class="section-desc">
+          <code>agent/config_reload.py</code>: Save applies immediately -- no restart -- by pushing each recomputed value into every already-imported module that copied it by name. <code>UNLIMITED_MODE</code> reuses the exact same mechanism to remove every time/trial cap at once.
+        </p>
+      </div>
+
+      <div class="diagram-container">
+        <div class="diagram-toolbar">
+          <button class="diagram-btn btn-zoom-in">+</button>
+          <button class="diagram-btn btn-zoom-out">−</button>
+          <button class="diagram-btn btn-zoom-reset">↺</button>
+        </div>
+        <div class="svg-viewport">
+          <object type="image/svg+xml" data="svg/config_hot_reload.svg" style="width:100%; height:100%; pointer-events:none;"></object>
         </div>
       </div>
     </section>

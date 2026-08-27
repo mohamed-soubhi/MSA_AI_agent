@@ -47,7 +47,8 @@
     <text class="ns" x="15" y="180">3. Escapes Multi-Line Values:</text>
     <text class="ns" x="25" y="200">• Double-quotes &amp; escapes SYSTEM_PROMPT newlines</text>
     <text class="ns" x="25" y="218">• Round-trips cleanly through python-dotenv on next boot</text>
-    <text class="ns" x="15" y="245">4. Safe Lifecycle: Takes effect on next process restart</text>
+    <text class="ns" x="15" y="245">4. Live: config_reload.reload_all() applies immediately (see next diagram) --</text>
+    <text class="ns" x="25" y="263">only BE_HOST/PORT/CORS_ORIGINS still need a restart</text>
   </g>
 
   <!-- Models Dropdown API -->
