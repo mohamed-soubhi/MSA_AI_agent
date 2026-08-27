@@ -75,7 +75,9 @@ FIELDS: list[Field] = [
 
     # -- Filesystem / sandbox (fs_tools.py) -----------------------------
     Field("WORKSPACE_DIR", "Filesystem / sandbox", "Workspace dir", "str", "agent",
-          "Sandbox root -- fs_tools.BASE_DIR. Everything the agent reads/writes stays inside this."),
+          "Sandbox root -- fs_tools.BASE_DIR. Everything the agent reads/writes stays inside this. "
+          "Leave unset to auto-resolve per-OS -- an absolute path saved from one OS (e.g. WSL's "
+          "/mnt/c/...) won't resolve on another (e.g. native Windows' C:\\...) sharing this same file."),
     Field("MAX_WRITE_BYTES", "Filesystem / sandbox", "Max write bytes", "int", "agent",
           "Hard cap on a single write_file() call."),
     Field("REQUIRE_CONFIRMATION", "Filesystem / sandbox", "Require confirmation", "bool", "agent",
@@ -105,7 +107,8 @@ FIELDS: list[Field] = [
     Field("MEMORY_ENABLED", "Memory", "Memory enabled", "bool", "agent",
           "Master switch -- False makes remember_fact/recall_memory no-ops."),
     Field("MEMORY_FILE", "Memory", "Memory file path", "str", "agent",
-          "Path to memory.json. Fixed outside WORKSPACE_DIR on purpose."),
+          "Path to memory.json. Fixed outside WORKSPACE_DIR on purpose. "
+          "Leave unset to auto-resolve per-OS -- see Workspace dir's note above."),
     Field("MEMORY_MAX_ENTRIES", "Memory", "Max entries", "int", "agent",
           "Oldest entries are dropped once the file exceeds this many."),
     Field("MEMORY_MAX_TEXT_CHARS", "Memory", "Max text chars per entry", "int", "agent",
@@ -123,7 +126,8 @@ FIELDS: list[Field] = [
     Field("LOG_ENABLED", "Logging", "Logging enabled", "bool", "agent",
           "Master switch -- False disables all JSONL logging."),
     Field("LOG_DIR", "Logging", "Log directory", "str", "agent",
-          "Folder session logs are written into."),
+          "Folder session logs are written into. "
+          "Leave unset to auto-resolve per-OS -- see Workspace dir's note above."),
     Field("LOG_FILE_MODE", "Logging", "Log file mode", "str", "agent",
           "'per_run' (one file per session) or 'single' (one growing file)."),
     Field("SINGLE_LOG_FILENAME", "Logging", "Single-mode filename", "str", "agent",

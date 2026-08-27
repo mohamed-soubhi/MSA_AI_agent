@@ -273,6 +273,11 @@
 // live settings, while browsing values read-only needs zero friction.
 let unlocked = false;
 
+// Tracks each field's value AS LOADED, so Save only submits what you
+// actually changed -- see saveConfig() below for why this matters far
+// beyond just avoiding no-op writes.
+const initialValues = {};
+
 function setUpLockGate() {
   const code = String(Math.floor(10000 + Math.random() * 90000));
   document.getElementById("lock-code").textContent = code;
@@ -313,6 +318,7 @@ async function loadConfig() {
   const bySection = {};
   for (const f of data.fields) {
     (bySection[f.section] ||= []).push(f);
+    initialValues[f.key] = f.value;
   }
 
   const form = document.getElementById("config-form");
@@ -617,13 +623,30 @@ async function saveConfig(event) {
   const status = document.getElementById("status");
   const btn = document.getElementById("save-btn");
 
+  // Only submit fields that actually changed from what was loaded --
+  // NOT every field's current value. Several fields (WORKSPACE_DIR,
+  // MEMORY_FILE, LOG_DIR) show whatever THIS OS resolved as their
+  // default (no override in .env) -- e.g. /mnt/c/... under WSL,
+  // C:\... on native Windows, for the exact same physical file when
+  // the repo is shared between the two. Submitting every field
+  // unconditionally would bake that OS-specific resolved value into
+  // agent/.env as a permanent override, breaking the OTHER OS the next
+  // time it reads the same file -- even though you never touched that
+  // field. Diffing against initialValues means an unrelated Save can
+  // never silently pin a path (or anything else) to whichever OS
+  // happened to load the page last.
   const values = {};
   for (const el of form.querySelectorAll("input, textarea")) {
-    if (el.type === "checkbox") {
-      values[el.name] = el.checked ? "true" : "false";
-    } else {
-      values[el.name] = el.value;
+    const value = el.type === "checkbox" ? (el.checked ? "true" : "false") : el.value;
+    if (value !== initialValues[el.name]) {
+      values[el.name] = value;
     }
+  }
+
+  if (Object.keys(values).length === 0) {
+    status.textContent = "No changes to save.";
+    status.className = "ok";
+    return;
   }
 
   btn.disabled = true;
@@ -639,6 +662,7 @@ async function saveConfig(event) {
     if (!res.ok) throw new Error(data.detail || "Save failed");
     status.textContent = data.message;
     status.className = "ok";
+    Object.assign(initialValues, values);
   } catch (err) {
     status.textContent = "Error: " + err.message;
     status.className = "err";

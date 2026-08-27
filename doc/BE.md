@@ -138,6 +138,17 @@ Nginx, `http://<host>/config`) while the BE service is running.
   `log_config.py`) go to `agent/.env`; `BE_`-prefixed settings go to
   `BE/.env`. Existing lines (comments, unrelated keys) are preserved —
   only the submitted keys are added or updated in place.
+- **Save only submits fields you actually changed** (`config.html`'s
+  `initialValues` diff, client-side) — never every field's current
+  displayed value. This matters most for `WORKSPACE_DIR`/
+  `MEMORY_FILE`/`LOG_DIR`: with no override, each shows whatever THIS
+  OS resolved as its default (e.g. `/mnt/c/...` under WSL, `C:\...` on
+  native Windows, for the exact same physical file when the repo is
+  shared between the two — `/mnt/c` **is** `C:\` under WSL). Submitting
+  every field unconditionally would bake that OS-specific resolved
+  value into `agent/.env` as a permanent override the next time ANY
+  field was saved, breaking the other OS the next time it read the
+  same file even though that field was never touched.
 - **Live, except three settings**: `save_config()` calls
   `config_reload.reload_all()` (agent settings) and
   `get_settings.cache_clear()` (BE settings) right after writing the
