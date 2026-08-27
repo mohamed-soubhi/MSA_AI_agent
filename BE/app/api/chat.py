@@ -28,10 +28,12 @@ total, shared regardless of whether the tokens came from the CLI or
 this chat page.
 """
 
+import asyncio
 import json
+import queue
 import threading
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -144,7 +146,7 @@ def respond_to_turn(request: RespondRequest) -> dict:
 
 
 @router.post("/stream")
-def stream_chat(request: ChatRequest):
+def stream_chat(chat_request: ChatRequest, http_request: Request):
     """Append the user's message, run the full tool-calling loop
     (run_agent(), same as CLI_agent.py's step mode), and stream every
     step back as Server-Sent Events: `data: <json>\\n\\n` per event,
@@ -171,12 +173,12 @@ def stream_chat(request: ChatRequest):
             )
 
         with _history_lock:
-            _messages.append({"role": "user", "content": request.message})
+            _messages.append({"role": "user", "content": chat_request.message})
             snapshot = list(_messages)
 
         agent = get_agent()
         logger = _get_chat_logger(agent.model)
-        logger.user_message(request.message)
+        logger.user_message(chat_request.message)
 
         turn = ConversationTurn(agent, snapshot, logger, TOOLS, TOOL_MAP)
         _current_turn = turn
@@ -184,11 +186,34 @@ def stream_chat(request: ChatRequest):
     tokens_before = agent.total_tokens
     turn.start()
 
-    def event_generator():
+    async def event_generator():
         global _messages, _current_turn
         try:
             while True:
-                event = turn.events.get()
+                # BUG this fixes (found via log analysis, 2026-08-27):
+                # a plain blocking turn.events.get() ties this generator
+                # to ONE http connection forever -- if the browser
+                # navigates away or drops the connection mid-turn (e.g.
+                # to the config page) while the background
+                # ConversationTurn is itself stuck waiting on a
+                # confirm()/ask_human() answer nobody will ever send,
+                # nothing here ever learns the client is gone. _current_turn
+                # never clears, and every future POST /stream 409s
+                # forever -- recoverable only by a full BE restart.
+                # Polling with a short timeout instead of blocking
+                # forever lets us check http_request.is_disconnected()
+                # between events and bail out (clearing _current_turn)
+                # the moment the client leaves, instead of waiting on an
+                # answer that can never arrive.
+                try:
+                    event = await asyncio.get_event_loop().run_in_executor(
+                        None, turn.events.get, True, 1.0
+                    )
+                except queue.Empty:
+                    if await http_request.is_disconnected():
+                        turn.cancelled = True
+                        break
+                    continue
                 yield _sse(event)
                 if event["type"] == "stream_end":
                     break
