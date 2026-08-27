@@ -189,8 +189,30 @@ def test_reload_propagates_be_modules(tmp_path, monkeypatch):
     dummy_agent_bridge.CHAT_SYSTEM_PROMPT = ""
     monkeypatch.setitem(sys.modules, "app.core.agent_bridge", dummy_agent_bridge)
 
+    dummy_chat = types.ModuleType("app.api.chat")
+    dummy_chat.CHAT_SYSTEM_PROMPT = ""
+    monkeypatch.setitem(sys.modules, "app.api.chat", dummy_chat)
+
     config_reload.reload_all()
 
     assert dummy_mem.MEMORY_FILE == "/tmp/be_test_memory.json"
     assert dummy_approval.CONFIRM_TIMEOUT_SECONDS == 88
     assert dummy_agent_bridge.CHAT_SYSTEM_PROMPT == "Custom BE prompt"
+    assert dummy_chat.CHAT_SYSTEM_PROMPT == "Custom BE prompt"
+
+
+@pytest.mark.tid("CFGRELOAD-009")
+def test_reload_propagates_chat_api_system_prompt_live(tmp_path, monkeypatch):
+    """Test propagation into live app.api.chat module when imported."""
+    env_file = tmp_path / ".env"
+    env_file.write_text("SYSTEM_PROMPT=Fresh live system prompt\n", encoding="utf-8")
+    monkeypatch.setattr(config_reload, "_AGENT_DIR", tmp_path)
+
+    import types
+    dummy_chat = types.ModuleType("app.api.chat")
+    dummy_chat.CHAT_SYSTEM_PROMPT = "Old prompt"
+    monkeypatch.setitem(sys.modules, "app.api.chat", dummy_chat)
+
+    config_reload.reload_all()
+
+    assert dummy_chat.CHAT_SYSTEM_PROMPT == "Fresh live system prompt"

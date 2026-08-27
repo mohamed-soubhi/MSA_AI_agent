@@ -39,7 +39,8 @@ copies.
 |    - _PROPAGATE: auto_runner, CLI_agent, confirm, fs_tools, memory, shared    |
 |    - _PROPAGATE_ALIASED: shell_tools (ALLOWED, BLOCKED, etc.)                 |
 |    - _PROPAGATE_BE: app.api.memory, app.core.approval_bridge                  |
-|    - _PROPAGATE_BE_ALIASED: app.core.agent_bridge (CHAT_SYSTEM_PROMPT)        |
+|    - _PROPAGATE_BE_ALIASED: app.core.agent_bridge (CHAT_SYSTEM_PROMPT),      |
+|                             app.api.chat (CHAT_SYSTEM_PROMPT)                 |
 +-------------------------------------------------------------------------------+
                                       │
                                       ▼
@@ -79,3 +80,4 @@ Every reload pathway is verified through unit tests:
 - `CFGRELOAD-006`: `agent_bridge._agent` cache eviction
 - `CFGRELOAD-007`: Safe handling when consumer modules are not in `sys.modules`
 - `CFGRELOAD-008`: Backend consumer module propagation (`app.api.memory`, `app.core.approval_bridge`, `app.core.agent_bridge`)
+- `CFGRELOAD-009`: Live propagation into `app.api.chat` (`CHAT_SYSTEM_PROMPT`) ensuring `reset_chat()` seeds fresh prompts
