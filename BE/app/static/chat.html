@@ -103,6 +103,17 @@
     animation: blink 1s step-start infinite;
   }
   @keyframes blink { 50% { opacity: 0; } }
+  .bubble.queued {
+    opacity: 0.55;
+  }
+  .bubble.queued::after {
+    content: "Queued…";
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    font-style: italic;
+    opacity: 0.85;
+  }
   .empty-state {
     margin: auto;
     text-align: center;
@@ -766,16 +777,48 @@ async function loadHistory() {
   }
 }
 
+// Message queue: typing/sending several messages back-to-back queues
+// them instead of racing into the backend's one-turn-at-a-time 409
+// (see chat.py's _turn_lock -- that guard is correct and stays;
+// queueing here means we simply never violate it in the first place).
+// One entry per queued message: { text, bubble } -- bubble is created
+// immediately on submit, so the transcript shows messages in the order
+// typed even though only one is actually being sent to the model at a
+// time.
+const messageQueue = [];
+let queueRunning = false;
+
 async function sendMessage(event) {
   event.preventDefault();
   const text = input.value.trim();
   if (!text) return;
 
-  addBubble("user", text);
   input.value = "";
   input.style.height = "auto";
-  sendBtn.disabled = true;
 
+  const bubble = addBubble("user", text);
+  messageQueue.push({ text, bubble });
+  if (messageQueue.length > 1) {
+    bubble.classList.add("queued");
+  }
+  drainQueue();
+}
+
+async function drainQueue() {
+  if (queueRunning) return;
+  queueRunning = true;
+  try {
+    while (messageQueue.length > 0) {
+      const { text, bubble } = messageQueue.shift();
+      bubble.classList.remove("queued");
+      await runTurn(text);
+    }
+  } finally {
+    queueRunning = false;
+  }
+}
+
+async function runTurn(text) {
   const assistantBubble = addBubble("assistant", "");
   assistantBubble.classList.add("pending");
 
@@ -867,13 +910,18 @@ async function sendMessage(event) {
     assistantBubble.classList.add("error");
     assistantBubble.textContent = "Error: " + err.message;
   } finally {
-    sendBtn.disabled = false;
     input.focus();
   }
 }
 
 async function newChat() {
   await fetch("/api/chat/reset", { method: "POST" });
+  // Any not-yet-sent queued messages belonged to the conversation that
+  // just got cleared -- drop them rather than sending them into the
+  // fresh one. A message already in flight (queueRunning) is left
+  // alone; drainQueue()'s own loop sees the now-empty queue and exits
+  // normally once it resolves.
+  messageQueue.length = 0;
   messagesEl.innerHTML = "";
   messagesEl.appendChild(emptyState);
   emptyState.style.display = "block";
