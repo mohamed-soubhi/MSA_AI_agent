@@ -174,6 +174,8 @@
   }
   button:hover { background: var(--accent-hover); }
   button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .danger-btn { background: transparent; border: 1px solid var(--err); color: var(--err); }
+  .danger-btn:hover { background: var(--err); color: white; }
   #status { font-size: 0.875rem; }
   #status.ok { color: var(--ok); }
   #status.err { color: var(--err); }
@@ -263,6 +265,7 @@
 <div class="bar">
   <span id="status"></span>
   <button type="submit" form="config-form" id="save-btn" disabled>Save</button>
+  <button type="button" id="close-btn" class="danger-btn">Close</button>
 </div>
 
 <script>
@@ -660,7 +663,7 @@ async function saveConfig(event) {
   if (Object.keys(values).length === 0) {
     status.textContent = "No changes to save.";
     status.className = "ok";
-    return;
+    return true;
   }
 
   btn.disabled = true;
@@ -677,15 +680,58 @@ async function saveConfig(event) {
     status.textContent = data.message;
     status.className = "ok";
     Object.assign(initialValues, values);
+    return true;
   } catch (err) {
     status.textContent = "Error: " + err.message;
     status.className = "err";
+    return false;
   } finally {
     btn.disabled = false;
   }
 }
 
+// Close: saves any pending edits (if editing is unlocked -- a locked
+// form has nothing changed to save), then asks the BE process to shut
+// down through the exact same path a normal Ctrl+C/kill would --
+// see app/api/shutdown.py. Confirmed first since it's not undo-able
+// from this page; the process has to be restarted (run_be.sh/.bat)
+// to use /chat or /config again afterward.
+async function closeAgent() {
+  if (!confirm(
+    "Save any changes and shut down the BE service?\n\n" +
+    "You'll need to restart it (run_be.sh / run_be.bat) to use the " +
+    "chat or config pages again."
+  )) {
+    return;
+  }
+
+  const status = document.getElementById("status");
+  const closeBtn = document.getElementById("close-btn");
+  closeBtn.disabled = true;
+
+  if (unlocked) {
+    const saved = await saveConfig({ preventDefault: () => {} });
+    if (!saved) {
+      closeBtn.disabled = false;
+      return; // saveConfig() already reported the error in #status
+    }
+  }
+
+  status.textContent = "Shutting down…";
+  status.className = "";
+  try {
+    await fetch("/api/shutdown", { method: "POST" });
+    status.textContent = "BE service is shutting down. Restart it to use this page again.";
+    status.className = "ok";
+  } catch (err) {
+    status.textContent = "Error: " + err.message;
+    status.className = "err";
+    closeBtn.disabled = false;
+  }
+}
+
 document.getElementById("config-form").addEventListener("submit", saveConfig);
+document.getElementById("close-btn").addEventListener("click", closeAgent);
 setUpLockGate();
 loadConfig();
 loadMemory();
