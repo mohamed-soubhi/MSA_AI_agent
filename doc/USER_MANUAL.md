@@ -118,10 +118,22 @@ Ollama" section).
 **Same file/shell tools as the CLI** — this runs the full tool-calling
 loop (`shared.run_agent()`), the same 9 tools `CLI_agent.py` wires up
 (list/read/write files, run commands, ask you questions), the same
-sandbox. The right-hand **Activity** panel shows every tool call/result
-live as the turn runs. When a tool needs your approval or is asking you
-something (`ask_human`/`ask_human_choice`), a modal opens on top of the
-chat with Approve/Deny or the question — it doesn't interleave into the
+sandbox. The right-hand panel has two tabs:
+- **Activity** — every tool call/result live as the turn runs.
+- **Preview** — an HTML file the agent wrote (a data-analysis report,
+  a Plotly chart, ...), rendered in a sandboxed iframe. Click **View**
+  on a `write_file` call that wrote an `.html`/`.htm` file, or on a
+  `[label](path/to/file.html)` link in the agent's own answer (which
+  also gets basic markdown rendering — bold, inline code, fenced code
+  blocks, lists — instead of raw text). Switching tabs never loses the
+  other one's state; Activity keeps logging underneath while Preview is
+  showing. Backed by `GET /api/workspace/file?path=...`, which reads
+  through the exact same sandbox `fs_tools.read_file()` already
+  enforces — no new way to reach outside `workspace/`.
+
+When a tool needs your approval or is asking you something
+(`ask_human`/`ask_human_choice`), a modal opens on top of the chat with
+Approve/Deny or the question — it doesn't interleave into the
 transcript. An **Auto-approve** checkbox next to the input will approve
 pending requests for you after a countdown instead of waiting on a
 click.

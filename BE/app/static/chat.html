@@ -141,7 +141,66 @@
   }
   #composer button:hover { background: var(--accent-hover); }
   #composer button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .side-pane { display: flex; flex-direction: column; }
   .side-pane h2 { color: var(--text); font-size: 1rem; margin: 0 0 10px; }
+  .pane-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .pane-tabs button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+  .pane-tabs button.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .pane-view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .pane-view.active { display: flex; }
+  #preview-frame {
+    display: none;
+    flex: 1;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+  }
+  #preview-path {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    font-family: ui-monospace, monospace;
+    word-break: break-all;
+  }
+  .view-file-btn {
+    display: inline-block;
+    margin-top: 8px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .bubble pre {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-size: 0.8125rem;
+  }
+  .bubble code {
+    font-family: ui-monospace, monospace;
+    background: rgba(148, 163, 184, 0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.875em;
+  }
+  .bubble pre code { background: none; padding: 0; }
+  .bubble a { color: #93c5fd; }
+  .bubble ul { margin: 6px 0; padding-left: 22px; }
   .side-pane .placeholder {
     border: 1px dashed var(--border);
     border-radius: 10px;
@@ -267,11 +326,23 @@
     </form>
   </div>
   <div class="side-pane">
-    <h2>Activity</h2>
-    <div class="activity" id="activity">
-      <div class="placeholder" id="activity-placeholder">
-        Tool calls and their results show up here. Approvals and
-        questions from the agent appear as a popup, out of the chat's way.
+    <div class="pane-tabs">
+      <button type="button" id="tab-activity" class="active">Activity</button>
+      <button type="button" id="tab-preview">Preview</button>
+    </div>
+    <div class="pane-view active" id="pane-activity">
+      <div class="activity" id="activity">
+        <div class="placeholder" id="activity-placeholder">
+          Tool calls and their results show up here. Approvals and
+          questions from the agent appear as a popup, out of the chat's way.
+        </div>
+      </div>
+    </div>
+    <div class="pane-view" id="pane-preview">
+      <div id="preview-path"></div>
+      <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
+      <div class="placeholder" id="preview-placeholder">
+        Click "View" on an HTML file the agent wrote to preview it here.
       </div>
     </div>
   </div>
@@ -312,17 +383,70 @@ async function loadAutoApproveSeconds() {
   autoApproveText.textContent = `Auto-approve (${AUTO_APPROVE_SECONDS}s)`;
 }
 
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Small, dependency-free markdown-ish renderer -- no CDN, no build
+// step, this is one static HTML file. Escapes everything first, so
+// the model's own text can never inject raw HTML/script; only the
+// specific patterns recognized below produce real markup. Fenced code
+// blocks are pulled out and restored verbatim (post-escaping) so
+// markdown syntax appearing INSIDE a code block (e.g. a literal
+// "**not bold**" in a code sample) never gets misinterpreted.
+function renderMarkdown(text) {
+  const codeBlocks = [];
+  let working = text.replace(/```[\w-]*\n?([\s\S]*?)```/g, (_, code) => {
+    codeBlocks.push(escapeHtml(code.replace(/\n$/, "")));
+    return `\u0000CODEBLOCK${codeBlocks.length - 1}\u0000`;
+  });
+
+  working = escapeHtml(working);
+
+  working = working.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
+  // [label](url) -- workspace-relative .html/.htm links get a "View"
+  // button (openPreviewFromLink) instead of a normal navigation, since
+  // they're usually the agent's own analysis output, not a real URL.
+  working = working.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
+    if (/^[\w./-][^:]*\.html?$/i.test(url)) {
+      return `${escapeHtml(label)} <button type="button" class="view-file-btn" onclick="previewFile('${url.replace(/'/g, "\\'")}')">View</button>`;
+    }
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  });
+  working = working.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+  working = working.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
+  working = working.replace(/(^|\n)[-*] (.+)/g, (_, pre, item) => `${pre}<li>${item}</li>`);
+  working = working.replace(/(<li>.*?<\/li>\n?)+/gs, (m) => `<ul>${m}</ul>`);
+  working = working.replace(/\n/g, "<br>");
+
+  working = working.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (_, idx) => `<pre><code>${codeBlocks[Number(idx)]}</code></pre>`);
+  return working;
+}
+
 function addBubble(role, text) {
   emptyState.style.display = "none";
   const row = document.createElement("div");
   row.className = `bubble-row ${role === "user" ? "user" : ""}`;
   const bubble = document.createElement("div");
   bubble.className = `bubble ${role}`;
-  bubble.textContent = text;
+  setBubbleContent(bubble, role, text);
   row.appendChild(bubble);
   messagesEl.appendChild(row);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return bubble;
+}
+
+function setBubbleContent(bubble, role, text) {
+  if (role === "assistant") {
+    bubble.innerHTML = renderMarkdown(text);
+  } else {
+    bubble.textContent = text;
+  }
 }
 
 function addActivity(kind, className) {
@@ -342,6 +466,53 @@ function addPre(item, text) {
   const pre = document.createElement("pre");
   pre.textContent = text;
   item.appendChild(pre);
+}
+
+// Activity/Preview tab switch -- a permanent split was the other
+// option, but tab-switching keeps the Activity log's live tool-call
+// feed fully intact underneath (nothing is torn down/lost switching
+// away from it), just not visible while Preview is showing.
+const tabActivityBtn = document.getElementById("tab-activity");
+const tabPreviewBtn = document.getElementById("tab-preview");
+const paneActivity = document.getElementById("pane-activity");
+const panePreview = document.getElementById("pane-preview");
+
+function switchTab(name) {
+  const showPreview = name === "preview";
+  tabActivityBtn.classList.toggle("active", !showPreview);
+  tabPreviewBtn.classList.toggle("active", showPreview);
+  paneActivity.classList.toggle("active", !showPreview);
+  panePreview.classList.toggle("active", showPreview);
+}
+
+tabActivityBtn.addEventListener("click", () => switchTab("activity"));
+tabPreviewBtn.addEventListener("click", () => switchTab("preview"));
+
+const previewFrame = document.getElementById("preview-frame");
+const previewPath = document.getElementById("preview-path");
+const previewPlaceholder = document.getElementById("preview-placeholder");
+
+// Global on purpose -- called from renderMarkdown()'s inline onclick
+// (the "View" button text is generated as an HTML string, not a real
+// DOM node with an addEventListener at creation time).
+async function previewFile(path) {
+  switchTab("preview");
+  previewPath.textContent = path;
+  previewPlaceholder.textContent = "Loading…";
+  previewPlaceholder.style.display = "block";
+  previewFrame.style.display = "none";
+  try {
+    const res = await fetch(`/api/workspace/file?path=${encodeURIComponent(path)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not load file");
+    previewPlaceholder.style.display = "none";
+    previewFrame.style.display = "block";
+    previewFrame.srcdoc = data.content;
+  } catch (err) {
+    previewFrame.style.display = "none";
+    previewPlaceholder.style.display = "block";
+    previewPlaceholder.textContent = "Error: " + err.message;
+  }
 }
 
 async function respond(requestId, body) {
@@ -530,12 +701,25 @@ async function sendMessage(event) {
 
         switch (payload.type) {
           case "thought":
-            assistantBubble.textContent = payload.content;
+            setBubbleContent(assistantBubble, "assistant", payload.content);
             messagesEl.scrollTop = messagesEl.scrollHeight;
             break;
           case "tool_call": {
             const item = addActivity(`Tool: ${payload.name}`);
             addPre(item, JSON.stringify(payload.arguments, null, 2));
+            // write_file writing an HTML file is exactly the "data
+            // analysis output" case this preview pane is for -- offer
+            // a View button right on the tool call, not just via a
+            // link the model has to remember to include in its answer.
+            const filePath = payload.arguments && payload.arguments.path;
+            if (payload.name === "write_file" && /\.html?$/i.test(filePath || "")) {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "view-file-btn";
+              btn.textContent = "View";
+              btn.addEventListener("click", () => previewFile(filePath));
+              item.appendChild(btn);
+            }
             break;
           }
           case "tool_result": {
@@ -559,7 +743,7 @@ async function sendMessage(event) {
             break;
           case "final":
             assistantBubble.classList.remove("pending");
-            assistantBubble.textContent = payload.content;
+            setBubbleContent(assistantBubble, "assistant", payload.content);
             break;
           case "error":
             assistantBubble.classList.remove("pending");
@@ -590,6 +774,12 @@ async function newChat() {
   activityEl.querySelectorAll(".activity-item").forEach((el) => el.remove());
   activityPlaceholder.style.display = "block";
   closeModal();
+  previewFrame.style.display = "none";
+  previewFrame.srcdoc = "";
+  previewPath.textContent = "";
+  previewPlaceholder.textContent = 'Click "View" on an HTML file the agent wrote to preview it here.';
+  previewPlaceholder.style.display = "block";
+  switchTab("activity");
 }
 
 input.addEventListener("input", () => {

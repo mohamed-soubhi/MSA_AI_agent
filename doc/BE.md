@@ -18,7 +18,8 @@ BE/
 │   │   ├── config.py      — GET/POST /api/config (interactive config editor's API)
 │   │   ├── models.py      — GET /api/models(/catalog) (local + cloud Ollama models, with specs)
 │   │   ├── chat.py        — GET/POST /api/chat/* (tool-calling chat, incl. GET /history, see "Chat page" below)
-│   │   └── memory.py      — GET /api/memory (read-only view of memory.json for config UI)
+│   │   ├── memory.py      — GET /api/memory (read-only view of memory.json for config UI)
+│   │   └── workspace.py   — GET /api/workspace/file (sandboxed file preview for chat's Preview tab)
 │   ├── core/
 │   │   ├── config.py           — Settings (pydantic-settings), BE_-prefixed env vars
 │   │   ├── config_schema.py    — field list + .env read/write + default-value resolver
@@ -112,6 +113,21 @@ over Server-Sent Events, streaming every step back as it happens.
   since live tool activity is what the SSE stream itself carries as
   `thought`/`tool_call`/`tool_result` events). Used by `chat.html` to
   repaint the conversation on page reload.
+- **Assistant answers get basic markdown rendering** (`renderMarkdown()`
+  in `chat.html` -- bold, inline code, fenced code blocks, links,
+  lists), hand-written since this is one static file with no build
+  step/CDN. Escapes everything first, so only the specific patterns it
+  recognizes produce real markup -- the model's own text can't inject
+  raw HTML.
+- **Preview tab, next to Activity**, for data-analysis output (an HTML
+  report/Plotly chart the agent wrote with `write_file`). A `write_file`
+  call ending in `.html`/`.htm`, or a `[label](path.html)` link in the
+  answer, gets a **View** button that loads the file via
+  `GET /api/workspace/file?path=...` (`app/api/workspace.py`, reusing
+  `fs_tools.read_file()`'s own sandbox enforcement -- no new way to
+  reach outside `workspace/`) into a sandboxed `<iframe srcdoc="...">`.
+  Switching tabs doesn't tear down the other one -- Activity keeps
+  logging live tool calls underneath while Preview is showing.
 - **Logged through the agent's own `chat_logger.py`** — same JSONL
   format, same `logs/` directory as the CLI agent, including every
   `tool_call`/`tool_result` and `prompt_eval_count`/`eval_count`/
