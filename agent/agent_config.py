@@ -179,6 +179,31 @@ WEB_FETCH_MAX_CHARS = _env_int("WEB_FETCH_MAX_CHARS", 8000)  # truncate fetched 
 WEB_TOOLS_REQUIRE_CONFIRMATION = _env_bool("WEB_TOOLS_REQUIRE_CONFIRMATION", True)  # confirm() before every web_search / web_fetch
 
 # --------------------------------------------------------------------------
+# Web scraping (scrape_tools.py) -- the Scrapling library
+# (https://github.com/D4Vinci/Scrapling), wired in as agent tools ONLY
+# when SCRAPING_ENABLED (see tools_registry.get_active_tools()).
+#
+# Off by default and gated harder than the Ollama web tools: unlike
+# ollama.web_fetch (the request is made by Ollama's servers), the
+# "http" fetcher here makes the request FROM THIS MACHINE -- so it can
+# reach localhost / the LAN. SCRAPING_BLOCK_PRIVATE_HOSTS (default on)
+# refuses loopback / private / link-local hosts; the "stealth" and
+# "dynamic" fetchers additionally run a local browser engine and need
+# SCRAPING_ALLOW_BROWSER on top.
+#
+# scrapling is an OPTIONAL dependency (pip install "scrapling[fetchers]"
+# && scrapling install) -- scrape_tools.py degrades to a clear "not
+# installed" message when it's absent.
+# --------------------------------------------------------------------------
+SCRAPING_ENABLED = _env_bool("SCRAPING_ENABLED", False)
+SCRAPING_FETCHER = os.getenv("SCRAPING_FETCHER", "http")  # "http" | "stealth" | "dynamic"
+SCRAPING_ALLOW_BROWSER = _env_bool("SCRAPING_ALLOW_BROWSER", False)  # required for the "stealth" / "dynamic" fetchers
+SCRAPING_BLOCK_PRIVATE_HOSTS = _env_bool("SCRAPING_BLOCK_PRIVATE_HOSTS", True)  # refuse loopback / RFC1918 / link-local
+SCRAPING_MAX_CHARS = _env_int("SCRAPING_MAX_CHARS", 12000)  # truncate scraped text before it enters context
+SCRAPING_TIMEOUT_SECONDS = _env_int("SCRAPING_TIMEOUT_SECONDS", 30)
+SCRAPING_REQUIRE_CONFIRMATION = _env_bool("SCRAPING_REQUIRE_CONFIRMATION", True)  # confirm() before every scrape_page / scrape_extract
+
+# --------------------------------------------------------------------------
 # confirm() (confirm.py)
 # --------------------------------------------------------------------------
 CONFIRM_TIMEOUT_SECONDS = _env_int_or_none("CONFIRM_TIMEOUT_SECONDS", 120)

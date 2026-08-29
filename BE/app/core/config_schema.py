@@ -118,6 +118,30 @@ FIELDS: list[Field] = [
           "Ask for approval before every web_search / web_fetch, exactly like "
           "write_file and run_command."),
 
+    # -- Web scraping (scrape_tools.py, Scrapling) ----------------------
+    Field("SCRAPING_ENABLED", "Web scraping", "Enable scraping tools", "bool", "agent",
+          "Adds scrape_page and scrape_extract (the Scrapling library). Off by "
+          "default. Unlike the Ollama web tools the request is made FROM THIS "
+          "MACHINE. Needs `pip install \"scrapling[fetchers]\" && scrapling install`."),
+    Field("SCRAPING_FETCHER", "Web scraping", "Default fetcher", "str", "agent",
+          "Which backend a scrape uses when the model doesn't specify one: "
+          "'http' (fast, no browser), 'stealth' (anti-bot browser), or "
+          "'dynamic' (full JavaScript browser)."),
+    Field("SCRAPING_ALLOW_BROWSER", "Web scraping", "Allow browser fetchers", "bool", "agent",
+          "Required for the 'stealth' and 'dynamic' fetchers -- they launch a "
+          "local browser engine. Leave off to restrict scraping to plain HTTP."),
+    Field("SCRAPING_BLOCK_PRIVATE_HOSTS", "Web scraping", "Block private hosts", "bool", "agent",
+          "Refuse to scrape URLs whose host resolves to loopback / private / "
+          "link-local addresses (SSRF guard). Turn off only if you need to "
+          "scrape an internal dashboard."),
+    Field("SCRAPING_MAX_CHARS", "Web scraping", "Max chars", "int", "agent",
+          "Scraped text is truncated to this many characters before it enters "
+          "the model's context."),
+    Field("SCRAPING_TIMEOUT_SECONDS", "Web scraping", "Timeout (s)", "int", "agent",
+          "Per-fetch timeout handed to Scrapling."),
+    Field("SCRAPING_REQUIRE_CONFIRMATION", "Web scraping", "Confirm each call", "bool", "agent",
+          "Ask for approval before every scrape_page / scrape_extract."),
+
     # -- confirm() --------------------------------------------------------
     Field("CONFIRM_TIMEOUT_SECONDS", "Confirmation gate", "Confirm timeout (s)", "int_or_none", "agent",
           "Deny and move on if unanswered in time. Empty/'none' disables the timeout."),
@@ -233,6 +257,13 @@ def _snapshot(ac, lc) -> dict[str, str]:
         "WEB_SEARCH_MAX_RESULTS": _render(ac.WEB_SEARCH_MAX_RESULTS),
         "WEB_FETCH_MAX_CHARS": _render(ac.WEB_FETCH_MAX_CHARS),
         "WEB_TOOLS_REQUIRE_CONFIRMATION": _render(ac.WEB_TOOLS_REQUIRE_CONFIRMATION),
+        "SCRAPING_ENABLED": _render(ac.SCRAPING_ENABLED),
+        "SCRAPING_FETCHER": _render(ac.SCRAPING_FETCHER),
+        "SCRAPING_ALLOW_BROWSER": _render(ac.SCRAPING_ALLOW_BROWSER),
+        "SCRAPING_BLOCK_PRIVATE_HOSTS": _render(ac.SCRAPING_BLOCK_PRIVATE_HOSTS),
+        "SCRAPING_MAX_CHARS": _render(ac.SCRAPING_MAX_CHARS),
+        "SCRAPING_TIMEOUT_SECONDS": _render(ac.SCRAPING_TIMEOUT_SECONDS),
+        "SCRAPING_REQUIRE_CONFIRMATION": _render(ac.SCRAPING_REQUIRE_CONFIRMATION),
         "CONFIRM_TIMEOUT_SECONDS": _render(ac.CONFIRM_TIMEOUT_SECONDS),
         "CONFIRM_MAX_ACTION_LEN": _render(ac.CONFIRM_MAX_ACTION_LEN),
         "MAX_AUTO_TOOL_CALLS": _render(ac.MAX_AUTO_TOOL_CALLS),

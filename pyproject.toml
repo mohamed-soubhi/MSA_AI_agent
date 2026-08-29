@@ -13,6 +13,15 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.optional-dependencies]
+# Web scraping tools (agent/scrape_tools.py). Not a base dependency:
+# the browser fetchers pull in Playwright/camoufox and a large browser
+# download (`scrapling install`), and scraping is off by default.
+#   pip install "MSA_AI_agent[scraping]" && scrapling install
+scraping = [
+    "scrapling[fetchers]>=0.3",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",
