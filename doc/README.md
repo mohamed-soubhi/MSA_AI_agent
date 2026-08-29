@@ -138,8 +138,8 @@ layout" above), so launch location doesn't affect where the sandbox is.
 ## Running the tests
 
 ```bash
-uv run pytest tests/ -v                                        # agent suite (446 tests)
-uv run --directory BE pytest tests/ -v                          # BE suite (78 tests)
+uv run pytest tests/ -v                                        # agent suite (448 tests)
+uv run --group dev --directory BE pytest tests/ -v              # BE suite (78 tests)
 uv run pytest tests/ --cov=agent --cov-report=term-missing      # with coverage
 ```
 
@@ -170,7 +170,7 @@ python3 -m pytest tests/test_fs_tools.py -v
 python3 tests/generate_report.py
 ```
 
-- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 446 tests, 100% pass rate (524 tests across full suite: 446 agent + 78 BE).
+- **Test Pass/Fail Report**: [`test_report.md`](test_report.md) — 448 tests, 100% pass rate (526 tests across full suite: 448 agent + 78 BE).
 - **Code Review & Defect Assessment Report (HTML)**: [`code_review_report.html`](code_review_report.html) — interactive audit dashboard.
 - **Code Review & Defect Assessment Report (Markdown)**: [`code_review_report.md`](code_review_report.md) — comprehensive static analysis and defect assessment.
 

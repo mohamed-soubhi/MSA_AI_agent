@@ -67,10 +67,11 @@ def get_active_tools() -> tuple[list, dict]:
 
 ---
 
-## 5. Test Coverage (11 Tests)
+## 5. Test Coverage (13 Tests)
 
 Unit tests in [`tests/test_web_tools.py`](../tests/test_web_tools.py):
 
+- `WEBTOOL-000`: Explicit `Authorization: Bearer <key>` header construction from `OLLAMA_API_KEY`.
 - `WEBTOOL-001`: Result ranking and multi-field formatting.
 - `WEBTOOL-002`: Clamping `max_results` to `WEB_SEARCH_MAX_RESULTS` ceiling.
 - `WEBTOOL-003`: Rejection of whitespace and empty search queries.
@@ -82,3 +83,4 @@ Unit tests in [`tests/test_web_tools.py`](../tests/test_web_tools.py):
 - `WEBTOOL-009`: Rejection of non-HTTP schemes (`ftp://`, `file://`).
 - `WEBTOOL-010`: Missing API key detection in `web_fetch`.
 - `WEBTOOL-011`: User confirmation rejection in `web_fetch`.
+- `WEBTOOL-012`: Explicit `host` propagation from `OLLAMA_HOST` environment variable.

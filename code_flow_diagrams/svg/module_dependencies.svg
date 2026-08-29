@@ -45,7 +45,7 @@
     <text class="ns" x="35" y="418">│   ├── app/static/    # chat.html, config.html</text>
     <text class="ns" x="35" y="436">│   └── nginx/         # nginx.conf reverse proxy</text>
     <text class="ns" x="25" y="460" fill="#fbbf24">├── workspace/       # Sandbox (BASE_DIR)</text>
-    <text class="ns" x="25" y="480" fill="#f43f5e">├── tests/           # Pytest Suite (524 tests: 446 agent + 78 BE)</text>
+    <text class="ns" x="25" y="480" fill="#f43f5e">├── tests/           # Pytest Suite (526 tests: 448 agent + 78 BE)</text>
     <text class="ns" x="25" y="500" fill="#94a3b8">├── logs/            # JSONL Session Logs</text>
     <text class="ns" x="25" y="520" fill="#94a3b8">├── doc/             # Documentation &amp; Audits</text>
     <text class="ns" x="25" y="540" fill="#38bdf8">└── memory.json      # Persistent Memory</text>

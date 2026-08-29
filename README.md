@@ -7,7 +7,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Ollama](https://img.shields.io/badge/Ollama-Native%20Tool%20Calling-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
 [![uv](https://img.shields.io/badge/uv-Package%20Manager-DE5FE9?style=for-the-badge&logo=astral&logoColor=white)](https://docs.astral.sh/uv/)
-[![Tests](https://img.shields.io/badge/Tests-524%20Passed%20(100%25)-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](doc/test_report.md)
+[![Tests](https://img.shields.io/badge/Tests-526%20Passed%20(100%25)-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](doc/test_report.md)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows%20%7C%20WSL-64748b?style=for-the-badge)](doc/USER_MANUAL.md)
 
 **A production-grade, secure, multi-modal AI coding agent built from scratch on Ollama native tool-calling.**  
@@ -31,7 +31,7 @@ Featuring a 4-layer defense-in-depth sandbox, dual interfaces (CLI REPL + Real-t
 - 🌐 **Config-Gated Web Search & Fetch**: Internet research capabilities via Ollama's hosted search API (`web_tools.py`) with zero local SSRF exposure and strict credential isolation.
 - 🎛️ **Live Config & Memory Dashboard**: Web-based configuration management (`BE/app/static/config.html`) with in-process hot-reloading, a 5-digit unlock confirmation gate, directory browser picker, and model spec inspector.
 - 📊 **Comprehensive Architecture Visualizer**: 12 standalone interactive SVG diagrams and dependency maps (`code_flow_diagrams/`).
-- 🧪 **100% Test Coverage**: **524 tests passed** across 22 test modules (446 Agent Core + 78 Backend API).
+- 🧪 **100% Test Coverage**: **526 tests passed** across 22 test modules (448 Agent Core + 78 Backend API).
 
 ---
 
@@ -237,9 +237,9 @@ uv run python3 tests/generate_report.py
 
 ### Test Suite Metrics:
 
-- **Agent Core Suite:** 446 Passed (13 modules: CLI, Config, AutoRunner, Logger, Reload, Confirm, FS, Human, Memory, Shared, Shell, Web)
+- **Agent Core Suite:** 448 Passed (13 modules: CLI, Config, AutoRunner, Logger, Reload, Confirm, FS, Human, Memory, Shared, Shell, Web)
 - **Backend API Suite:** 78 Passed (9 modules: ApprovalBridge, ToolBridge, Chat, Config, Health, MemoryAPI, Models, Shutdown, Workspace)
-- **Total Repository Health:** **524 / 524 Passed (100%)**
+- **Total Repository Health:** **526 / 526 Passed (100%)**
 
 ---
 
