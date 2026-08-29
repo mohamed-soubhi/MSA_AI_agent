@@ -1,741 +1,603 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MSA AI Agent — Sandboxed Autonomous AI Coding Agent</title>
+  <title>MSA AI Agent — Sandboxed Autonomous AI Coding Agent &amp; Web Platform</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Antigravity Theme CSS -->
+  <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/svg+xml" href="../code_flow_diagrams/favicon.svg">
-  <style>
-    :root {
-      --bg-dark: #090d16;
-      --bg-card: rgba(18, 26, 43, 0.85);
-      --bg-card-hover: rgba(28, 40, 65, 0.95);
-      --border: rgba(56, 189, 248, 0.2);
-      --border-glow: rgba(56, 189, 248, 0.4);
-      --accent: #38bdf8;
-      --accent-grad: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
-      --success: #34d399;
-      --warning: #fbbf24;
-      --danger: #f87171;
-      --text: #f1f5f9;
-      --text-dim: #94a3b8;
-      --font-code: "JetBrains Mono", "Fira Code", monospace;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    /* Background glow decorations */
-    .glow-orb {
-      position: absolute;
-      width: 500px;
-      height: 500px;
-      border-radius: 50%;
-      filter: blur(120px);
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.15;
-    }
-    .glow-1 { top: -100px; left: 10%; background: #38bdf8; }
-    .glow-2 { top: 400px; right: 5%; background: #818cf8; }
-    .glow-3 { bottom: 100px; left: 20%; background: #c084fc; }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* Navigation Header */
-    header {
-      position: sticky;
-      top: 0;
-      background: rgba(9, 13, 22, 0.85);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      z-index: 100;
-    }
-    .nav-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 70px;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      color: var(--text);
-      font-weight: 700;
-      font-size: 1.25rem;
-      letter-spacing: -0.02em;
-    }
-    .logo-badge {
-      background: var(--accent-grad);
-      color: #000;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-    .nav-links {
-      display: flex;
-      gap: 24px;
-      align-items: center;
-    }
-    .nav-links a {
-      color: var(--text-dim);
-      text-decoration: none;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: var(--accent); }
-    .btn-github {
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid var(--border);
-      color: var(--accent);
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    .btn-github:hover {
-      background: var(--accent);
-      color: #000;
-      border-color: var(--accent);
-      transform: translateY(-1px);
-    }
-
-    /* Hero Section */
-    .hero {
-      padding: 90px 0 60px;
-      text-align: center;
-    }
-    .hero-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      border-radius: 9999px;
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid var(--border);
-      color: var(--accent);
-      font-size: 0.875rem;
-      font-weight: 600;
-      margin-bottom: 24px;
-    }
-    .hero-title {
-      font-size: 3.5rem;
-      font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 20px;
-      letter-spacing: -0.03em;
-    }
-    .gradient-text {
-      background: var(--accent-grad);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .hero-subtitle {
-      font-size: 1.25rem;
-      color: var(--text-dim);
-      max-width: 800px;
-      margin: 0 auto 36px;
-      line-height: 1.6;
-    }
-    .hero-actions {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 50px;
-    }
-    .btn-primary {
-      background: var(--accent-grad);
-      color: #000;
-      padding: 14px 28px;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 700;
-      text-decoration: none;
-      transition: all 0.2s;
-      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(56, 189, 248, 0.45);
-    }
-    .btn-secondary {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 14px 28px;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .btn-secondary:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--accent);
-      transform: translateY(-2px);
-    }
-
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      margin-bottom: 80px;
-    }
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
-      text-align: center;
-      transition: all 0.3s;
-      backdrop-filter: blur(10px);
-    }
-    .stat-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-4px);
-    }
-    .stat-val {
-      font-size: 2.25rem;
-      font-weight: 800;
-      color: var(--accent);
-      margin-bottom: 4px;
-      font-family: var(--font-code);
-    }
-    .stat-label {
-      font-size: 0.9375rem;
-      color: var(--text-dim);
-      font-weight: 500;
-    }
-
-    /* Section Styles */
-    .section {
-      padding: 60px 0;
-    }
-    .section-header {
-      text-align: center;
-      margin-bottom: 50px;
-    }
-    .section-badge {
-      color: var(--accent);
-      font-size: 0.8125rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 8px;
-      display: block;
-    }
-    .section-title {
-      font-size: 2.25rem;
-      font-weight: 800;
-      margin-bottom: 16px;
-      letter-spacing: -0.02em;
-    }
-    .section-desc {
-      color: var(--text-dim);
-      max-width: 650px;
-      margin: 0 auto;
-      font-size: 1.0625rem;
-    }
-
-    /* Feature Grid */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 24px;
-      margin-bottom: 60px;
-    }
-    .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 30px;
-      transition: all 0.3s;
-      display: flex;
-      flex-direction: column;
-    }
-    .feature-card:hover {
-      border-color: var(--accent);
-      background: var(--bg-card-hover);
-      transform: translateY(-4px);
-    }
-    .feature-icon {
-      font-size: 2rem;
-      margin-bottom: 18px;
-    }
-    .feature-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: var(--text);
-    }
-    .feature-text {
-      color: var(--text-dim);
-      font-size: 0.9375rem;
-      line-height: 1.6;
-    }
-
-    /* Tools Showcase Tabs */
-    .tools-container {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      overflow: hidden;
-      margin-bottom: 60px;
-    }
-    .tools-nav {
-      display: flex;
-      flex-wrap: wrap;
-      background: rgba(10, 15, 26, 0.8);
-      border-bottom: 1px solid var(--border);
-    }
-    .tool-tab {
-      padding: 14px 20px;
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      font-family: var(--font-code);
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
-    .tool-tab:hover { color: var(--text); background: rgba(56, 189, 248, 0.05); }
-    .tool-tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-      background: rgba(56, 189, 248, 0.1);
-    }
-    .tool-content {
-      padding: 32px;
-      display: none;
-    }
-    .tool-content.active { display: block; }
-    .tool-sig {
-      background: #060911;
-      padding: 14px 18px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      font-family: var(--font-code);
-      color: var(--accent);
-      font-size: 0.9375rem;
-      margin-bottom: 20px;
-      overflow-x: auto;
-    }
-
-    /* Code Snippet Box */
-    .code-box {
-      background: #060911;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin: 24px 0;
-    }
-    .code-header {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 10px 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.8125rem;
-      color: var(--text-dim);
-      font-family: var(--font-code);
-    }
-    .code-body {
-      padding: 18px;
-      font-family: var(--font-code);
-      font-size: 0.875rem;
-      color: #e2e8f0;
-      overflow-x: auto;
-      line-height: 1.6;
-    }
-
-    /* Links Portal Hub */
-    .portal-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-      margin-top: 30px;
-    }
-    .portal-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
-      text-decoration: none;
-      color: var(--text);
-      transition: all 0.3s;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .portal-card:hover {
-      border-color: var(--accent);
-      background: var(--bg-card-hover);
-      transform: translateY(-4px);
-    }
-    .portal-tag {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 8px;
-    }
-    .portal-title {
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .portal-desc {
-      font-size: 0.875rem;
-      color: var(--text-dim);
-      line-height: 1.5;
-    }
-
-    /* Footer */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 50px 0;
-      text-align: center;
-      color: var(--text-dim);
-      font-size: 0.875rem;
-    }
-    footer a { color: var(--accent); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
-
-    @media (max-width: 768px) {
-      .hero-title { font-size: 2.25rem; }
-      .nav-links { display: none; }
-    }
-  </style>
 </head>
 <body>
 
-  <div class="glow-orb glow-1"></div>
-  <div class="glow-orb glow-2"></div>
-  <div class="glow-orb glow-3"></div>
-
-  <!-- Header Navigation -->
-  <header>
-    <div class="container nav-inner">
-      <a href="#" class="logo">
-        <span>🤖 MSA AI Agent</span>
-        <span class="logo-badge">v2.0 Production</span>
+  <!-- =========================================================================
+       1. Top Sticky Navigation Bar
+       ========================================================================= -->
+  <header class="site-nav">
+    <div class="container nav-wrapper">
+      <a href="#" class="nav-logo">
+        <span>🤖 MSA AI AGENT</span>
+        <span class="nav-logo-badge">v2.0 PROD</span>
       </a>
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#tools">Tool Suite</a>
-        <a href="#quickstart">Quick Start</a>
-        <a href="#architecture">Architecture</a>
-        <a href="#docs">Documentation</a>
-        <a href="https://github.com/mohamed-soubhi/MSA_AI_agent" target="_blank" class="btn-github">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+
+      <div class="nav-actions">
+        <button id="toggleAllBtn" class="btn-pill" title="Expand or Collapse All Tool Cards" onclick="toggleAllTools()">
+          <span id="toggleAllIcon">⊞</span> <span id="toggleAllText">Expand All</span>
+        </button>
+
+        <a href="../code_flow_diagrams/index.html" class="btn-pill" title="Architecture Visualizer">
+          <span>📊</span> Architecture
+        </a>
+
+        <a href="https://github.com/mohamed-soubhi/MSA_AI_agent" target="_blank" class="btn-pill" title="View Source on GitHub">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           GitHub
         </a>
+
+        <button id="themeToggle" class="btn-pill primary" title="Switch Theme (Dark / Light)" onclick="toggleTheme()">
+          <span class="theme-icon">☀️</span>
+          <span class="theme-text">Light</span>
+        </button>
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="container">
-      <div class="hero-pill">🛡️ 4-Layer Hardened Defense-in-Depth Sandbox</div>
-      <h1 class="hero-title">
-        Sandboxed Autonomous <br>
-        <span class="gradient-text">AI Coding Agent &amp; Web Platform</span>
-      </h1>
-      <p class="hero-subtitle">
-        Built from scratch on Ollama native tool-calling. Featuring dual interfaces (CLI REPL + Real-time Streaming Web Chat), durable cross-session memory, hosted web search, and in-process live settings management.
-      </p>
-      <div class="hero-actions">
-        <a href="../code_flow_diagrams/index.html" class="btn-primary">Explore Architecture Visualizer 📊</a>
-        <a href="../doc/code_review_report.html" class="btn-secondary">View Code Review Report 🔍</a>
-        <a href="#quickstart" class="btn-secondary">Quick Start Guide 🚀</a>
-      </div>
-    </div>
-  </section>
+  <main class="container">
+    
+    <!-- =========================================================================
+         2. Hero Profile & Metrics Header
+         ========================================================================= -->
+    <section class="hero-section">
+      <div class="hero-header">
+        <div class="hero-eyebrow">🛡️ 4-Layer Defense-in-Depth Sandbox</div>
+        <h1 class="hero-name">MSA AI AGENT</h1>
+        <div class="hero-subtitle">Sandboxed Autonomous AI Coding Agent &amp; Web Platform</div>
+        <div class="hero-person-title">Production-Grade ReAct Engine · Ollama Native Tool Calling · 524 Pytest Tests (100% Pass) · Dual CLI &amp; Web Surfaces</div>
 
-  <!-- Real-time Stats Grid -->
-  <div class="container">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-val">524/524</div>
-        <div class="stat-label">Pytest Tests Passed (100%)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val">15</div>
-        <div class="stat-label">Core Python Modules</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val">11</div>
-        <div class="stat-label">Sandboxed &amp; Gated Tools</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val">4 Layers</div>
-        <div class="stat-label">Security &amp; Isolation Gates</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Key Features Grid -->
-  <section class="section" id="features">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">Capabilities</span>
-        <h2 class="section-title">Engineered for Robustness &amp; Security</h2>
-        <p class="section-desc">Every subsystem was architected to eliminate silent failure modes, sandbox breakouts, and stuck-in-loop states.</p>
-      </div>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🛡️</div>
-          <h3 class="feature-title">Defense-in-Depth Sandbox</h3>
-          <p class="feature-text">Filesystem I/O strictly restricted to <code>workspace/</code>. Intercepts compound shell chaining (<code>&amp;&amp;, ||, ;</code>), protects against Windows reserved device names, and kills orphaned subprocess groups via <code>os.killpg</code>.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <h3 class="feature-title">Dual Interaction Interfaces</h3>
-          <p class="feature-text">Full terminal REPL (Step Mode + Auto Plan Mode) and a modern FastAPI Web Chat SPA with real-time Server-Sent Events (SSE), tool execution logs, and sandboxed HTML previews.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🧠</div>
-          <h3 class="feature-title">Cross-Session Durable Memory</h3>
-          <p class="feature-text">Persistent JSON memory featuring atomic file replacement (<code>os.replace</code>), corrupted backup recovery (<code>.corrupt.bak</code>), tag-based recall, and automated all-time token usage analytics.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🌐</div>
-          <h3 class="feature-title">Config-Gated Web Tools</h3>
-          <p class="feature-text">Hosted internet search and web page fetching via Ollama's cloud API. Eliminates local SSRF risks, enforces confirmation gates, and isolates API credentials from disk storage.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🎛️</div>
-          <h3 class="feature-title">Live Settings &amp; Memory UI</h3>
-          <p class="feature-text">Web-based Config Editor with in-process module reloading (<code>config_reload.py</code>), 5-digit unlock confirmation code, single-click directory picker, and model catalog browser.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🔄</div>
-          <h3 class="feature-title">ReAct Loop Defense</h3>
-          <p class="feature-text">Hardened ReAct execution core equipped with 1-gram, 2-gram, and 3-gram alternating stuck-loop detection, watchdog timers, and seamless unlimited mode for data pipelines.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Interactive Tools Showcase -->
-  <section class="section" id="tools">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">Tool Registry</span>
-        <h2 class="section-title">Hardened 11-Tool Execution Suite</h2>
-        <p class="section-desc">Assembled through <code>tools_registry.py</code> to ensure 100% feature parity between CLI and Web interfaces.</p>
-      </div>
-
-      <div class="tools-container">
-        <div class="tools-nav">
-          <button class="tool-tab active" onclick="switchTool('fs_read', this)">read_file</button>
-          <button class="tool-tab" onclick="switchTool('fs_write', this)">write_file</button>
-          <button class="tool-tab" onclick="switchTool('shell', this)">run_command</button>
-          <button class="tool-tab" onclick="switchTool('web_search', this)">web_search</button>
-          <button class="tool-tab" onclick="switchTool('web_fetch', this)">web_fetch</button>
-          <button class="tool-tab" onclick="switchTool('human', this)">ask_human</button>
-          <button class="tool-tab" onclick="switchTool('memory', this)">remember_fact</button>
-        </div>
-
-        <div id="tool-fs_read" class="tool-content active">
-          <div class="tool-sig">read_file(path: str) -> str</div>
-          <p>Reads the content of a file located strictly within the <code>workspace/</code> sandbox root.</p>
-          <ul style="margin-top: 12px; padding-left: 20px; color: var(--text-dim);">
-            <li><strong>Safety Invariant:</strong> Validated by <code>fs_tools.resolve_path()</code>. Blocks path traversal (<code>../</code>) and symlink escapes.</li>
-            <li><strong>Normalization:</strong> NFKC Unicode normalization prevents visual spoofing.</li>
-          </ul>
-        </div>
-
-        <div id="tool-fs_write" class="tool-content">
-          <div class="tool-sig">write_file(path: str, content: str) -> str</div>
-          <p>Writes text content to a sandboxed file, creating parent directories safely if necessary.</p>
-          <ul style="margin-top: 12px; padding-left: 20px; color: var(--text-dim);">
-            <li><strong>Gate:</strong> Requires user approval via <code>confirm()</code>.</li>
-            <li><strong>Isolation:</strong> Blocks writes outside <code>workspace/</code> and defends against Windows reserved device names (<code>CON, PRN, AUX, NUL</code>).</li>
-          </ul>
-        </div>
-
-        <div id="tool-shell" class="tool-content">
-          <div class="tool-sig">run_command(command: str) -> str</div>
-          <p>Executes shell commands in a dedicated subprocess group rooted inside <code>workspace/</code>.</p>
-          <ul style="margin-top: 12px; padding-left: 20px; color: var(--text-dim);">
-            <li><strong>4-Layer Gate:</strong> (1) Allowlist check &rarr; (2) Blocklist check &rarr; (3) Compound operator check (forces ask on <code>&amp;&amp;, ||, ;</code>) &rarr; (4) Subprocess timeout with <code>os.killpg</code> group kill.</li>
-          </ul>
-        </div>
-
-        <div id="tool-web_search" class="tool-content">
-          <div class="tool-sig">web_search(query: str, max_results: int | None = None) -> str</div>
-          <p>Searches the public web via Ollama's hosted search API and returns ranked titles, URLs, and snippets.</p>
-          <ul style="margin-top: 12px; padding-left: 20px; color: var(--text-dim);">
-            <li><strong>Security:</strong> Proxied through Ollama Cloud; zero local SSRF surface. Gated by <code>WEB_TOOLS_ENABLED</code> and <code>confirm()</code>.</li>
-          </ul>
-        </div>
-
-        <div id="tool-web_fetch" class="tool-content">
-          <div class="tool-sig">web_fetch(url: str) -> str</div>
-          <p>Fetches page contents from an absolute HTTP/HTTPS URL and converts it to formatted Markdown.</p>
-          <ul style="margin-top: 12px; padding-left: 20px; color: var(--text-dim);">
-            <li><strong>Safety:</strong> Enforces <code>http://</code> / <code>https://</code> scheme; truncates output at <code>WEB_FETCH_MAX_CHARS</code> ceiling.</li>
-          </ul>
-        </div>
-
-        <div id="tool-human" class="tool-content">
-          <div class="tool-sig">ask_human(question: str) -> str / ask_human_choice(question: str, options: list[str]) -> str</div>
-          <p>Conversational Human-in-the-Loop clarification tools when model instructions are ambiguous.</p>
-          <ul style="margin-top: 12px; padding-left: 20px; color: var(--text-dim);">
-            <li><strong>Routing:</strong> Routes to terminal stdin in CLI mode; pushes SSE event and suspends worker thread in Web mode.</li>
-          </ul>
-        </div>
-
-        <div id="tool-memory" class="tool-content">
-          <div class="tool-sig">remember_fact(fact: str, tags: list[str] | None = None) -> str</div>
-          <p>Persists durable facts across sessions into <code>memory.json</code> with timestamp metadata.</p>
-          <ul style="margin-top: 12px; padding-left: 20px; color: var(--text-dim);">
-            <li><strong>Robustness:</strong> Atomic file replacement (<code>os.replace</code>) guarantees corruption-free writes.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Quickstart Section -->
-  <section class="section" id="quickstart">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">Installation</span>
-        <h2 class="section-title">Get Started in Seconds</h2>
-        <p class="section-desc">Managed entirely with <code>uv</code> for deterministic, zero-friction virtualenv setup.</p>
-      </div>
-
-      <div class="code-box">
-        <div class="code-header">
-          <span>Terminal (Linux / macOS / Windows WSL)</span>
-          <span>bash</span>
-        </div>
-        <div class="code-body">
-<span style="color: #64748b;"># 1. Clone repository & install dependencies</span>
-git clone https://github.com/mohamed-soubhi/MSA_AI_agent.git
-cd MSA_AI_agent
-uv sync --group dev
-
-<span style="color: #64748b;"># 2. Launch the Web Backend (Chat &amp; Config UI)</span>
-./run_be.sh          <span style="color: #64748b;"># on Windows: run_be.bat</span>
-
-<span style="color: #64748b;"># 3. Or launch the Terminal CLI Agent</span>
-./run_cli_agent.sh   <span style="color: #64748b;"># on Windows: run_cli_agent.bat</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Documentation & Tools Portal Hub -->
-  <section class="section" id="docs">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">Ecosystem</span>
-        <h2 class="section-title">Documentation &amp; Interactive Portals</h2>
-        <p class="section-desc">Explore technical specifications, audit dashboards, and standalone viewers.</p>
-      </div>
-
-      <div class="portal-grid">
-        <a href="../code_flow_diagrams/index.html" class="portal-card">
-          <div>
-            <div class="portal-tag">Interactive App</div>
-            <div class="portal-title">Architecture Visualizer</div>
-            <div class="portal-desc">12 standalone SVG diagrams covering system topology, ReAct loops, safety gates, and call graphs.</div>
+        <!-- Executive Stat Strip -->
+        <div class="hero-stat-strip">
+          <div class="stat-item">
+            <span class="stat-icon">⚡</span>
+            <span class="stat-highlight">524 / 524</span>
+            <span class="stat-detail">Pytest Passed (100%)</span>
           </div>
-        </a>
-
-        <a href="../doc/code_review_report.html" class="portal-card">
-          <div>
-            <div class="portal-tag">Audit Dashboard</div>
-            <div class="portal-title">Code Review &amp; Audit Report</div>
-            <div class="portal-desc">Comprehensive static analysis, defect remediation log, and module quality matrix.</div>
+          <span class="stat-sep">/</span>
+          <div class="stat-item">
+            <span class="stat-icon">🛡️</span>
+            <span class="stat-highlight">4 Layers</span>
+            <span class="stat-detail">Security &amp; Isolation Gates</span>
           </div>
-        </a>
-
-        <a href="../doc/USER_MANUAL.md" class="portal-card">
-          <div>
-            <div class="portal-tag">Guide</div>
-            <div class="portal-title">User Manual &amp; uv Guide</div>
-            <div class="portal-desc">Step-by-step practical manual for CLI, web chat, config editor, and dependency management.</div>
+          <span class="stat-sep">/</span>
+          <div class="stat-item">
+            <span class="stat-icon">🛠️</span>
+            <span class="stat-highlight">11 Tools</span>
+            <span class="stat-detail">Gated &amp; Sandboxed Suite</span>
           </div>
-        </a>
-
-        <a href="../jsonl-viewer/index.html" class="portal-card">
-          <div>
-            <div class="portal-tag">Diagnostic Tool</div>
-            <div class="portal-title">JSONL Session Viewer</div>
-            <div class="portal-desc">Inspect structured audit logs, prompt evaluation metrics, and round execution times.</div>
+          <span class="stat-sep">/</span>
+          <div class="stat-item">
+            <span class="stat-icon">🧠</span>
+            <span class="stat-highlight">Durable JSON</span>
+            <span class="stat-detail">Cross-Session Memory</span>
           </div>
-        </a>
-
-        <a href="../markdown-reader/index.html" class="portal-card">
-          <div>
-            <div class="portal-tag">Documentation Tool</div>
-            <div class="portal-title">Markdown Reader</div>
-            <div class="portal-desc">Standalone viewer for rendering project documentation with syntax highlighting.</div>
+          <span class="stat-sep">/</span>
+          <div class="stat-item">
+            <span class="stat-icon">🌐</span>
+            <span class="stat-highlight">Dual UX</span>
+            <span class="stat-detail">CLI REPL &amp; Web SPA</span>
           </div>
-        </a>
+        </div>
 
-        <a href="../doc/test_report.md" class="portal-card">
-          <div>
-            <div class="portal-tag">Quality Assurance</div>
-            <div class="portal-title">Pytest Pass/Fail Report</div>
-            <div class="portal-desc">Detailed pass/fail breakdown of all 524 tests with execution durations and registered TIDs.</div>
-          </div>
-        </a>
+        <div class="hero-actions-bar">
+          <a href="#quickstart" class="btn-pill">🚀 Quick Start</a>
+          <a href="#tools" class="btn-pill">🛠️ Tool Suite</a>
+          <a href="#architecture" class="btn-pill">🏛️ Security Matrix</a>
+          <a href="#ecosystem" class="btn-pill">📚 Ecosystem Hub</a>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <p>MSA AI Agent &bull; Developed by Mohamed Soubhi &bull; Released under MIT License &bull; <a href="https://github.com/mohamed-soubhi/MSA_AI_agent">GitHub Repository</a></p>
+    <!-- =========================================================================
+         3. Quickstart Box
+         ========================================================================= -->
+    <section class="quickstart-box" id="quickstart">
+      <div class="term-header">
+        <span class="term-title">⚡ Quickstart &amp; uv Environment Setup</span>
+        <button class="btn-pill" onclick="copyQuickstart()">📋 Copy Commands</button>
+      </div>
+      <pre class="term-code"><span class="term-comment"># 1. Clone repository &amp; install dependencies using uv</span>
+<span class="term-cmd">git clone https://github.com/mohamed-soubhi/MSA_AI_agent.git</span>
+<span class="term-cmd">cd MSA_AI_agent</span>
+<span class="term-cmd">uv sync --group dev</span>
+
+<span class="term-comment"># 2. Launch the Web Backend (Chat &amp; Config UI at http://localhost:8000/chat)</span>
+<span class="term-cmd">./run_be.sh</span>          <span class="term-comment"># Windows: run_be.bat</span>
+
+<span class="term-comment"># 3. Or launch the Terminal CLI Agent REPL</span>
+<span class="term-cmd">./run_cli_agent.sh</span>   <span class="term-comment"># Windows: run_cli_agent.bat</span></pre>
+    </section>
+
+    <!-- =========================================================================
+         4. Ecosystem & Diagnostic Apps
+         ========================================================================= -->
+    <section class="projects-section" id="ecosystem">
+      <div class="projects-header">
+        <h2 class="projects-heading">Ecosystem &amp; Diagnostic Apps</h2>
+        <p class="projects-sub">Standalone visualization suites, audit dashboards, and documentation viewers.</p>
+      </div>
+
+      <div class="projects-grid">
+        <div class="side-project-card" style="--card-accent: var(--accent-cyan);">
+          <div class="side-project-top">
+            <div class="side-project-head">
+              <span class="side-project-icon">📊</span>
+              <span class="side-project-badge">12 Standalone SVGs</span>
+            </div>
+            <div class="side-project-title">Architecture Visualizer</div>
+            <div class="side-project-desc">Interactive visualizer mapping high-level system topology, ReAct loops, 4 security gates, bridge flows, and module dependency graphs.</div>
+            <div class="side-project-chips">
+              <span class="chip-mini">SVG Diagrams</span><span class="chip-mini">ReAct Loop</span><span class="chip-mini">Interactive</span>
+            </div>
+          </div>
+          <a href="../code_flow_diagrams/index.html" class="side-project-link">Launch Visualizer &rarr;</a>
+        </div>
+
+        <div class="side-project-card" style="--card-accent: var(--accent-neon);">
+          <div class="side-project-top">
+            <div class="side-project-head">
+              <span class="side-project-icon">🔍</span>
+              <span class="side-project-badge">Zero Defects</span>
+            </div>
+            <div class="side-project-title">Code Review &amp; Audit Report</div>
+            <div class="side-project-desc">Complete static analysis, vulnerability assessments, remediation logs, and architecture quality matrix across all 15 Python modules.</div>
+            <div class="side-project-chips">
+              <span class="chip-mini">Static Analysis</span><span class="chip-mini">Hardening</span><span class="chip-mini">Quality Matrix</span>
+            </div>
+          </div>
+          <a href="../doc/code_review_report.html" class="side-project-link">View Audit Dashboard &rarr;</a>
+        </div>
+
+        <div class="side-project-card" style="--card-accent: var(--accent-amber);">
+          <div class="side-project-top">
+            <div class="side-project-head">
+              <span class="side-project-icon">📖</span>
+              <span class="side-project-badge">Comprehensive</span>
+            </div>
+            <div class="side-project-title">User Manual &amp; UV Guide</div>
+            <div class="side-project-desc">Step-by-step practical guide covering CLI agent operations, Web Chat SPA, Config Editor, model configurations, and UV package management.</div>
+            <div class="side-project-chips">
+              <span class="chip-mini">User Manual</span><span class="chip-mini">uv Commands</span><span class="chip-mini">Troubleshooting</span>
+            </div>
+          </div>
+          <a href="../doc/USER_MANUAL.md" class="side-project-link">Read User Manual &rarr;</a>
+        </div>
+
+        <div class="side-project-card" style="--card-accent: var(--accent-violet);">
+          <div class="side-project-top">
+            <div class="side-project-head">
+              <span class="side-project-icon">📝</span>
+              <span class="side-project-badge">Secret Redacted</span>
+            </div>
+            <div class="side-project-title">JSONL Session Viewer</div>
+            <div class="side-project-desc">Diagnostic tool for structured session logs, token analytics, timing metrics, and full trajectory replay without security leaks.</div>
+            <div class="side-project-chips">
+              <span class="chip-mini">JSONL</span><span class="chip-mini">Session Logs</span><span class="chip-mini">Analytics</span>
+            </div>
+          </div>
+          <a href="../jsonl-viewer/index.html" class="side-project-link">Open Log Viewer &rarr;</a>
+        </div>
+
+        <div class="side-project-card" style="--card-accent: var(--accent-teal);">
+          <div class="side-project-top">
+            <div class="side-project-head">
+              <span class="side-project-icon">📑</span>
+              <span class="side-project-badge">Markdown SPA</span>
+            </div>
+            <div class="side-project-title">Markdown Reader</div>
+            <div class="side-project-desc">Standalone viewer for rendering all documentation, architecture specifications, and code reviews with rich syntax highlighting.</div>
+            <div class="side-project-chips">
+              <span class="chip-mini">Markdown</span><span class="chip-mini">GFM</span><span class="chip-mini">Reader</span>
+            </div>
+          </div>
+          <a href="../markdown-reader/index.html" class="side-project-link">Open Reader &rarr;</a>
+        </div>
+
+        <div class="side-project-card" style="--card-accent: var(--accent-rose);">
+          <div class="side-project-top">
+            <div class="side-project-head">
+              <span class="side-project-icon">🧪</span>
+              <span class="side-project-badge">100% Pass Rate</span>
+            </div>
+            <div class="side-project-title">Pytest Pass/Fail Report</div>
+            <div class="side-project-desc">Automated Markdown test report detailing all 524 test cases, execution timings, and registered test IDs (`WEBTOOL`, `FS`, `SHELL`, `SHARED`).</div>
+            <div class="side-project-chips">
+              <span class="chip-mini">524 Tests</span><span class="chip-mini">100% Pass</span><span class="chip-mini">Registered TIDs</span>
+            </div>
+          </div>
+          <a href="../doc/test_report.md" class="side-project-link">View Test Report &rarr;</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         5. Hardened 11-Tool Execution Suite
+         ========================================================================= -->
+    <section class="projects-section" id="tools">
+      <div class="projects-header">
+        <h2 class="projects-heading">11 Hardened Tools Suite</h2>
+        <p class="projects-sub">Assembled centrally via <code>tools_registry.py</code> with strict parameter validation and fail-closed confirmation gates.</p>
+      </div>
+
+      <div class="tools-list">
+        <!-- Tool 1: read_file -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-cyan);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">FILESYSTEM</span>
+              <span>read_file(path)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">read_file(path: str) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Reads text file contents strictly inside the <code>workspace/</code> sandbox root.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Read-Only</span>
+              <span class="chip-mini">Path Traversal Defense</span>
+              <span class="chip-mini">NFKC Unicode Normalization</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 2: write_file -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-neon);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">FILESYSTEM</span>
+              <span>write_file(path, content)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">write_file(path: str, content: str) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Writes text content to a sandboxed file, creating parent directories safely. Gated by <code>confirm()</code>.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Gated Write</span>
+              <span class="chip-mini">Windows Device Names Block</span>
+              <span class="chip-mini">Symlink Guard</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 3: list_directory -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-cyan);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">FILESYSTEM</span>
+              <span>list_directory(path=".")</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">list_directory(path: str = ".") -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Lists sandboxed directory entries with directory indicators. Rejects path traversal escapes.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Read-Only</span>
+              <span class="chip-mini">Sandbox Restricted</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 4: create_directory -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-neon);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">FILESYSTEM</span>
+              <span>create_directory(path)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">create_directory(path: str) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Creates folder hierarchy safely within <code>workspace/</code>. Gated by confirmation.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Gated Creation</span>
+              <span class="chip-mini">Sandbox Boundary</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 5: run_command -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-amber);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">TERMINAL</span>
+              <span>run_command(command)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">run_command(command: str) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Executes shell commands in a dedicated subprocess group with 4 safety layers: allowlist, blocklist, compound operator interception (forces human review on <code>&amp;&amp;, ||, ;</code>), and <code>os.killpg</code> subprocess kill.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">4-Layer Gate</span>
+              <span class="chip-mini">Compound Operator Trap</span>
+              <span class="chip-mini">Process Group Isolation</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 6: web_search -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-teal);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">WEB</span>
+              <span>web_search(query, max_results=5)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">web_search(query: str, max_results: int | None = None) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Searches the web via Ollama's hosted search API. Proxied in the cloud to prevent local SSRF. Gated by <code>WEB_TOOLS_ENABLED</code> and <code>confirm()</code>.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Ollama Cloud API</span>
+              <span class="chip-mini">Zero Local SSRF</span>
+              <span class="chip-mini">API Key Isolated</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 7: web_fetch -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-teal);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">WEB</span>
+              <span>web_fetch(url)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">web_fetch(url: str) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Fetches absolute HTTP/HTTPS page contents and converts to Markdown. Enforces character truncation ceilings.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">HTTP/HTTPS Scheme Check</span>
+              <span class="chip-mini">Max Chars Truncate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 8: ask_human -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-violet);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">HUMAN-IN-LOOP</span>
+              <span>ask_human(question)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">ask_human(question: str) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Prompts the user for clarification when instructions are underspecified. Suspends background worker thread in Web mode.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Interactive Clarification</span>
+              <span class="chip-mini">Thread-Safe Event Queue</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 9: ask_human_choice -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-violet);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">HUMAN-IN-LOOP</span>
+              <span>ask_human_choice(question, options)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">ask_human_choice(question: str, options: list[str]) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Presents numbered multiple-choice options. Validates numeric range and reprompts on invalid entries.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Validated Choices</span>
+              <span class="chip-mini">CLI/Web Parity</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 10: remember_fact -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-gold);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">MEMORY</span>
+              <span>remember_fact(fact, tags=None)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">remember_fact(fact: str, tags: list[str] | None = None) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Persists knowledge across sessions into <code>memory.json</code> with timestamp metadata using atomic <code>os.replace</code> swaps.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Atomic File Swap</span>
+              <span class="chip-mini">Corrupt Auto-Backup</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool 11: recall_memory -->
+        <div class="tool-expandable-card" style="--tool-accent: var(--accent-gold);" onclick="toggleToolCard(this)">
+          <div class="tool-header-btn">
+            <div class="tool-header-left">
+              <span class="tool-name-badge">MEMORY</span>
+              <span>recall_memory(query)</span>
+            </div>
+            <span class="expand-indicator">+</span>
+          </div>
+          <div class="tool-body-panel">
+            <div class="tool-sig-box">recall_memory(query: str) -> str</div>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Scans cross-session memory facts and summaries using keyword and tag matching.</p>
+            <div class="side-project-chips">
+              <span class="chip-mini">Tag Search</span>
+              <span class="chip-mini">Context Window Retention</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         6. Technical Skills & Security Architecture Matrix
+         ========================================================================= -->
+    <section class="skills-section" id="architecture">
+      <div class="skills-header">
+        <h2 class="skills-heading">Security &amp; Architecture Matrix</h2>
+        <p class="skills-sub">Defense-in-depth security gates, concurrency guards, and execution bounds.</p>
+      </div>
+
+      <div class="skills-matrix-grid">
+        <div class="skill-category-card" style="--cat-accent: var(--accent-neon);">
+          <div class="category-title">
+            <span>🛡️</span> Filesystem Sandbox Gates
+          </div>
+          <div class="skill-chips-wrap">
+            <span class="skill-chip featured">Fixed BASE_DIR (workspace/)</span>
+            <span class="skill-chip featured">Symlink Escape Denial</span>
+            <span class="skill-chip">Windows Device Names (CON/PRN)</span>
+            <span class="skill-chip">resolve_path() Choke Point</span>
+            <span class="skill-chip">NFKC Unicode Normalization</span>
+          </div>
+        </div>
+
+        <div class="skill-category-card" style="--cat-accent: var(--accent-amber);">
+          <div class="category-title">
+            <span>⚡</span> Shell &amp; Process Defense
+          </div>
+          <div class="skill-chips-wrap">
+            <span class="skill-chip featured">Allowlist &amp; Blocklist</span>
+            <span class="skill-chip featured">Compound (&amp;&amp;, ||, ;) Trap</span>
+            <span class="skill-chip">Subprocess Process Groups</span>
+            <span class="skill-chip">os.killpg(SIGKILL) Subtree Kill</span>
+            <span class="skill-chip">Non-blocking _stdin_lock</span>
+          </div>
+        </div>
+
+        <div class="skill-category-card" style="--cat-accent: var(--accent-cyan);">
+          <div class="category-title">
+            <span>🔄</span> ReAct Execution Core
+          </div>
+          <div class="skill-chips-wrap">
+            <span class="skill-chip featured">1/2/3-Gram Cycle Defense</span>
+            <span class="skill-chip featured">Watchdog Execution Timers</span>
+            <span class="skill-chip">Ollama Native Tool Calling</span>
+            <span class="skill-chip">Unlimited Mode for Pipelines</span>
+            <span class="skill-chip">In-Process Hot Reload</span>
+          </div>
+        </div>
+
+        <div class="skill-category-card" style="--cat-accent: var(--accent-violet);">
+          <div class="category-title">
+            <span>🧠</span> Memory &amp; Audit Logs
+          </div>
+          <div class="skill-chips-wrap">
+            <span class="skill-chip featured">Atomic Swap (os.replace)</span>
+            <span class="skill-chip featured">.corrupt.bak Auto-Recovery</span>
+            <span class="skill-chip">Secret Redaction (_mask_secrets)</span>
+            <span class="skill-chip">JSONL Structured Logging</span>
+            <span class="skill-chip">Cumulative Token Analytics</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Alert -->
+  <div id="toast" class="toast">Commands copied to clipboard!</div>
+
+  <!-- =========================================================================
+       7. Site Footer
+       ========================================================================= -->
+  <footer class="site-footer">
+    <div class="container footer-wrapper">
+      <div class="footer-text">
+        Designed &amp; Developed by <a href="https://mohamed-soubhi.github.io/" target="_blank">Mohamed Soubhi</a> · Released under MIT License · <a href="https://github.com/mohamed-soubhi/MSA_AI_agent" target="_blank">GitHub Repository</a>
+      </div>
     </div>
   </footer>
 
+  <!-- Client-Side Scripts -->
   <script>
-    function switchTool(toolId, btn) {
-      document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tool-content').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      const target = document.getElementById('tool-' + toolId);
-      if (target) target.classList.add('active');
+    // Theme Switcher with localStorage persistence
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('msa_theme', next);
+      updateThemeButton(next);
+    }
+
+    function updateThemeButton(theme) {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) return;
+      if (theme === 'light') {
+        btn.querySelector('.theme-icon').textContent = '🌙';
+        btn.querySelector('.theme-text').textContent = 'Dark';
+      } else {
+        btn.querySelector('.theme-icon').textContent = '☀️';
+        btn.querySelector('.theme-text').textContent = 'Light';
+      }
+    }
+
+    // Initialize stored theme
+    const savedTheme = localStorage.getItem('msa_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeButton(savedTheme);
+
+    // Expand/Collapse Tool Cards
+    function toggleToolCard(card) {
+      card.classList.toggle('expanded');
+      const ind = card.querySelector('.expand-indicator');
+      if (ind) {
+        ind.textContent = card.classList.contains('expanded') ? '−' : '+';
+      }
+    }
+
+    let allExpanded = false;
+    function toggleAllTools() {
+      allExpanded = !allExpanded;
+      document.querySelectorAll('.tool-expandable-card').forEach(card => {
+        if (allExpanded) {
+          card.classList.add('expanded');
+          const ind = card.querySelector('.expand-indicator');
+          if (ind) ind.textContent = '−';
+        } else {
+          card.classList.remove('expanded');
+          const ind = card.querySelector('.expand-indicator');
+          if (ind) ind.textContent = '+';
+        }
+      });
+      document.getElementById('toggleAllIcon').textContent = allExpanded ? '⊟' : '⊞';
+      document.getElementById('toggleAllText').textContent = allExpanded ? 'Collapse All' : 'Expand All';
+    }
+
+    // Copy Quickstart Command
+    function copyQuickstart() {
+      const code = "git clone https://github.com/mohamed-soubhi/MSA_AI_agent.git\ncd MSA_AI_agent\nuv sync --group dev\n./run_be.sh";
+      navigator.clipboard.writeText(code).then(() => {
+        showToast("Quickstart commands copied!");
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
     // Adapt relative links when hosted on GitHub Pages (*.github.io)
