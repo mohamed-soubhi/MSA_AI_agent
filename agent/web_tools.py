@@ -39,6 +39,30 @@ def _api_key_missing() -> bool:
     return not (os.getenv("OLLAMA_API_KEY") or "").strip()
 
 
+def _client() -> "ollama.Client":
+    """A fresh ollama client that carries the Bearer token explicitly,
+    built from OLLAMA_API_KEY at call time.
+
+    NOT the module-level ollama.web_search() / ollama.web_fetch()
+    helpers: those use one lazily-built default client that bakes its
+    Authorization header from whatever os.environ held the first time
+    any ollama.* module function ran. OLLAMA_API_KEY is normally loaded
+    from agent/.env during agent_config import, and can change on a
+    config reload -- so that default client is often built with NO
+    token and then never picks one up ("Authorization header with
+    Bearer token is required"). Constructing our own client per call
+    with headers={"Authorization": "Bearer <key>"} is the pattern
+    Ollama's own examples use, and always reflects the current key.
+    OLLAMA_HOST is still honoured for anyone pointing at a proxy.
+    """
+    key = (os.environ.get("OLLAMA_API_KEY") or "").strip()
+    kwargs = {"headers": {"Authorization": f"Bearer {key}"}}
+    host = os.environ.get("OLLAMA_HOST")
+    if host:
+        kwargs["host"] = host
+    return ollama.Client(**kwargs)
+
+
 def web_search(query: str, max_results: int | None = None) -> str:
     """Search the web via Ollama's hosted search and return ranked results.
 
@@ -60,7 +84,7 @@ def web_search(query: str, max_results: int | None = None) -> str:
     limit = max(1, min(limit, ceiling))
 
     try:
-        response = ollama.web_search(query, max_results=limit)
+        response = _client().web_search(query, max_results=limit)
     except ollama.ResponseError as exc:
         return f"Error: Ollama web search failed ({exc})."
     except Exception as exc:  # network / auth / unexpected -- never crash the tool loop
@@ -98,7 +122,7 @@ def web_fetch(url: str) -> str:
         return "Web fetch denied by user."
 
     try:
-        response = ollama.web_fetch(url)
+        response = _client().web_fetch(url)
     except ollama.ResponseError as exc:
         return f"Error: Ollama web fetch failed ({exc})."
     except Exception as exc:  # network / auth / unexpected -- never crash the tool loop
