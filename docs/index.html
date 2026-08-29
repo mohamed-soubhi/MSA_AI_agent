@@ -737,6 +737,16 @@ uv sync --group dev
       const target = document.getElementById('tool-' + toolId);
       if (target) target.classList.add('active');
     }
+
+    // Adapt relative links when hosted on GitHub Pages (*.github.io)
+    if (window.location.hostname.endsWith('github.io')) {
+      const repoBase = 'https://github.com/mohamed-soubhi/MSA_AI_agent/blob/main/';
+      document.querySelectorAll('a[href^="../"]').forEach(a => {
+        const relPath = a.getAttribute('href').replace(/^\.\.\//, '');
+        a.href = repoBase + relPath;
+        a.target = '_blank';
+      });
+    }
   </script>
 </body>
 </html>

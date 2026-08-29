@@ -1,30 +1,27 @@
-# MSA AI Agent — Sandboxed Autonomous AI Coding Agent
-
 <div align="center">
 
-[![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+# MSA AI Agent
+### Sandboxed Autonomous AI Coding Agent & Web Platform
+
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Ollama](https://img.shields.io/badge/Ollama-Native%20Tool%20Calling-black?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Native%20Tool%20Calling-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
 [![uv](https://img.shields.io/badge/uv-Package%20Manager-DE5FE9?style=for-the-badge&logo=astral&logoColor=white)](https://docs.astral.sh/uv/)
 [![Tests](https://img.shields.io/badge/Tests-524%20Passed%20(100%25)-22c55e?style=for-the-badge&logo=pytest&logoColor=white)](doc/test_report.md)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows%20%7C%20WSL-64748b?style=for-the-badge)](doc/USER_MANUAL.md)
 
-<p align="center">
-  <b>A production-grade, secure, multi-modal AI coding agent built from scratch on Ollama native tool-calling.</b><br>
-  Featuring a 4-layer defense-in-depth sandbox, dual interfaces (CLI REPL + Real-time Streaming Web Chat), durable cross-session memory, hosted web search, in-process settings hot-reloading, and an interactive architecture visualizer.
-</p>
+**A production-grade, secure, multi-modal AI coding agent built from scratch on Ollama native tool-calling.**  
+Featuring a 4-layer defense-in-depth sandbox, dual interfaces (CLI REPL + Real-time Streaming Web Chat), durable cross-session memory, hosted web search, in-process settings hot-reloading, and an interactive architecture visualizer.
 
-[Quick Start](#-quick-start) • [Architecture](#-architecture--data-flow) • [Features](#-core-features) • [Tool Suite](#-tool-suite-reference) • [Documentation](#-documentation-index) • [Test Suite](#-testing--quality-assurance)
+[Quick Start](#quick-start) • [Architecture](#architecture--data-flow) • [Features](#core-features) • [Tool Suite](#tool-suite-reference) • [Configuration](#configuration-reference) • [Testing](#testing--quality-assurance) • [Documentation](#documentation-index)
 
 </div>
 
 ---
 
-## 🌟 Highlights & Overview
+## Core Features
 
 **MSA AI Agent** is an autonomous developer assistant designed to solve coding tasks, analyze codebases, run shell commands, inspect files, and generate reports within a strictly isolated environment.
-
-### Why MSA AI Agent?
 
 - 🛡️ **Zero Host Compromise**: Sandboxed filesystem operations strictly confined to `workspace/` (`fs_tools.py`), combined with a 4-layer shell execution gate (`shell_tools.py`) that catches malicious operator chaining (`&&`, `||`, `;`), command substitution, and process leaks.
 - ⚡ **Dual Interaction Surfaces**:
@@ -38,7 +35,7 @@
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 Dependencies are managed by [uv](https://docs.astral.sh/uv/) — one root `pyproject.toml` and `uv.lock` reproducing an identical, isolated environment across Linux, macOS, Windows, and WSL.
 
@@ -93,7 +90,7 @@ uv run agent/CLI_agent.py
 
 ---
 
-## 🏛️ Architecture & Data Flow
+## Architecture & Data Flow
 
 ```mermaid
 flowchart TD
@@ -139,7 +136,7 @@ flowchart TD
 
 ---
 
-## 🛠️ Tool Suite Reference
+## Tool Suite Reference
 
 The agent has access to **11 specialized tools** assembled through `tools_registry.py`, ensuring zero drift between CLI and Web interfaces:
 
@@ -159,7 +156,7 @@ The agent has access to **11 specialized tools** assembled through `tools_regist
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 MSA_AI_agent/
@@ -200,7 +197,7 @@ MSA_AI_agent/
 
 ---
 
-## ⚙️ Configuration Reference
+## Configuration Reference
 
 Settings can be customized via `.env` files or modified live in the [Config Editor](http://localhost:8000/config):
 
@@ -220,7 +217,7 @@ Settings can be customized via `.env` files or modified live in the [Config Edit
 
 ---
 
-## 🧪 Testing & Quality Assurance
+## Testing & Quality Assurance
 
 The codebase includes a comprehensive, automated test suite with **100% pass rate**:
 
@@ -246,7 +243,7 @@ uv run python3 tests/generate_report.py
 
 ---
 
-## 📚 Documentation Index
+## Documentation Index
 
 | Document | Purpose |
 |---|---|
@@ -261,6 +258,6 @@ uv run python3 tests/generate_report.py
 
 ---
 
-## 📄 License & Attribution
+## License & Attribution
 
 Developed with ❤️ as an advanced agentic coding workshop project. Released under the MIT License.
